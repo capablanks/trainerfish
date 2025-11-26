@@ -1,0 +1,7 @@
+<!-- res/values/colors.xml -->
+<resources>
+    <color name="ic_launcher_bg">#000000</color>
+    <color name="engine_fish_on">#FF4444</color>  <!-- Red -->
+    <color name="engine_fish_off">#448AFF</color> <!-- Blue -->
+
+</resources>

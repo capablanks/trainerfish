@@ -1,0 +1,21 @@
+# Android / Gradle
+.gradle/
+.idea/
+local.properties
+**/build/
+.cxx/
+
+# Release artifacts
+app/release/
+app/*.apk
+app/*.aab
+
+# Test sources (optional)
+app/src/androidTest/
+app/src/test/
+
+# Large opening book binaries - keep local, don't push to GitHub
+app/src/main/res/raw/fullbook_d32_all_book_data.bin
+app/src/main/res/raw/fullbook_d32_all_book_index.bin
+app/src/main/res/raw/fullbook_d32_book_data.bin
+app/src/main/res/raw/fullbook_d32_book_index.bin
