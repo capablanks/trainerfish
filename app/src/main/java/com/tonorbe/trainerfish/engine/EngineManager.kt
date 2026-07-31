@@ -56,7 +56,7 @@ object EngineManager {
 
         val out = fileBuiltin(ctx)
         if (!out.exists() || out.length() == 0L) {
-            // Try copying from /assets first…
+            // Try copying from /assets first...
             val assetPath = "engines/${builtinName()}"
             val copiedFromAssets = runCatching {
                 ctx.assets.open(assetPath).use { ins ->
@@ -65,7 +65,7 @@ object EngineManager {
                 true
             }.getOrDefault(false)
 
-            // …if not in assets, try /res/raw with common names.
+            // ...if not in assets, try /res/raw with common names.
             if (!copiedFromAssets && (out.length() == 0L)) {
                 val rawId = findRawForArch(ctx, arch()) ?: return@withContext null
                 ctx.resources.openRawResource(rawId).use { ins ->
@@ -133,7 +133,7 @@ object EngineManager {
             // 0755 (octal) == 0x1ED (hex) == 493 (decimal)
             Os.chmod(f.absolutePath, 0x1ED)   // or use 493
         } catch (_: Throwable) {
-            // Fallback if chmod isn’t allowed
+            // Fallback if chmod isn't allowed
             f.setReadable(true, false)
             f.setWritable(true, true)
             f.setExecutable(true, false)

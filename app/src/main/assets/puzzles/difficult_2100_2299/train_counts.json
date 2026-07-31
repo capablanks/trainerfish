@@ -1,0 +1,1450 @@
+{
+  "formatVersion": 1,
+  "countIndex": "theme_rating_floor_counts",
+  "floorStep": 25,
+  "puzzleCount": 400485,
+  "ratingMin": 2100,
+  "ratingMax": 2299,
+  "allByFloor": {
+    "2100": 54471,
+    "2125": 51498,
+    "2150": 52358,
+    "2175": 54623,
+    "2200": 50496,
+    "2225": 46845,
+    "2250": 45433,
+    "2275": 44761
+  },
+  "themeOrder": [
+    "healthymix",
+    "opening",
+    "middlegame",
+    "endgame",
+    "rookendgame",
+    "bishopendgame",
+    "pawnendgame",
+    "knightendgame",
+    "queenendgame",
+    "queenrookendgame",
+    "advancedpawn",
+    "attackingf2f7",
+    "capturingdefender",
+    "discoveredattack",
+    "doublecheck",
+    "exposedking",
+    "fork",
+    "hangingpiece",
+    "kingsideattack",
+    "pin",
+    "queensideattack",
+    "sacrifice",
+    "skewer",
+    "trappedpiece",
+    "attraction",
+    "clearance",
+    "collinearmove",
+    "discoveredcheck",
+    "defensivemove",
+    "deflection",
+    "interference",
+    "intermezzo",
+    "quietmove",
+    "xrayattack",
+    "zugzwang",
+    "mate",
+    "matein1",
+    "matein2",
+    "matein3",
+    "matein4",
+    "matein5",
+    "anastasiamate",
+    "arabianmate",
+    "backrankmate",
+    "balestramate",
+    "blindswinemate",
+    "bodenmate",
+    "cornermate",
+    "doublebishopmate",
+    "dovetailmate",
+    "epaulettemate",
+    "hookmate",
+    "killboxmate",
+    "pillsburymate",
+    "morphymate",
+    "operamate",
+    "swallowtailmate",
+    "trianglemate",
+    "vukovicmate",
+    "smotheredmate",
+    "castling",
+    "enpassant",
+    "promotion",
+    "underpromotion",
+    "equality",
+    "advantage",
+    "crushing",
+    "onemove",
+    "short",
+    "long",
+    "verylong",
+    "master",
+    "mastervsmaster",
+    "supergm",
+    "morphysmate",
+    "pillsburysmate",
+    "swallowstailmate"
+  ],
+  "themes": {
+    "healthymix": {
+      "key": "healthymix",
+      "label": "Healthy mix",
+      "category": "Recommended",
+      "count": 0,
+      "byFloor": {},
+      "officialLichessTheme": true,
+      "foundInPgn": false
+    },
+    "opening": {
+      "key": "opening",
+      "label": "Opening",
+      "category": "Phases",
+      "count": 12176,
+      "byFloor": {
+        "2100": 1784,
+        "2125": 1788,
+        "2150": 1759,
+        "2175": 1814,
+        "2200": 1477,
+        "2225": 1196,
+        "2250": 1156,
+        "2275": 1202
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "middlegame": {
+      "key": "middlegame",
+      "label": "Middlegame",
+      "category": "Phases",
+      "count": 196562,
+      "byFloor": {
+        "2100": 27406,
+        "2125": 25301,
+        "2150": 25287,
+        "2175": 25607,
+        "2200": 26024,
+        "2225": 23161,
+        "2250": 22104,
+        "2275": 21672
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "endgame": {
+      "key": "endgame",
+      "label": "Endgame",
+      "category": "Phases",
+      "count": 191747,
+      "byFloor": {
+        "2100": 25281,
+        "2125": 24409,
+        "2150": 25312,
+        "2175": 27202,
+        "2200": 22995,
+        "2225": 22488,
+        "2250": 22173,
+        "2275": 21887
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "rookendgame": {
+      "key": "rookendgame",
+      "label": "Rook endgame",
+      "category": "Phases",
+      "count": 21796,
+      "byFloor": {
+        "2100": 2772,
+        "2125": 2880,
+        "2150": 2965,
+        "2175": 3245,
+        "2200": 2383,
+        "2225": 2518,
+        "2250": 2523,
+        "2275": 2510
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "bishopendgame": {
+      "key": "bishopendgame",
+      "label": "Bishop endgame",
+      "category": "Phases",
+      "count": 9480,
+      "byFloor": {
+        "2100": 1277,
+        "2125": 1173,
+        "2150": 1304,
+        "2175": 1464,
+        "2200": 1044,
+        "2225": 1042,
+        "2250": 1093,
+        "2275": 1083
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "pawnendgame": {
+      "key": "pawnendgame",
+      "label": "Pawn endgame",
+      "category": "Phases",
+      "count": 25794,
+      "byFloor": {
+        "2100": 2725,
+        "2125": 2936,
+        "2150": 3199,
+        "2175": 4350,
+        "2200": 2369,
+        "2225": 3162,
+        "2250": 3629,
+        "2275": 3424
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "knightendgame": {
+      "key": "knightendgame",
+      "label": "Knight endgame",
+      "category": "Phases",
+      "count": 5558,
+      "byFloor": {
+        "2100": 664,
+        "2125": 683,
+        "2150": 750,
+        "2175": 866,
+        "2200": 542,
+        "2225": 737,
+        "2250": 677,
+        "2275": 639
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "queenendgame": {
+      "key": "queenendgame",
+      "label": "Queen endgame",
+      "category": "Phases",
+      "count": 4596,
+      "byFloor": {
+        "2100": 556,
+        "2125": 600,
+        "2150": 678,
+        "2175": 781,
+        "2200": 497,
+        "2225": 528,
+        "2250": 477,
+        "2275": 479
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "queenrookendgame": {
+      "key": "queenrookendgame",
+      "label": "Queen and Rook",
+      "category": "Phases",
+      "count": 1329,
+      "byFloor": {
+        "2100": 186,
+        "2125": 172,
+        "2150": 170,
+        "2175": 209,
+        "2200": 149,
+        "2225": 147,
+        "2250": 168,
+        "2275": 128
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "advancedpawn": {
+      "key": "advancedpawn",
+      "label": "Advanced pawn",
+      "category": "Motifs",
+      "count": 34052,
+      "byFloor": {
+        "2100": 4293,
+        "2125": 4428,
+        "2150": 4407,
+        "2175": 4775,
+        "2200": 4226,
+        "2225": 4097,
+        "2250": 3976,
+        "2275": 3850
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "attackingf2f7": {
+      "key": "attackingf2f7",
+      "label": "Attacking f2 or f7",
+      "category": "Motifs",
+      "count": 1387,
+      "byFloor": {
+        "2100": 180,
+        "2125": 188,
+        "2150": 188,
+        "2175": 192,
+        "2200": 162,
+        "2225": 173,
+        "2250": 146,
+        "2275": 158
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "capturingdefender": {
+      "key": "capturingdefender",
+      "label": "Capture the defender",
+      "category": "Motifs",
+      "count": 2960,
+      "byFloor": {
+        "2100": 440,
+        "2125": 400,
+        "2150": 415,
+        "2175": 376,
+        "2200": 369,
+        "2225": 353,
+        "2250": 320,
+        "2275": 287
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "discoveredattack": {
+      "key": "discoveredattack",
+      "label": "Discovered attack",
+      "category": "Motifs",
+      "count": 20110,
+      "byFloor": {
+        "2100": 2821,
+        "2125": 2714,
+        "2150": 2666,
+        "2175": 2586,
+        "2200": 2615,
+        "2225": 2280,
+        "2250": 2285,
+        "2275": 2143
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "doublecheck": {
+      "key": "doublecheck",
+      "label": "Double check",
+      "category": "Motifs",
+      "count": 2780,
+      "byFloor": {
+        "2100": 398,
+        "2125": 393,
+        "2150": 404,
+        "2175": 370,
+        "2200": 358,
+        "2225": 312,
+        "2250": 285,
+        "2275": 260
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "exposedking": {
+      "key": "exposedking",
+      "label": "Exposed king",
+      "category": "Motifs",
+      "count": 21786,
+      "byFloor": {
+        "2100": 2813,
+        "2125": 2727,
+        "2150": 2823,
+        "2175": 2900,
+        "2200": 2837,
+        "2225": 2590,
+        "2250": 2607,
+        "2275": 2489
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "fork": {
+      "key": "fork",
+      "label": "Fork",
+      "category": "Motifs",
+      "count": 35895,
+      "byFloor": {
+        "2100": 5126,
+        "2125": 4747,
+        "2150": 4660,
+        "2175": 4546,
+        "2200": 4719,
+        "2225": 4220,
+        "2250": 4155,
+        "2275": 3722
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "hangingpiece": {
+      "key": "hangingpiece",
+      "label": "Hanging piece",
+      "category": "Motifs",
+      "count": 12927,
+      "byFloor": {
+        "2100": 1874,
+        "2125": 1736,
+        "2150": 1613,
+        "2175": 1703,
+        "2200": 1645,
+        "2225": 1508,
+        "2250": 1441,
+        "2275": 1407
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "kingsideattack": {
+      "key": "kingsideattack",
+      "label": "Kingside attack",
+      "category": "Motifs",
+      "count": 22377,
+      "byFloor": {
+        "2100": 3166,
+        "2125": 2980,
+        "2150": 3032,
+        "2175": 3132,
+        "2200": 2874,
+        "2225": 2471,
+        "2250": 2346,
+        "2275": 2376
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "pin": {
+      "key": "pin",
+      "label": "Pin",
+      "category": "Motifs",
+      "count": 32573,
+      "byFloor": {
+        "2100": 4475,
+        "2125": 4083,
+        "2150": 4245,
+        "2175": 4240,
+        "2200": 4312,
+        "2225": 3876,
+        "2250": 3667,
+        "2275": 3675
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "queensideattack": {
+      "key": "queensideattack",
+      "label": "Queenside attack",
+      "category": "Motifs",
+      "count": 4552,
+      "byFloor": {
+        "2100": 645,
+        "2125": 610,
+        "2150": 640,
+        "2175": 624,
+        "2200": 547,
+        "2225": 520,
+        "2250": 498,
+        "2275": 468
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "sacrifice": {
+      "key": "sacrifice",
+      "label": "Sacrifice",
+      "category": "Motifs",
+      "count": 43253,
+      "byFloor": {
+        "2100": 5822,
+        "2125": 5737,
+        "2150": 5736,
+        "2175": 6021,
+        "2200": 5398,
+        "2225": 5013,
+        "2250": 4867,
+        "2275": 4659
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "skewer": {
+      "key": "skewer",
+      "label": "Skewer",
+      "category": "Motifs",
+      "count": 5596,
+      "byFloor": {
+        "2100": 825,
+        "2125": 743,
+        "2150": 707,
+        "2175": 676,
+        "2200": 707,
+        "2225": 696,
+        "2250": 598,
+        "2275": 644
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "trappedpiece": {
+      "key": "trappedpiece",
+      "label": "Trapped piece",
+      "category": "Motifs",
+      "count": 5367,
+      "byFloor": {
+        "2100": 804,
+        "2125": 705,
+        "2150": 724,
+        "2175": 663,
+        "2200": 744,
+        "2225": 625,
+        "2250": 581,
+        "2275": 521
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "attraction": {
+      "key": "attraction",
+      "label": "Attraction",
+      "category": "Advanced",
+      "count": 20004,
+      "byFloor": {
+        "2100": 2783,
+        "2125": 2729,
+        "2150": 2699,
+        "2175": 2853,
+        "2200": 2479,
+        "2225": 2319,
+        "2250": 2174,
+        "2275": 1968
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "clearance": {
+      "key": "clearance",
+      "label": "Clearance",
+      "category": "Advanced",
+      "count": 10165,
+      "byFloor": {
+        "2100": 1317,
+        "2125": 1243,
+        "2150": 1358,
+        "2175": 1411,
+        "2200": 1311,
+        "2225": 1226,
+        "2250": 1149,
+        "2275": 1150
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "collinearmove": {
+      "key": "collinearmove",
+      "label": "Collinear move",
+      "category": "Advanced",
+      "count": 1240,
+      "byFloor": {
+        "2100": 161,
+        "2125": 137,
+        "2150": 157,
+        "2175": 172,
+        "2200": 166,
+        "2225": 142,
+        "2250": 158,
+        "2275": 147
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "discoveredcheck": {
+      "key": "discoveredcheck",
+      "label": "Discovered check",
+      "category": "Advanced",
+      "count": 10832,
+      "byFloor": {
+        "2100": 1448,
+        "2125": 1478,
+        "2150": 1476,
+        "2175": 1447,
+        "2200": 1361,
+        "2225": 1220,
+        "2250": 1226,
+        "2275": 1176
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "defensivemove": {
+      "key": "defensivemove",
+      "label": "Defensive move",
+      "category": "Advanced",
+      "count": 59545,
+      "byFloor": {
+        "2100": 7309,
+        "2125": 7002,
+        "2150": 7765,
+        "2175": 8763,
+        "2200": 7019,
+        "2225": 7133,
+        "2250": 7203,
+        "2275": 7351
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "deflection": {
+      "key": "deflection",
+      "label": "Deflection",
+      "category": "Advanced",
+      "count": 19615,
+      "byFloor": {
+        "2100": 2659,
+        "2125": 2525,
+        "2150": 2540,
+        "2175": 2613,
+        "2200": 2593,
+        "2225": 2378,
+        "2250": 2191,
+        "2275": 2116
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "interference": {
+      "key": "interference",
+      "label": "Interference",
+      "category": "Advanced",
+      "count": 2167,
+      "byFloor": {
+        "2100": 309,
+        "2125": 302,
+        "2150": 272,
+        "2175": 283,
+        "2200": 276,
+        "2225": 241,
+        "2250": 257,
+        "2275": 227
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "intermezzo": {
+      "key": "intermezzo",
+      "label": "Intermezzo",
+      "category": "Advanced",
+      "count": 7032,
+      "byFloor": {
+        "2100": 956,
+        "2125": 870,
+        "2150": 897,
+        "2175": 858,
+        "2200": 970,
+        "2225": 871,
+        "2250": 843,
+        "2275": 767
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "quietmove": {
+      "key": "quietmove",
+      "label": "Quiet move",
+      "category": "Advanced",
+      "count": 39309,
+      "byFloor": {
+        "2100": 4600,
+        "2125": 4568,
+        "2150": 4762,
+        "2175": 5307,
+        "2200": 4846,
+        "2225": 4938,
+        "2250": 5058,
+        "2275": 5230
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "xrayattack": {
+      "key": "xrayattack",
+      "label": "X-Ray attack",
+      "category": "Advanced",
+      "count": 863,
+      "byFloor": {
+        "2100": 118,
+        "2125": 109,
+        "2150": 135,
+        "2175": 94,
+        "2200": 123,
+        "2225": 106,
+        "2250": 92,
+        "2275": 86
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "zugzwang": {
+      "key": "zugzwang",
+      "label": "Zugzwang",
+      "category": "Advanced",
+      "count": 8219,
+      "byFloor": {
+        "2100": 945,
+        "2125": 970,
+        "2150": 1044,
+        "2175": 1394,
+        "2200": 839,
+        "2225": 952,
+        "2250": 1082,
+        "2275": 993
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "mate": {
+      "key": "mate",
+      "label": "Checkmate",
+      "category": "Mates",
+      "count": 15654,
+      "byFloor": {
+        "2100": 2694,
+        "2125": 2451,
+        "2150": 2079,
+        "2175": 1882,
+        "2200": 2086,
+        "2225": 1725,
+        "2250": 1462,
+        "2275": 1275
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "matein1": {
+      "key": "matein1",
+      "label": "Mate in 1",
+      "category": "Mates",
+      "count": 162,
+      "byFloor": {
+        "2100": 38,
+        "2125": 36,
+        "2150": 28,
+        "2175": 22,
+        "2200": 11,
+        "2225": 9,
+        "2250": 10,
+        "2275": 8
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "matein2": {
+      "key": "matein2",
+      "label": "Mate in 2",
+      "category": "Mates",
+      "count": 5061,
+      "byFloor": {
+        "2100": 1131,
+        "2125": 864,
+        "2150": 697,
+        "2175": 581,
+        "2200": 637,
+        "2225": 463,
+        "2250": 385,
+        "2275": 303
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "matein3": {
+      "key": "matein3",
+      "label": "Mate in 3",
+      "category": "Mates",
+      "count": 6400,
+      "byFloor": {
+        "2100": 976,
+        "2125": 1011,
+        "2150": 885,
+        "2175": 763,
+        "2200": 842,
+        "2225": 783,
+        "2250": 618,
+        "2275": 522
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "matein4": {
+      "key": "matein4",
+      "label": "Mate in 4",
+      "category": "Mates",
+      "count": 3143,
+      "byFloor": {
+        "2100": 437,
+        "2125": 416,
+        "2150": 388,
+        "2175": 401,
+        "2200": 477,
+        "2225": 367,
+        "2250": 326,
+        "2275": 331
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "matein5": {
+      "key": "matein5",
+      "label": "Mate in 5 or more",
+      "category": "Mates",
+      "count": 888,
+      "byFloor": {
+        "2100": 112,
+        "2125": 124,
+        "2150": 81,
+        "2175": 115,
+        "2200": 119,
+        "2225": 103,
+        "2250": 123,
+        "2275": 111
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "anastasiamate": {
+      "key": "anastasiamate",
+      "label": "Anastasia's mate",
+      "category": "Mate themes",
+      "count": 26,
+      "byFloor": {
+        "2100": 3,
+        "2125": 7,
+        "2150": 2,
+        "2225": 6,
+        "2250": 6,
+        "2275": 2
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "arabianmate": {
+      "key": "arabianmate",
+      "label": "Arabian mate",
+      "category": "Mate themes",
+      "count": 88,
+      "byFloor": {
+        "2100": 14,
+        "2125": 11,
+        "2150": 12,
+        "2175": 16,
+        "2200": 8,
+        "2225": 11,
+        "2250": 7,
+        "2275": 9
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "backrankmate": {
+      "key": "backrankmate",
+      "label": "Back rank mate",
+      "category": "Mate themes",
+      "count": 222,
+      "byFloor": {
+        "2100": 42,
+        "2125": 43,
+        "2150": 25,
+        "2175": 25,
+        "2200": 27,
+        "2225": 30,
+        "2250": 13,
+        "2275": 17
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "balestramate": {
+      "key": "balestramate",
+      "label": "Balestra mate",
+      "category": "Mate themes",
+      "count": 36,
+      "byFloor": {
+        "2100": 4,
+        "2125": 5,
+        "2150": 7,
+        "2175": 7,
+        "2200": 4,
+        "2225": 3,
+        "2250": 4,
+        "2275": 2
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "blindswinemate": {
+      "key": "blindswinemate",
+      "label": "Blind Swine mate",
+      "category": "Mate themes",
+      "count": 96,
+      "byFloor": {
+        "2100": 20,
+        "2125": 13,
+        "2150": 14,
+        "2175": 10,
+        "2200": 10,
+        "2225": 11,
+        "2250": 8,
+        "2275": 10
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "bodenmate": {
+      "key": "bodenmate",
+      "label": "Boden's mate",
+      "category": "Mate themes",
+      "count": 20,
+      "byFloor": {
+        "2100": 1,
+        "2125": 3,
+        "2150": 2,
+        "2175": 4,
+        "2200": 5,
+        "2225": 3,
+        "2250": 1,
+        "2275": 1
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "cornermate": {
+      "key": "cornermate",
+      "label": "Corner mate",
+      "category": "Mate themes",
+      "count": 191,
+      "byFloor": {
+        "2100": 38,
+        "2125": 25,
+        "2150": 33,
+        "2175": 13,
+        "2200": 35,
+        "2225": 19,
+        "2250": 18,
+        "2275": 10
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "doublebishopmate": {
+      "key": "doublebishopmate",
+      "label": "Double bishop mate",
+      "category": "Mate themes",
+      "count": 11,
+      "byFloor": {
+        "2100": 1,
+        "2125": 2,
+        "2150": 1,
+        "2175": 1,
+        "2200": 3,
+        "2225": 1,
+        "2275": 2
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "dovetailmate": {
+      "key": "dovetailmate",
+      "label": "Dovetail mate",
+      "category": "Mate themes",
+      "count": 64,
+      "byFloor": {
+        "2100": 12,
+        "2125": 8,
+        "2150": 9,
+        "2175": 8,
+        "2200": 6,
+        "2225": 10,
+        "2250": 7,
+        "2275": 4
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "epaulettemate": {
+      "key": "epaulettemate",
+      "label": "Epaulette mate",
+      "category": "Mate themes",
+      "count": 308,
+      "byFloor": {
+        "2100": 51,
+        "2125": 44,
+        "2150": 39,
+        "2175": 38,
+        "2200": 38,
+        "2225": 41,
+        "2250": 32,
+        "2275": 25
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "hookmate": {
+      "key": "hookmate",
+      "label": "Hook mate",
+      "category": "Mate themes",
+      "count": 94,
+      "byFloor": {
+        "2100": 17,
+        "2125": 16,
+        "2150": 9,
+        "2175": 15,
+        "2200": 11,
+        "2225": 11,
+        "2250": 9,
+        "2275": 6
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "killboxmate": {
+      "key": "killboxmate",
+      "label": "Kill box mate",
+      "category": "Mate themes",
+      "count": 166,
+      "byFloor": {
+        "2100": 30,
+        "2125": 32,
+        "2150": 25,
+        "2175": 17,
+        "2200": 25,
+        "2225": 22,
+        "2250": 9,
+        "2275": 6
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "pillsburymate": {
+      "key": "pillsburymate",
+      "label": "Pillsbury's mate",
+      "category": "Mate themes",
+      "count": 0,
+      "byFloor": {},
+      "officialLichessTheme": true,
+      "foundInPgn": false
+    },
+    "morphymate": {
+      "key": "morphymate",
+      "label": "Morphy's mate",
+      "category": "Mate themes",
+      "count": 0,
+      "byFloor": {},
+      "officialLichessTheme": true,
+      "foundInPgn": false
+    },
+    "operamate": {
+      "key": "operamate",
+      "label": "Opera mate",
+      "category": "Mate themes",
+      "count": 617,
+      "byFloor": {
+        "2100": 109,
+        "2125": 103,
+        "2150": 86,
+        "2175": 84,
+        "2200": 69,
+        "2225": 70,
+        "2250": 57,
+        "2275": 39
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "swallowtailmate": {
+      "key": "swallowtailmate",
+      "label": "Swallow's tail mate",
+      "category": "Mate themes",
+      "count": 0,
+      "byFloor": {},
+      "officialLichessTheme": true,
+      "foundInPgn": false
+    },
+    "trianglemate": {
+      "key": "trianglemate",
+      "label": "Triangle mate",
+      "category": "Mate themes",
+      "count": 123,
+      "byFloor": {
+        "2100": 20,
+        "2125": 23,
+        "2150": 14,
+        "2175": 14,
+        "2200": 20,
+        "2225": 13,
+        "2250": 10,
+        "2275": 9
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "vukovicmate": {
+      "key": "vukovicmate",
+      "label": "Vukovi\u0107 mate",
+      "category": "Mate themes",
+      "count": 49,
+      "byFloor": {
+        "2100": 10,
+        "2125": 6,
+        "2150": 10,
+        "2175": 10,
+        "2200": 2,
+        "2225": 3,
+        "2250": 2,
+        "2275": 6
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "smotheredmate": {
+      "key": "smotheredmate",
+      "label": "Smothered mate",
+      "category": "Mate themes",
+      "count": 19,
+      "byFloor": {
+        "2125": 6,
+        "2150": 4,
+        "2175": 4,
+        "2200": 1,
+        "2225": 3,
+        "2275": 1
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "castling": {
+      "key": "castling",
+      "label": "Castling",
+      "category": "Special moves",
+      "count": 567,
+      "byFloor": {
+        "2100": 54,
+        "2125": 78,
+        "2150": 60,
+        "2175": 82,
+        "2200": 93,
+        "2225": 68,
+        "2250": 72,
+        "2275": 60
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "enpassant": {
+      "key": "enpassant",
+      "label": "En passant rights",
+      "category": "Special moves",
+      "count": 1553,
+      "byFloor": {
+        "2100": 199,
+        "2125": 193,
+        "2150": 211,
+        "2175": 208,
+        "2200": 209,
+        "2225": 179,
+        "2250": 188,
+        "2275": 166
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "promotion": {
+      "key": "promotion",
+      "label": "Promotion",
+      "category": "Special moves",
+      "count": 9635,
+      "byFloor": {
+        "2100": 1226,
+        "2125": 1243,
+        "2150": 1241,
+        "2175": 1273,
+        "2200": 1254,
+        "2225": 1137,
+        "2250": 1183,
+        "2275": 1078
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "underpromotion": {
+      "key": "underpromotion",
+      "label": "Underpromotion",
+      "category": "Special moves",
+      "count": 223,
+      "byFloor": {
+        "2100": 26,
+        "2125": 20,
+        "2150": 34,
+        "2175": 41,
+        "2200": 33,
+        "2225": 24,
+        "2250": 22,
+        "2275": 23
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "equality": {
+      "key": "equality",
+      "label": "Equality",
+      "category": "Goals",
+      "count": 1692,
+      "byFloor": {
+        "2100": 284,
+        "2125": 273,
+        "2150": 266,
+        "2175": 221,
+        "2200": 189,
+        "2225": 174,
+        "2250": 159,
+        "2275": 126
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "advantage": {
+      "key": "advantage",
+      "label": "Advantage",
+      "category": "Goals",
+      "count": 161024,
+      "byFloor": {
+        "2100": 22394,
+        "2125": 20869,
+        "2150": 21003,
+        "2175": 21538,
+        "2200": 21013,
+        "2225": 18579,
+        "2250": 17907,
+        "2275": 17721
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "crushing": {
+      "key": "crushing",
+      "label": "Crushing",
+      "category": "Goals",
+      "count": 219726,
+      "byFloor": {
+        "2100": 28780,
+        "2125": 27622,
+        "2150": 28698,
+        "2175": 30658,
+        "2200": 26898,
+        "2225": 26077,
+        "2250": 25617,
+        "2275": 25376
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "onemove": {
+      "key": "onemove",
+      "label": "One-move puzzle",
+      "category": "Lengths",
+      "count": 252,
+      "byFloor": {
+        "2100": 52,
+        "2125": 51,
+        "2150": 47,
+        "2175": 33,
+        "2200": 25,
+        "2225": 16,
+        "2250": 16,
+        "2275": 12
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "short": {
+      "key": "short",
+      "label": "Short puzzle",
+      "category": "Lengths",
+      "count": 146787,
+      "byFloor": {
+        "2100": 22138,
+        "2125": 20198,
+        "2150": 20170,
+        "2175": 21145,
+        "2200": 17534,
+        "2225": 15786,
+        "2250": 15084,
+        "2275": 14732
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "long": {
+      "key": "long",
+      "label": "Long puzzle",
+      "category": "Lengths",
+      "count": 175137,
+      "byFloor": {
+        "2100": 23193,
+        "2125": 22258,
+        "2150": 22681,
+        "2175": 23317,
+        "2200": 22514,
+        "2225": 21067,
+        "2250": 20245,
+        "2275": 19862
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "verylong": {
+      "key": "verylong",
+      "label": "Very long puzzle",
+      "category": "Lengths",
+      "count": 75920,
+      "byFloor": {
+        "2100": 8769,
+        "2125": 8708,
+        "2150": 9148,
+        "2175": 9804,
+        "2200": 10113,
+        "2225": 9686,
+        "2250": 9800,
+        "2275": 9892
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "master": {
+      "key": "master",
+      "label": "Master games",
+      "category": "Origin",
+      "count": 61037,
+      "byFloor": {
+        "2100": 8284,
+        "2125": 7992,
+        "2150": 8052,
+        "2175": 8683,
+        "2200": 7408,
+        "2225": 7067,
+        "2250": 6800,
+        "2275": 6751
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "mastervsmaster": {
+      "key": "mastervsmaster",
+      "label": "Master vs Master games",
+      "category": "Origin",
+      "count": 6665,
+      "byFloor": {
+        "2100": 921,
+        "2125": 863,
+        "2150": 850,
+        "2175": 964,
+        "2200": 814,
+        "2225": 739,
+        "2250": 751,
+        "2275": 763
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "supergm": {
+      "key": "supergm",
+      "label": "Super GM games",
+      "category": "Origin",
+      "count": 309,
+      "byFloor": {
+        "2100": 45,
+        "2125": 46,
+        "2150": 32,
+        "2175": 48,
+        "2200": 33,
+        "2225": 33,
+        "2250": 43,
+        "2275": 29
+      },
+      "officialLichessTheme": true,
+      "foundInPgn": true
+    },
+    "morphysmate": {
+      "key": "morphysmate",
+      "label": "Morphysmate",
+      "category": "Detected in PGN",
+      "count": 159,
+      "byFloor": {
+        "2100": 22,
+        "2125": 24,
+        "2150": 22,
+        "2175": 24,
+        "2200": 17,
+        "2225": 13,
+        "2250": 16,
+        "2275": 21
+      },
+      "officialLichessTheme": false,
+      "foundInPgn": true
+    },
+    "pillsburysmate": {
+      "key": "pillsburysmate",
+      "label": "Pillsburysmate",
+      "category": "Detected in PGN",
+      "count": 745,
+      "byFloor": {
+        "2100": 126,
+        "2125": 128,
+        "2150": 78,
+        "2175": 107,
+        "2200": 83,
+        "2225": 89,
+        "2250": 72,
+        "2275": 62
+      },
+      "officialLichessTheme": false,
+      "foundInPgn": true
+    },
+    "swallowstailmate": {
+      "key": "swallowstailmate",
+      "label": "Swallowstailmate",
+      "category": "Detected in PGN",
+      "count": 170,
+      "byFloor": {
+        "2100": 29,
+        "2125": 30,
+        "2150": 27,
+        "2175": 16,
+        "2200": 18,
+        "2225": 22,
+        "2250": 16,
+        "2275": 12
+      },
+      "officialLichessTheme": false,
+      "foundInPgn": true
+    }
+  },
+  "notes": [
+    "Used by Android for instant hit counters after cold app start.",
+    "For All, sum allByFloor over the selected rating range.",
+    "For a selected theme, sum themes[themeKey].byFloor over the selected rating range.",
+    "Sampling still uses train_rating_buckets.bin and theme_indexes/*.bin; this file is only for counts."
+  ]
+}

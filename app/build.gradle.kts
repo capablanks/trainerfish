@@ -15,14 +15,16 @@ android {
         applicationId = "com.tonorbe.trainerfish"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 500
+        versionName = "5.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Build the JNI .so for these ABIs (add "armeabi-v7a" if you want 32-bit too)
         ndk {
-            abiFilters += listOf("arm64-v8a")
-            // abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            abiFilters += "arm64-v8a"
+            abiFilters += "armeabi-v7a"
+            abiFilters += "x86_64"     // ✅ emulator + Play “official emulator”
+            // abiFilters += "x86"     // optional (older emulators)
         }
 
         // Pass C++ flags to CMake
@@ -91,8 +93,12 @@ kotlin {
 }
 
 dependencies {
+    implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.material3)
     implementation(libs.litert)
+    implementation(libs.androidx.compose.ui.text)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.ui.unit)
 
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
     implementation(composeBom)
@@ -116,6 +122,12 @@ dependencies {
     implementation("androidx.browser:browser:1.8.0")
     implementation("com.android.billingclient:billing-ktx:7.0.0")
 
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("io.coil-kt:coil-svg:2.7.0")
+
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
+    implementation("androidx.compose.material:material-icons-extended")
+
 }

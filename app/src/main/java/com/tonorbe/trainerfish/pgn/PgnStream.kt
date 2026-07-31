@@ -6,6 +6,8 @@ import com.github.bhlangonijr.chesslib.game.Game
 import com.github.bhlangonijr.chesslib.pgn.PgnHolder
 import java.io.File
 import java.util.Locale
+import kotlin.math.min
+
 
 
 
@@ -43,24 +45,37 @@ private fun parseHeaders(chunk: String): Map<String, String> {
 
 private fun extractFen(chunk: String): String? = FEN_RE.find(chunk)?.groupValues?.getOrNull(1)
 
-private fun splitThemeTokens(theme: String?): Set<String> =
-    theme.orEmpty()
-        .split(Regex("[,;\\s]+")) // commas, semicolons, or ANY whitespace
+// Split ONLY on commas / semicolons, so multi-word themes stay intact.
+// Extract distinct theme tokens from a PGN [Theme "..."] header
+// We now split ONLY on commas / semicolons, so phrases like
+// "anastasia's mate" stay intact.
+// Split on commas, semicolons, and whitespace so each Lichess tag token
+// (advancedpawn, fork, matein2, long, middlegame, ...) becomes its own theme.
+private fun splitThemeTokens(theme: String?): Set<String> {
+    return theme
+        .orEmpty()
+        .split(Regex("[,;\\s]+"))
         .map { it.trim().lowercase(Locale.ROOT) }
         .filter { it.isNotEmpty() }
         .toSet()
+}
 
+
+// Does this PGN chunk match the requested theme filter?
 private fun chunkMatchesTheme(chunk: String, theme: String?): Boolean {
     if (theme == null || theme.equals("all", true)) return true
+
     val raw = THEME_RE.find(chunk)?.groupValues?.get(1).orEmpty()
-    return theme.lowercase(Locale.ROOT) in splitThemeTokens(raw)
+    val tokens = splitThemeTokens(raw)
+
+    return theme.trim().lowercase(Locale.ROOT) in tokens
 }
 
 // -----------------------------------------------------------------------------
 // Themes: quick list + cached full list (distinct tokens)
 // -----------------------------------------------------------------------------
 private const val THEME_CACHE_SP = "gm_theme_cache"
-private const val THEME_CACHE_VERSION = 1  // bump if format changes
+private const val THEME_CACHE_VERSION = 3  // bump if format changes
 
 /** Very quick pass: scan some of the file and collect theme TOKENS (distinct). */
 fun listThemesInRawQuick(
@@ -199,6 +214,69 @@ fun findGameIndexesByFilter(
     return reservoir.shuffled(kotlin.random.Random)
 }
 
+fun loadGamesByIndexesWithOffsets(
+    context: Context,
+    @RawRes pgnResId: Int,
+    index: PgnOffsetIndex,
+    indexes: List<Int>
+): List<PgnGameInfo> {
+    if (indexes.isEmpty()) return emptyList()
+
+    // Important: process in ascending order so we can stream-skip forward
+    val sorted = indexes.distinct().sorted()
+
+    val out = ArrayList<PgnGameInfo>(sorted.size)
+
+    context.resources.openRawResource(pgnResId).use { input ->
+        var curPos = 0L
+
+        for (gameIdx in sorted) {
+            val off = index.get(gameIdx) ?: continue
+            val target = off.start.toLong()
+            if (target < curPos) {
+                // If out-of-order or mismatch, fall back by reopening stream (rare)
+                // (But sorted should prevent this)
+                continue
+            }
+
+            skipFully(input, target - curPos)
+            curPos = target
+
+            val bytes = readFully(input, off.length)
+            curPos += off.length
+
+            val chunk = bytes.toString(Charsets.UTF_8)
+            val clean = sanitizeChunkForChesslib(chunk)
+
+            // reuse your existing chunk->PgnGameInfo parsing logic
+            val headers = parseHeaders(clean)
+            val tmp = File.createTempFile("pgn_", ".pgn", context.cacheDir)
+            try {
+                tmp.writeText(clean, Charsets.UTF_8)
+                val holder = PgnHolder(tmp.absolutePath)
+                holder.loadPgn()
+                val g: Game = holder.games.firstOrNull() ?: continue
+
+                out += PgnGameInfo(
+                    white = headers["White"].orEmpty(),
+                    black = headers["Black"].orEmpty(),
+                    startFen = extractFen(clean),
+                    game = g,
+                    event = headers["Event"].orEmpty(),
+                    theme = headers["Theme"].orEmpty(),
+                    rating = headers["Rating"]?.toIntOrNull(),
+                    site = headers["Site"].orEmpty(),
+                    note = headers["Note"].orEmpty()
+                )
+            } finally {
+                runCatching { tmp.delete() }
+            }
+        }
+    }
+
+    return out
+}
+
 
 fun loadGamesByIndexes(
     context: Context,
@@ -230,10 +308,14 @@ fun loadGamesByIndexes(
                     black = h["Black"].orEmpty(),
                     startFen = extractFen(clean),
                     game = g,
-                    event = h["Event"].orEmpty(),
+                    event = h["Event"].orEmpty(),          // <- Event now *is* the Lichess ID for tactics
                     theme = h["Theme"].orEmpty(),
-                    rating = h["Rating"]?.toIntOrNull()
+                    rating = h["Rating"]?.toIntOrNull(),
+                    site = h["Site"].orEmpty(),
+                    note = h["Note"].orEmpty()
                 )
+
+
             } finally { runCatching { tmp.delete() } }
         }
 
@@ -269,3 +351,28 @@ fun countGamesInResource(
         }
     return games
 }
+
+private fun skipFully(input: java.io.InputStream, bytes: Long) {
+    var remaining = bytes
+    val scratch = ByteArray(64 * 1024)
+    while (remaining > 0) {
+        val toRead = min(scratch.size.toLong(), remaining).toInt()
+        val r = input.read(scratch, 0, toRead)
+        if (r < 0) throw java.io.EOFException("EOF while skipping")
+        remaining -= r
+    }
+}
+
+private fun readFully(input: java.io.InputStream, len: Int): ByteArray {
+    val out = ByteArray(len)
+    var off = 0
+    while (off < len) {
+        val r = input.read(out, off, len - off)
+        if (r < 0) throw java.io.EOFException("EOF while reading chunk")
+        off += r
+    }
+    return out
+}
+
+
+

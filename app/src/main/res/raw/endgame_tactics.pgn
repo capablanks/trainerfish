@@ -1,0 +1,6551 @@
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "1"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/5P2/8/5K2/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. f8=Q+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "2"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/ppp5/8/PPP5/3k4/8/8/7K w - - 0 1"]
+
+{White to move}
+1. b6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "3"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5k2/5P2/4K3/7p/8/6P1/8/8 w - - 0 1"]
+
+{White to move}
+1. Kf6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "4"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "k7/2P5/1p6/K7/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Ka6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "5"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/4p3/3kp1p1/6P1/3K1P2/8/8 b - - 0 1"]
+
+{Black to move}
+1... e4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "6"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5p2/4p3/8/3P4/5k2/P7/5K2 w - - 0 1"]
+
+{White to move}
+1. d5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "7"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/7p/6pP/2k2pP1/4pP2/6P1/8/4K3 w - - 0 1"]
+
+{White to move}
+1. g4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "8"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/5K2/7P/6pP/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kf6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "9"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/p7/1p6/8/P3k3/2K5/8/8 w - - 0 1"]
+
+{White to move}
+1. a5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "10"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/pK6/8/5P2/1k6 b - - 0 1"]
+
+{Black to move}
+1... Kb2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "11"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/p4K2/P7/8/8/8/1k6/8 w - - 0 1"]
+
+{White to move}
+1. Ke6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "12"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/4k3/8/3p1p2/5K2/8/8 w - - 0 1"]
+
+{White to move}
+1. Ke4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "13"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/4K2p/8/6Pp/7P/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kf8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "14"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/5k2/6pP/4K1P1/8 w - - 0 1"]
+
+{White to move}
+1. Kd3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "15"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/8/3K2p1/8/6P1/8/8/8 w - - 0 1"]
+
+{White to move}
+1. g5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "16"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/3p4/3p4/5p2/2kP1P2/8/4P3/2K5 w - - 0 1"]
+
+{White to move}
+1. e4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "17"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/7p/7K/7P/8/8/6P1/8 w - - 0 1"]
+
+{White to move}
+1. g3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "18"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "K7/8/p7/8/8/2k5/P7/8 w - - 0 1"]
+
+{White to move}
+1. Kb7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "19"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/5k2/6pP/4K1P1/8/8 b - - 0 1"]
+
+{Black to move}
+1... Ke5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "20"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/k6p/2P5/K7/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kb4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "21"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6pp/5p2/p4P2/k5P1/3K4/7P/8 w - - 0 1"]
+
+{White to move}
+1. Kc4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "22"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/1k1p4/8/1KPP4/8 w - - 0 1"]
+
+{White to move}
+1. d3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "23"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3K4/7p/3k4/P7/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kc8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "24"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/p2p4/P3kP2/4P3/4K3/8 w - - 0 1"]
+
+{White to move}
+1. Ke1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "25"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3k4/3p4/8/3P4/3P4/3K4/8/8 w - - 0 1"]
+
+{White to move}
+1. d6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "26"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2p4K/8/7k/8/8/6PP/8 w - - 0 1"]
+
+{White to move}
+1. g4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "27"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/3p3K/8/6p1/1p2p1P1/1P2P3/8/8 w - - 0 1"]
+
+{White to move}
+1. Kg6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "28"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/p1k3p1/2p4p/P1K4P/1P3P2/8/8 b - - 0 1"]
+
+{Black to move}
+1... Kd7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "29"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6p1/6P1/8/K7/8/8/6k1 w - - 0 1"]
+
+{White to move}
+1. Kb3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "30"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1p3pp1/1p2p3/kP2P3/P3P3/1P3Pp1/2P5/K7 w - - 0 1"]
+
+{White to move}
+1. Kb2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "31"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/2p5/k1p1K3/p1P5/P7/8/8 w - - 0 1"]
+
+{White to move}
+1. Kf5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "32"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6K1/8/6k1/8/8/p7/P7/8 w - - 0 1"]
+
+{White to move}
+1. Kh8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "33"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/1k6/8/5ppp/7P/4K1P1/8 b - - 0 1"]
+
+{Black to move}
+1... g3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "34"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/3k1p2/5p1p/p1p2P2/P1PpKPPP/1P6/8/8 w - - 0 1"]
+
+{White to move}
+1. g5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "35"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/5k2/8/p7/8/1PK5/8 w - - 0 1"]
+
+{White to move}
+1. Kb1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "36"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6K1/8/ppp2k2/8/1P6/1P5P/8 w - - 0 1"]
+
+{White to move}
+1. h4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "37"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/k7/3p4/7K/2P1P3/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kg6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "38"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5p2/8/6Pk/5P2/8/8/7K w - - 0 1"]
+
+{White to move}
+1. g6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "39"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/k6p/6p1/8/8/K5PP/8 w - - 0 1"]
+
+{White to move}
+1. Kb3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "40"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/pp1pppp1/3p2p1/PP2P1P1/K1P4P/8/k7/8 w - - 0 1"]
+
+{White to move}
+1. h5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "41"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5pp1/7p/5P1P/3k2P1/2p5/5P2/2K5 w - - 0 1"]
+
+{White to move}
+1. f6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "42"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/p6p/P4K1P/8/4k3/8 b - - 0 1"]
+
+{Black to move}
+1... Kd3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "43"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2p5/8/1k6/1P1P1p2/5K2/8/8 b - - 0 1"]
+
+{Black to move}
+1... Kc4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "44"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4K3/8/2p5/8/P2k4/8/P7/8 w - - 0 1"]
+
+{White to move}
+1. a5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "45"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/7p/5Ppk/4KP2/8/8 w - - 0 1"]
+
+{White to move}
+1. Kf2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "46"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/3p4/1k6/1P6/K1P5/8 w - - 0 1"]
+
+{White to move}
+1. Ka1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "47"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6p1/6K1/8/7P/5k2/7P/8 w - - 0 1"]
+
+{White to move}
+1. Kf5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "48"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/4k1P1/8/8/6P1/2K5 w - - 0 1"]
+
+{White to move}
+1. g4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "49"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/pp3p2/8/6kp/8/3K1PP1/PP6/8 b - - 0 1"]
+
+{Black to move}
+1... f5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "50"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/p7/P2k4/8/3KP3/8 w - - 0 1"]
+
+{White to move}
+1. Kc2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "51"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1k6/8/p5p1/6p1/6P1/5P1P/6PK/8 w - - 0 1"]
+
+{White to move}
+1. f4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "52"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/4p1p1/3p1pP1/k2P1P2/4P3/5K2/8 w - - 0 1"]
+
+{White to move}
+1. Kg2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "53"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4k3/8/1p2Pp2/p7/P1K1P3/1P6/8 w - - 0 1"]
+
+{White to move}
+1. Kd3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "54"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/6pP/p4K2/k7/P7/8 w - - 0 1"]
+
+{White to move}
+1. Ke3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "55"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3k4/8/1pPK4/1P6/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. c7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "56"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6pp/5p2/3k1PP1/5K1P/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kg4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "57"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/1P2kp2/P2p2p1/6P1/3K4/8 b - - 0 1"]
+
+{Black to move}
+1... f4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "58"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/p6p/1p3kp1/1P6/P4PKP/5P2/8 w - - 0 1"]
+
+{White to move}
+1. f4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "59"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1p5p/p4k2/8/4Pp2/7P/PP2K3/8 w - - 0 1"]
+
+{White to move}
+1. Kf3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "60"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "K7/8/p7/1k6/5P2/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kb7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "61"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6pp/8/4kPPP/8/8/2K5/8 w - - 0 1"]
+
+{White to move}
+1. f6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "62"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5p1p/8/K6k/8/8/PP6/8 w - - 0 1"]
+
+{White to move}
+1. b4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "63"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/1p1k4/5ppp/PPK1p3/6P1/5PP1/8 b - - 0 1"]
+
+{Black to move}
+1... f4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "64"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6p1/2p4p/1p1k1p1P/1P3P2/PpPK4/6P1/8 w - - 0 1"]
+
+{White to move}
+1. a4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "65"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5p1p/4p1p1/4P1P1/pk1P1P1P/8/8/2K5 w - - 0 1"]
+
+{White to move}
+1. d5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "66"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/5p2/8/5K1p/8/6P1/7P/8 b - - 0 1"]
+
+{Black to move}
+1... h4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "67"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6p1/k1P2p1p/7K/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kg6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "68"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/1p5p/p4p2/P3np2/1PPB3P/8/6P1/6K1 w - - 0 1"]
+
+{White to move}
+1. Bxe5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "69"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/3p4/1P1kp3/8/3P4/5P2/7K w - - 0 1"]
+
+{White to move}
+1. f4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "70"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/3p4/4p3/1P1kP3/8/8/3P4/2K5 w - - 0 1"]
+
+{White to move}
+1. d4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "71"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5k2/p4p2/5K2/7P/8/6P1/8 b - - 0 1"]
+
+{Black to move}
+1... a5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "72"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2k3p1/2p4p/5P2/2K3PP/8/8/8 w - - 0 1"]
+
+{White to move}
+1. g5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "73"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/4p1p1/8/5P2/6K1/3k4 w - - 0 1"]
+
+{White to move}
+1. Kh1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "74"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/3K1k2/5p1p/4p1p1/4P1P1/5PP1/8 b - - 0 1"]
+
+{Black to move}
+1... f4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "75"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5k1p/5p2/p4Pp1/P3K1P1/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Kf8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "76"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/3Pk1p1/8/1K3Pp1/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kc6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "77"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/7p/8/3pP3/1pp4P/5P2/P7/K7 b - - 0 1"]
+
+{Black to move}
+1... d4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "78"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/7k/4K2p/6p1/6P1/7P/8/8 w - - 0 1"]
+
+{White to move}
+1. Kf7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "79"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/7p/2pk4/6K1/1P6/5P2/8/8 w - - 0 1"]
+
+{White to move}
+1. Kf6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "80"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/pPk3pp/2P1p3/1pK3P1/5PP1/8 b - - 0 1"]
+
+{Black to move}
+1... g4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "81"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "k7/2p5/8/KP3p2/8/8/6P1/8 w - - 0 1"]
+
+{White to move}
+1. Ka6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "82"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4p3/2p5/2K5/8/8/P4k2/8 w - - 0 1"]
+
+{White to move}
+1. Kd4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "83"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1p6/p1pPk1p1/3p2K1/PP1Pp2P/4P3/8/8 b - - 0 1"]
+
+{Black to move}
+1... a5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "84"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3k4/p1p5/8/2p1p3/4P3/PpPP2K1/1P6/8 b - - 0 1"]
+
+{Black to move}
+1... c4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "85"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "K1k5/7p/8/2P5/8/8/P7/8 w - - 0 1"]
+
+{White to move}
+1. c6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "86"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2p1Pk2/5P2/8/3p1K2/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kf3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "87"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1p3p2/2p1p1p1/P2kP3/P2p1PP1/8/2K4P/8 w - - 0 1"]
+
+{White to move}
+1. h4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "88"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5K2/kp6/p1p5/P2p4/1P3P2/2P5/8 b - - 0 1"]
+
+{Black to move}
+1... b5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "89"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1p1k4/1P1p4/3p4/3Pp2p/1K2P2p/7P/8 w - - 0 1"]
+
+{White to move}
+1. Kb4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "90"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/p3k1p1/1p2p2p/1P2K1PP/5P2/P7/8 b - - 0 1"]
+
+{Black to move}
+1... g5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "91"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/7p/p4pp1/8/k4PPP/P2K4/8/8 w - - 0 1"]
+
+{White to move}
+1. Ke4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "92"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/6kp/p7/1p4P1/1P3K2/P1P5/8 w - - 0 1"]
+
+{White to move}
+1. c4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "93"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4k2p/p5p1/3p1p2/PP6/2K2P1P/5P2/8 b - - 0 1"]
+
+{Black to move}
+1... f4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "94"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5p2/1ppp4/2k5/5P2/7P/8/5K2 w - - 0 1"]
+
+{White to move}
+1. h4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "95"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2pp2pp/8/2PP1P2/1p5k/8/PP4p1/6K1 w - - 0 1"]
+
+{White to move}
+1. f6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "96"]
+[White ""]
+[Black "Pawn endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1k6/1p6/3p4/1P6/1P6/1P6/8/7K w - - 0 1"]
+
+{White to move}
+1. Kg2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "97"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/2k5/2r5/2R5/1KP5/8/8 w - - 0 1"]
+
+{White to move}
+1. Kb4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "98"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "r7/P7/K5k1/8/6p1/8/2R5/8 w - - 0 1"]
+
+{White to move}
+1. Rc5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "99"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6KR/8/pk6/8/8/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Kc5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "100"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6r1/1P4P1/4K3/8/8/8/8/7k b - - 0 1"]
+
+{Black to move}
+1... Rb8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "101"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/8/p4K2/1p2R3/6k1 w - - 0 1"]
+
+{White to move}
+1. Re1+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "102"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4K3/8/5kp1/8/R7/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kd7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "103"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2k4r/6R1/1KP5/8/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Ra7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "104"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "R7/8/3K4/1k6/3P4/8/p1r5/8 b - - 0 1"]
+
+{Black to move}
+1... Rc6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "105"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "R7/P6r/8/5K1k/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Rf8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "106"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/3K4/5kp1/8/R7/8/8 b - - 0 1"]
+
+{Black to move}
+1... g4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "107"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/1R6/5P2/5K2/6p1/8/4r3/8 w - - 0 1"]
+
+{White to move}
+1. Kg6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "108"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5K2/R7/5kp1/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Ra5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "109"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1k6/1Pr5/PK6/1R6/8/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Rxb7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "110"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1k6/7r/2pRK3/8/3P4/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Kc7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "111"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/6R1/6P1/4kP1K/8/8/1r6 b - - 0 1"]
+
+{Black to move}
+1... Kf3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "112"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/5p2/5K2/3rP3/8/8/8/7R w - - 0 1"]
+
+{White to move}
+1. e6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "113"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/8/8/8/8/3R1K2/1r1p4/8 b - - 0 1"]
+
+{Black to move}
+1... Rb3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "114"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/R7/8/7P/5K2/8/p7/r7 w - - 0 1"]
+
+{White to move}
+1. Kg5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "115"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/8/8/8/8/4q3/6R1/5K2 w - - 0 1"]
+
+{White to move}
+1. Rh2+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "116"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4Q3/5pk1/6p1/5r1p/7P/6P1/6K1/8 b - - 0 1"]
+
+{Black to move}
+1... Rd5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "117"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/4K3/8/r4p2/4P3/8/8/5R2 w - - 0 1"]
+
+{White to move}
+1. Rg1+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "118"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/5pk1/6p1/6Kp/5R2 b - - 0 1"]
+
+{Black to move}
+1... f3+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "119"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6R1/3k4/3p1Kp1/8/8/8/4p3/8 w - - 0 1"]
+
+{White to move}
+1. Rg7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "120"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4K3/2k1P3/8/8/8/8/3R4/5r2 w - - 0 1"]
+
+{White to move}
+1. Rd7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "121"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/R7/8/4K3/7b/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kf5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "122"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4R3/3p4/1K6/4Pr2/1k6/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kc7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "123"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4r3/6R1/8/8/6p1/7k/6p1/6K1 w - - 0 1"]
+
+{White to move}
+1. Rh7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "124"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2R5/k1p5/2Pp4/K2P1P2/8/8/1r6 b - - 0 1"]
+
+{Black to move}
+1... Rb4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "125"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/7R/7K/8/8/8/5p2/8 w - - 0 1"]
+
+{White to move}
+1. Rg7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "126"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/p1P5/P1r5/2p1K3/8/8/2R5/8 w - - 0 1"]
+
+{White to move}
+1. Rb2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "127"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/2p3p1/4P3/3KP3/7R/8/2p5/2r5 w - - 0 1"]
+
+{White to move}
+1. e7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "128"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1R6/1P6/6p1/7p/6k1/p5P1/6KP/1r6 w - - 0 1"]
+
+{White to move}
+1. h3+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "129"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/6k1/R7/7P/6PK/p1r5/8 w - - 0 1"]
+
+{White to move}
+1. h5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "130"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1R6/8/8/8/3k2K1/1pp5/8/8 w - - 0 1"]
+
+{White to move}
+1. Rb4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "131"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "R7/5pp1/7k/5P2/7P/8/p6K/r7 b - - 0 1"]
+
+{Black to move}
+1... g6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "132"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/4b1k1/R5p1/5p2/5K2 w - - 0 1"]
+
+{White to move}
+1. Ra4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "133"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/8/8/3P4/3p2r1/5R2/8/2K5 w - - 0 1"]
+
+{White to move}
+1. d6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "134"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1R6/1P6/8/k7/2K5/8/1r6 w - - 0 1"]
+
+{White to move}
+1. Ra7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "135"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2r5/PK1k4/8/7p/7P/6P1/8/8 b - - 0 1"]
+
+{Black to move}
+1... Ra8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "136"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3k4/8/8/8/8/4R3/5r1r/4R1K1 w - - 0 1"]
+
+{White to move}
+1. Rd1+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "137"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2p5/2r3Pp/7k/8/R4KP1/6P1/8 w - - 0 1"]
+
+{White to move}
+1. g7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "138"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/1r5p/6p1/4R1P1/8/p1K5/k7 w - - 0 1"]
+
+{White to move}
+1. Re1+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "139"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "K7/P4k2/8/8/8/8/4R3/1r6 w - - 0 1"]
+
+{White to move}
+1. Rc2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "140"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/kp6/4R3/1P2K3/8/3pp3/8/8 w - - 0 1"]
+
+{White to move}
+1. Kd6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "141"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/R3p3/1r6/3PPK2/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Ra8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "142"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3Q4/r4p2/6pk/p1p4p/1p6/8/6P1/6K1 w - - 0 1"]
+
+{White to move}
+1. Qf8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "143"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/2k1K3/8/3R4/4n3/8 w - - 0 1"]
+
+{White to move}
+1. Re3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "144"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/3r4/8/3PK1k1/4P3/5P2/8/8 w - - 0 1"]
+
+{White to move}
+1. Ke6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "145"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4R3/8/8/8/2K5/5p2/2k1p3/8 w - - 0 1"]
+
+{White to move}
+1. Re3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "146"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5ppk/3P3p/8/7q/2P5/5PP1/4R1K1 w - - 0 1"]
+
+{White to move}
+1. d7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "147"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "R7/P6r/8/8/8/8/8/1K5k w - - 0 1"]
+
+{White to move}
+1. Kc2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "148"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/pp6/P7/7K/1k6/R7 w - - 0 1"]
+
+{White to move}
+1. Ra3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "149"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/5k2/6p1/P3R1P1/8/r7/3K4 w - - 0 1"]
+
+{White to move}
+1. Kc1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "150"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3r4/5p1k/4p3/1R6/2p4P/2p1P3/1p6/4R1K1 b - - 0 1"]
+
+{Black to move}
+1... Rd1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "151"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1R3p2/6pk/8/6KP/8/8/5r2 b - - 0 1"]
+
+{Black to move}
+1... f5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "152"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1R6/5kp1/r7/5PPK/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. g6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "153"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6p1/2RPp3/8/8/3k4/5KP1/3r4 w - - 0 1"]
+
+{White to move}
+1. Rc1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "154"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3r4/3PK3/2k5/8/8/2p5/3R4/8 w - - 0 1"]
+
+{White to move}
+1. Rd6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "155"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "R7/5ppk/1p2p3/1P4p1/P7/1r3P2/5KPP/8 w - - 0 1"]
+
+{White to move}
+1. Ra6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "156"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5k2/2R5/5P2/6K1/2b5/8/8/8 b - - 0 1"]
+
+{Black to move}
+1...  *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "157"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1r6/1P6/6p1/1R3pk1/8/1K6/8/8 w - - 0 1"]
+
+{White to move}
+1. Kc4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "158"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5P2/2K1P3/8/1k6/8/8/5r2 b - - 0 1"]
+
+{Black to move}
+1... Kc4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "159"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5r2/8/6p1/1pkp4/5PP1/3K4/1P6/5R2 w - - 0 1"]
+
+{White to move}
+1. f5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "160"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5k2/1p4pP/p7/1p1p4/6K1/2r5/6PP/8 b - - 0 1"]
+
+{Black to move}
+1... Rc4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "161"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "R7/8/8/3n4/3k4/3pp3/8/3K4 w - - 0 1"]
+
+{White to move}
+1.  *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "162"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2K5/2P4R/8/k7/8/8/2r4p/8 w - - 0 1"]
+
+{White to move}
+1. Kb7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "163"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "r2k1B2/7R/p7/8/8/8/8/4K3 w - - 0 1"]
+
+{White to move}
+1. Bc5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "164"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6k1/3R4/8/5K1n/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kg5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "165"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/7R/p6P/8/8/8/p5K1/8 w - - 0 1"]
+
+{White to move}
+1. Rb7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "166"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4k3/7R/P4p2/4pK2/8/8/4r3 w - - 0 1"]
+
+{White to move}
+1. a6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "167"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/5R2/6K1/8/8/8/8/6b1 w - - 0 1"]
+
+{White to move}
+1. Rf1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "168"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2r5/8/1P6/K7/6p1/8/3R2Pk/8 b - - 0 1"]
+
+{Black to move}
+1... Ra8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "169"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2k5/2P5/8/8/8/2R4P/Kp5r/8 w - - 0 1"]
+
+{White to move}
+1. Kb1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "170"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4K2k/7p/6rP/8/2R5/p7/P7/8 w - - 0 1"]
+
+{White to move}
+1. Ke7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "171"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/5k2/8/8/2p1p1p1/2R3K1 w - - 0 1"]
+
+{White to move}
+1. Kf2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "172"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/R6K/P6p/8/7p/2P5/8/3k3r w - - 0 1"]
+
+{White to move}
+1. Rg7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "173"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/1KP5/3r4/8/8/8/k7 w - - 0 1"]
+
+{White to move}
+1. c7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "174"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/8/5K2/2N5/1r6/3R4/8/8 w - - 0 1"]
+
+{White to move}
+1. Ne6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "175"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/8/4K1Rp/6pP/5p1r/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kf7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "176"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6R1/8/p7/8/1k5r/1Pp4p/P1K5/8 w - - 0 1"]
+
+{White to move}
+1. Rg5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "177"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/R6P/1r6/p6K/1k6/8 w - - 0 1"]
+
+{White to move}
+1. h6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "178"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/5P2/6P1/8/4K3/1k6/5r2 w - - 0 1"]
+
+{White to move}
+1. Kd4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "179"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2p4k/P7/4K3/4P3/p7/6r1/2R5 w - - 0 1"]
+
+{White to move}
+1. a7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "180"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/5R1P/8/8/8/3r4/K1k5 w - - 0 1"]
+
+{White to move}
+1. h7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "181"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/3P4/7B/8/1k2r3/8/3K4 w - - 0 1"]
+
+{White to move}
+1. Kd2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "182"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1p3P2/6p1/k4rp1/8/8/6PP/4R2K w - - 0 1"]
+
+{White to move}
+1. Re5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "183"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5q1k/1RR5/8/8/8/8/4K3/8 w - - 0 1"]
+
+{White to move}
+1. Rh7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "184"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5K2/p4P2/2P5/8/1k6/1P6/P7/2r5 w - - 0 1"]
+
+{White to move}
+1. a3+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "185"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/6k1/2R5/3P2p1/2p3r1/4K3/8 w - - 0 1"]
+
+{White to move}
+1. Kf2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "186"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5KR1/8/7p/8/8/5p2/5k2 w - - 0 1"]
+
+{White to move}
+1. Kg8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "187"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/2p1r3/4k1K1/2P5/2PR4/8 w - - 0 1"]
+
+{White to move}
+1. Rd1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "188"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5rk1/5p2/4P2P/8/4pR2/8/4K3/8 w - - 0 1"]
+
+{White to move}
+1. Rf6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "189"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5K2/1k6/8/4P3/3r4/3p4/8/3R4 w - - 0 1"]
+
+{White to move}
+1. e6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "190"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6r1/3k4/p2p4/1pp4p/2P1R1P1/1PK2P2/P7/8 b - - 0 1"]
+
+{Black to move}
+1... Rf8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "191"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6K1/6R1/r5P1/8/7k/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Rh7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "192"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/5K2/7k/8/p7/1p6/1R6 w - - 0 1"]
+
+{White to move}
+1. Kf5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "193"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5nk1/4R3/5K2/8/8/8/8/8 b - - 0 1"]
+
+{Black to move}
+1...  *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "194"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1K6/1P1k4/1P6/8/8/r7/6R1/8 w - - 0 1"]
+
+{White to move}
+1. Rg7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "195"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3k4/5p2/1P3P1R/r7/1p1p2p1/8/4P1P1/7K w - - 0 1"]
+
+{White to move}
+1. Rh8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "196"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1k5r/p7/K7/5R1P/8/8/6p1/8 w - - 0 1"]
+
+{White to move}
+1. Rb5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "197"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/pR3Rpk/8/4q3/8/2P4p/1KP5/8 w - - 0 1"]
+
+{White to move}
+1. Rf3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "198"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/3r4/4K3/4B3/8/8/8/2R5 w - - 0 1"]
+
+{White to move}
+1. Rc8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "199"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/3r4/4k3/8/4KB2/8/R7/8 b - - 0 1"]
+
+{Black to move}
+1... Rd1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "200"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/8/2P5/3p1R2/8/8/2Pr4/5K2 w - - 0 1"]
+
+{White to move}
+1. c4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "201"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "K7/2rp4/8/2p3P1/8/8/5R2/7k w - - 0 1"]
+
+{White to move}
+1. Kb8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "202"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1p6/7p/5p1P/5P2/1p6/6RK/k7 w - - 0 1"]
+
+{White to move}
+1. Rg5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "203"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/P7/1P6/8/3k4/8/r7/2K5 b - - 0 1"]
+
+{Black to move}
+1... Kc3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "204"]
+[White ""]
+[Black "Rook endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/R7/3P4/6r1/8/8/8/1k5K w - - 0 1"]
+
+{White to move}
+1. d7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "205"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/2K5/8/B7/8/1p6/1k6 w - - 0 1"]
+
+{White to move}
+1. Bb3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "206"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2k5/1p1p1p2/3BpP1P/P1P1P2P/5K2/1b6/8 b - - 0 1"]
+
+{Black to move}
+1... Bc1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "207"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4b3/6k1/3KBp2/5Pp1/6Pp/7P/8 b - - 0 1"]
+
+{Black to move}
+1... Bh4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "208"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/3k2b1/1P6/2P5/2K5/4B3 b - - 0 1"]
+
+{Black to move}
+1... Kc4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "209"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5k2/8/6PP/5K2/8/1B6/1b6/8 b - - 0 1"]
+
+{Black to move}
+1...  *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "210"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2k1b3/2P5/3K1P1B/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Ke6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "211"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "K7/1P6/1kP5/3P4/8/8/1p5b/8 w - - 0 1"]
+
+{White to move}
+1. d6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "212"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/8/6PP/7K/8/2bB4/8/8 b - - 0 1"]
+
+{Black to move}
+1... Kg8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "213"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/8/6PP/2b4K/2B5/8/8/8 b - - 0 1"]
+
+{Black to move}
+1...  *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "214"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5k2/8/4PP2/5K1b/8/4B3/8/8 w - - 0 1"]
+
+{White to move}
+1. Kg5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "215"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5bk1/8/5PP1/6K1/8/3B4/8/8 w - - 0 1"]
+
+{White to move}
+1. Bc4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "216"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5k2/8/4PP2/2b5/8/5B2/2K5/8 w - - 0 1"]
+
+{White to move}
+1. Bc6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "217"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/3b4/8/5k2/8/4K3/2P1BP2/8 w - - 0 1"]
+
+{White to move}
+1. c4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "218"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6b1/6P1/B1p5/P7/1k6/8/5K2 w - - 0 1"]
+
+{White to move}
+1. Bc3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "219"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/4K1pp/6Bk/7P/8/8 w - - 0 1"]
+
+{White to move}
+1. Kf5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "220"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5k2/8/6PK/8/8/2b3B1/8/8 w - - 0 1"]
+
+{White to move}
+1. Kh7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "221"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5K2/4P3/3k4/1b5B/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Be7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "222"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3k4/5K2/4P3/2b5/8/8/8/B7 w - - 0 1"]
+
+{White to move}
+1. Bg7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "223"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1k6/8/1b2pp2/6p1/2P4p/5K1P/2B5/8 w - - 0 1"]
+
+{White to move}
+1. Bb3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "224"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3b4/8/2k5/2P5/2K1P3/4B3/8/8 b - - 0 1"]
+
+{Black to move}
+1... Bf6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "225"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3b4/1p6/p1pBk1p1/P1P3P1/1P2KP2/8/8/8 w - - 0 1"]
+
+{White to move}
+1. f5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "226"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1k6/p7/P7/1K1B4/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1.  *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "227"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2b5/2P5/3K4/k7/4B3/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Ka6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "228"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/4b2k/8/8/4K1PP/4B3/8 w - - 0 1"]
+
+{White to move}
+1. Bg4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "229"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2p1B3/p1P5/2P5/2K1k2p/6bP/P7/8 w - - 0 1"]
+
+{White to move}
+1. Bd8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "230"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1b6/8/2P5/5K1B/8/4kP2/8/8 b - - 0 1"]
+
+{Black to move}
+1... Kd4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "231"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6p1/5p2/2K1kP2/1P6/3B4/8/4b3 b - - 0 1"]
+
+{Black to move}
+1... Bf2+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "232"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1k6/8/2K5/1p6/p7/P7/1B6/8 w - - 0 1"]
+
+{White to move}
+1. Be5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "233"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5kpp/2pp4/P1B5/4P3/8/1Pb3PP/6K1 b - - 0 1"]
+
+{Black to move}
+1... Bd3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "234"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/pp6/2p2k2/5pp1/2P2b1p/1P3P1K/P4P2/3B4 b - - 0 1"]
+
+{Black to move}
+1... Bd6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "235"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/2B5/4p3/3p4/kp1K4/8/8 w - - 0 1"]
+
+{White to move}
+1. Bd5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "236"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4k3/8/3P4/b3P3/4K3/3B4/8 b - - 0 1"]
+
+{Black to move}
+1...  *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "237"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "b7/P2k4/P7/2K1B3/3P4/8/8/8 w - - 0 1"]
+
+{White to move}
+1. d5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "238"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1b6/2pB4/8/k1K1p3/8/1P6/8/8 w - - 0 1"]
+
+{White to move}
+1. b4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "239"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5kpp/1p6/p1p1P3/P1P5/Bb1K2P1/1P6/8 b - - 0 1"]
+
+{Black to move}
+1... Bxa4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "240"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "k7/8/8/1p2P1p1/bK6/8/B7/8 w - - 0 1"]
+
+{White to move}
+1. Bf7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "241"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/p5b1/1p3k1p/4pP2/P3K3/1P6/8/5B2 w - - 0 1"]
+
+{White to move}
+1. b4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "242"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/1b5P/kP6/8/5K2/1P6/8 w - - 0 1"]
+
+{White to move}
+1. Ke4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "243"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/5B2/pp6/kb6/8/1K6 w - - 0 1"]
+
+{White to move}
+1.  *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "244"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1k6/1b6/p3p2P/1B5p/P7/5P2/2K5 w - - 0 1"]
+
+{White to move}
+1. h6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "245"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5p2/8/2p1PPk1/p1b1K3/p1B5/8/8 w - - 0 1"]
+
+{White to move}
+1. e6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "246"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/4Bp2/6p1/1K2k3/8/8 w - - 0 1"]
+
+{White to move}
+1. Kc2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "247"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2K5/8/8/PP6/8/2k1b3/P7/8 w - - 0 1"]
+
+{White to move}
+1. b6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "248"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1kP1b3/4P3/3P1K2/8/3P4/8/8 w - - 0 1"]
+
+{White to move}
+1. d6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "249"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5kP1/4pP2/3b2K1/4p3/6p1/8/5B2 w - - 0 1"]
+
+{White to move}
+1. Be2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "250"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6p1/4K1B1/7p/6kP/8/6P1/8 w - - 0 1"]
+
+{White to move}
+1. Bf5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "251"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/pB4Pb/4k3/8/K2P4/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Be4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "252"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/6P1/5BP1/p7/8/K7/p7/8 w - - 0 1"]
+
+{White to move}
+1. Kb3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "253"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "K7/4p1B1/4p3/8/4P3/4P3/p7/1k6 w - - 0 1"]
+
+{White to move}
+1. Kb7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "254"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5K2/k7/4P1p1/8/8/8/4b3/8 w - - 0 1"]
+
+{White to move}
+1. Ke7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "255"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2b1k3/p7/1p1Ppp1P/1P5P/2P1B3/8/1K6 w - - 0 1"]
+
+{White to move}
+1. d6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "256"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/2B5/K3P2p/8/3k4 w - - 0 1"]
+
+{White to move}
+1. Bd5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "257"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6b1/5p2/2B2K2/7k/8/6P1/8/8 w - - 0 1"]
+
+{White to move}
+1. Bf3+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "258"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5b2/5P2/4k1K1/8/8/2B5/8/8 w - - 0 1"]
+
+{White to move}
+1. Ba1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "259"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6K1/8/7p/8/k7/2B5/1P6/8 w - - 0 1"]
+
+{White to move}
+1. Kf7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "260"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/2p5/P5p1/7p/1B5P/5kbK/8 w - - 0 1"]
+
+{White to move}
+1. a6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "261"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2KB4/1P6/2k5/8/8/8/7b/8 w - - 0 1"]
+
+{White to move}
+1. Bg5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "262"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/6K1/4B2P/6k1/4b3/8/8 w - - 0 1"]
+
+{White to move}
+1. Bg7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "263"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7b/3K4/5p2/8/8/8/7P/B3k3 w - - 0 1"]
+
+{White to move}
+1. Ke7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "264"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/1P6/8/2K2k2/8/1b4P1/8 w - - 0 1"]
+
+{White to move}
+1. Kd5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "265"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1pPK3b/8/8/8/6k1/8/8 w - - 0 1"]
+
+{White to move}
+1. Kc8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "266"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/P5b1/8/k7/p1P2p1B/3K4/8 w - - 0 1"]
+
+{White to move}
+1. Ke3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "267"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/8/2PK4/2P3B1/6b1/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Bh5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "268"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1K6/P7/4p3/4Pk2/2pBb3/8/8 w - - 0 1"]
+
+{White to move}
+1. Bb1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "269"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4B3/8/4k3/P5p1/1PK5/8/8/4b3 w - - 0 1"]
+
+{White to move}
+1. Kc5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "270"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5k2/8/p1p1p1b1/1pPp4/1P1Pp1PB/P3P2K/8/8 w - - 0 1"]
+
+{White to move}
+1. Kg3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "271"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/1p5b/2p1k3/2Bp4/8/2K5 b - - 0 1"]
+
+{Black to move}
+1... Ke3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "272"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/K7/8/7P/B7/3k4/b2P4/8 w - - 0 1"]
+
+{White to move}
+1. h6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "273"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/pkP3P1/3B4/8/3K4/1b6/8/8 w - - 0 1"]
+
+{White to move}
+1. Kc3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "274"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1kp1b3/1p4K1/4P2p/P1P3p1/5pP1/P4P2/4B3 b - - 0 1"]
+
+{Black to move}
+1... h4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "275"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/7p/6pP/1B4P1/pp6/1k1K4/8/8 w - - 0 1"]
+
+{White to move}
+1. Be8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "276"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/8/8/6pP/6B1/8/7K/8 w - - 0 1"]
+
+{White to move}
+1. Be6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "277"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/3p1B2/4p3/5p2/5K1k w - - 0 1"]
+
+{White to move}
+1. Bg3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "278"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/b1kP2p1/P5P1/8/BK6/8/8 b - - 0 1"]
+
+{Black to move}
+1... Bc8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "279"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/B3P3/3k4/5K2/2P4b/8/8 w - - 0 1"]
+
+{White to move}
+1. Bc8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "280"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/4b1p1/2Bp3p/5P1P/1pK1Pk2/8/8 b - - 0 1"]
+
+{Black to move}
+1... g5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "281"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "B6k/6p1/2K3PP/8/4p3/8/6b1/8 w - - 0 1"]
+
+{White to move}
+1. Kd6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "282"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5k2/8/7K/8/5B2/2p1pP2/2P2b2/8 w - - 0 1"]
+
+{White to move}
+1. Bd6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "283"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6B1/8/1p1k4/1p1P4/1K6/7p/8/8 w - - 0 1"]
+
+{White to move}
+1. Bh7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "284"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2b5/2p5/8/2Pp1ppk/p2P3p/5PP1/5K1P/2B5 b - - 0 1"]
+
+{Black to move}
+1... c6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "285"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/4b1p1/8/4p3/8/8/1P1BK1P1/8 w - - 0 1"]
+
+{White to move}
+1. Bc3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "286"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2k5/4b3/2p3p1/B1PpP1p1/K2P2P1/8/8/8 w - - 0 1"]
+
+{White to move}
+1. e6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "287"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/1B3b2/1p1k1p1p/p1p3p1/P1P2P1P/1P2K1P1/8 b - - 0 1"]
+
+{Black to move}
+1... b4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "288"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5b2/p2k4/1p1p1p1p/1P1K1P1P/2P1PB2/8/8 w - - 0 1"]
+
+{White to move}
+1. Bd1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "289"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4b2k/7p/1p6/6K1/2P1B1P1/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kh6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "290"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4B1b1/6P1/5K1k/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Bg5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "291"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2k5/P7/1K1P4/8/b7/4B3/8 w - - 0 1"]
+
+{White to move}
+1. Bf3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "292"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4B3/2K1P3/8/8/8/k1p5/2b5 w - - 0 1"]
+
+{White to move}
+1. Kd7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "293"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3k4/p2bp2p/1p4p1/3PK1P1/1P5P/P7/8/5B2 w - - 0 1"]
+
+{White to move}
+1. d6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "294"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4B3/5K2/5P1b/2p5/2p5/1k6/8/8 w - - 0 1"]
+
+{White to move}
+1. Kg6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "295"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/4K1bp/P7/7k/8/6B1 w - - 0 1"]
+
+{White to move}
+1. a5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "296"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2p4p/6p1/6k1/2B2p2/p4P1P/1bP1K1P1/8 b - - 0 1"]
+
+{Black to move}
+1... Kh4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "297"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2KB4/5pp1/1Pk1p1p1/4p3/7P/4P3/2b5 w - - 0 1"]
+
+{White to move}
+1. b6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "298"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/3pk3/6P1/P5Pp/5B2/1p5b/pP6/K7 w - - 0 1"]
+
+{White to move}
+1. a6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "299"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1b6/5k2/3p1P1B/3p3P/8/8/3K4/8 w - - 0 1"]
+
+{White to move}
+1. Bg7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "300"]
+[White ""]
+[Black "Bishop endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/7P/6K1/3k4/3b4/1p6/1P6/2B5 w - - 0 1"]
+
+{White to move}
+1. Kf7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "301"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4Q3/1K6/8/8/8/4pk2/8 w - - 0 1"]
+
+{White to move}
+1. Qh4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "302"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1K6/8/3Q4/8/8/1kp5/8 w - - 0 1"]
+
+{White to move}
+1. Qe5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "303"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1QK5/8/8/8/8/p7/k7 w - - 0 1"]
+
+{White to move}
+1. Kb6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "304"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "k7/5q2/1Q6/KP6/P7/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Qc7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "305"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/6p1/7p/3q4/1P3Q2/7P/6PK/8 w - - 0 1"]
+
+{White to move}
+1. Qb8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "306"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "k7/p7/1r6/K7/8/3Q4/8/8 w - - 0 1"]
+
+{White to move}
+1. Qd5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "307"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/3p4/2r5/5K2/3Q4/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Re6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "308"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "Q7/5pkp/4q1p1/8/P7/8/8/6K1 w - - 0 1"]
+
+{White to move}
+1. a5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "309"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/3Q4/1q2K3/8/8/7k w - - 0 1"]
+
+{White to move}
+1. Kf3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "310"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/8/1k1K4/4Q3/q7 w - - 0 1"]
+
+{White to move}
+1. Qe6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "311"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/8/8/3K3Q/qk6 w - - 0 1"]
+
+{White to move}
+1. Qh1+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "312"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5qpk/2P4p/4Q3/8/7P/6PK/8 w - - 0 1"]
+
+{White to move}
+1. c7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "313"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4K3/1p6/1P1Q3P/5pk1/3p4/2PP1p2/8/7q w - - 0 1"]
+
+{White to move}
+1. Qg3+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "314"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/P7/2q3k1/6P1/3Q4/2p3K1/8/8 w - - 0 1"]
+
+{White to move}
+1. a8=Q *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "315"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/Q7/2p2q2/8/Kp6/8/k7 w - - 0 1"]
+
+{White to move}
+1. Qe2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "316"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/5q2/3Pp2K/8/4Q3/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Qg2+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "317"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7q/4K1k1/7p/6p1/8/8/8/7Q w - - 0 1"]
+
+{White to move}
+1. Qa1+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "318"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/p1p5/kP4Q1/P7/8/7q/8/1K6 w - - 0 1"]
+
+{White to move}
+1. b7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "319"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1Q6/8/8/p7/P7/4k1K1/8/5q2 w - - 0 1"]
+
+{White to move}
+1. Qe5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "320"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/8/8/4k2K/5q1Q b - - 0 1"]
+
+{Black to move}
+1... Qf4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "321"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5Q2/6pp/r5rk/8/8/6PK/8 w - - 0 1"]
+
+{White to move}
+1. Qf3+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "322"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3K1k2/5b2/8/3n2Q1/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Qh6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "323"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7Q/8/8/5p2/8/8/3k1K2/1q6 w - - 0 1"]
+
+{White to move}
+1. Qd8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "324"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4p3/1pkP3Q/5p2/1K3p2/5Pq1/8/8 w - - 0 1"]
+
+{White to move}
+1. Qe6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "325"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6pk/P4p1p/4p3/2p5/Q7/5q2/2K5 b - - 0 1"]
+
+{Black to move}
+1... e4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "326"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4Q3/6pk/4p2p/p3P2P/2p2q2/2P5/2K5/8 b - - 0 1"]
+
+{Black to move}
+1... Qf2+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "327"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1Q6/3pqp2/7k/8/8/3P1PK1/8 w - - 0 1"]
+
+{White to move}
+1. Qh7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "328"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/3p1K2/3q2pk/8/2Q1P3/6P1/8 w - - 0 1"]
+
+{White to move}
+1. e4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "329"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7K/6P1/8/8/1k6/6q1/2Q5/8 b - - 0 1"]
+
+{Black to move}
+1... Qh4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "330"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5q2/Q7/3kp3/8/4P3/1p1K4/1P6/8 w - - 0 1"]
+
+{White to move}
+1. Qb6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "331"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6q1/1Q6/4kp2/8/5P2/2p1K3/2P5/8 w - - 0 1"]
+
+{White to move}
+1. Qc6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "332"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3Q4/6K1/8/7k/8/8/1pq2P2/8 w - - 0 1"]
+
+{White to move}
+1. Qd5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "333"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/7q/2K2p2/4p3/2k1P2p/8/3P4/7Q w - - 0 1"]
+
+{White to move}
+1. Qb1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "334"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2Q5/8/8/8/8/2K5/8/r1kr4 w - - 0 1"]
+
+{White to move}
+1. Qc4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "335"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/4P1Q1/7p/4k2P/6P1/p3q3/6K1 b - - 0 1"]
+
+{Black to move}
+1... Kf3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "336"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2K1k3/5p2/8/5P1p/1q6/6Q1/8/8 w - - 0 1"]
+
+{White to move}
+1. Qe5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "337"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5Q2/1p6/6p1/7p/7k/8/7K/3q4 w - - 0 1"]
+
+{White to move}
+1. Qf4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "338"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1k6/7q/PKQ5/1P6/2P5/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Qe7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "339"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5p1k/2pQ2p1/2P2q2/1P5p/5P1P/6PK/8 w - - 0 1"]
+
+{White to move}
+1. b5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "340"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4k3/6p1/P2Q1p1p/K4P1P/6P1/8/1q6 w - - 0 1"]
+
+{White to move}
+1. a6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "341"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/3Qn3/2n2K2/2k5/8/8 w - - 0 1"]
+
+{White to move}
+1. Ke4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "342"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/2p3p1/2P4p/4p3/1Q5P/6PK/4qk2 b - - 0 1"]
+
+{Black to move}
+1... e3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "343"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6Q1/1q5p/3P3k/6p1/1p4P1/5PK1/8 w - - 0 1"]
+
+{White to move}
+1. f3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "344"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/7k/6bb/8/6KQ w - - 0 1"]
+
+{White to move}
+1.  *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "345"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/p7/2Q5/1P6/1P3qp1/3k4/6K1 b - - 0 1"]
+
+{Black to move}
+1... Kd1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "346"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2Q3p1/8/7k/6p1/4q3/8/7K b - - 0 1"]
+
+{Black to move}
+1... g3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "347"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2p2p2/q1P1p3/p7/4Q3/2K5/2P5/k7 w - - 0 1"]
+
+{White to move}
+1. Qa4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "348"]
+[White ""]
+[Black "Queen endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5k2/5P2/2p2Qp1/3p4/p1p1p1p1/4q3/1KP3P1/8 w - - 0 1"]
+
+{White to move}
+1. Qe6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "349"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2KPk1n1/8/8/1N6/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Ne8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "350"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/4K3/5P1n/4N3/8/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Nf5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "351"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/3K4/1P6/5n2/8/6k1/8 b - - 0 1"]
+
+{Black to move}
+1... Nd3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "352"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/n7/PK6/8/8/8/8/7k b - - 0 1"]
+
+{Black to move}
+1... Nc8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "353"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1n6/KP6/8/8/8/8/7k b - - 0 1"]
+
+{Black to move}
+1... Nd6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "354"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6n1/5KP1/8/3n4/8/8/8/k7 w - - 0 1"]
+
+{White to move}
+1. Kxg8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "355"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6n1/6P1/6K1/8/8/8/5k2/8 b - - 0 1"]
+
+{Black to move}
+1... Ke3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "356"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5K2/5P2/6n1/8/8/8/8/6k1 w - - 0 1"]
+
+{White to move}
+1. Kg7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "357"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/8/2P5/8/8/3n4/8/7K b - - 0 1"]
+
+{Black to move}
+1... Nf2+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "358"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4Pk1N/8/8/8/p7/8/6K1 w - - 0 1"]
+
+{White to move}
+1. Nf6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "359"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/8/1kpp1N2/8/4K3 w - - 0 1"]
+
+{White to move}
+1. Ne5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "360"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2N3k1/1K6/8/1p6/2p5/8/8 w - - 0 1"]
+
+{White to move}
+1. Ne6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "361"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/4K1p1/6Pp/5N1P/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Nd6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "362"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5kn1/3K4/4P3/3N4/8/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Kg7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "363"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/3P4/2n5/8/8/P4k1K/8 w - - 0 1"]
+
+{White to move}
+1. a4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "364"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/1k2pnP1/1p2N3/p3P3/8/K7/8 w - - 0 1"]
+
+{White to move}
+1. Nd7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "365"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/p4k2/1pK2P2/1P1N4/P3n3/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Nxb6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "366"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5K1k/8/6P1/5N1n/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Nf5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "367"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/8/4N3/5n1P/8/8/8/7K w - - 0 1"]
+
+{White to move}
+1. Ng7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "368"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5N2/p5p1/k7/P3pP2/2K3pP/6P1/4n3/8 w - - 0 1"]
+
+{White to move}
+1. f6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "369"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/6p1/6Pp/ppp5/3pn2P/1P3K2/1PP2P2/3N4 b - - 0 1"]
+
+{Black to move}
+1... Nc3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "370"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/8/kpp1N3/8/2K5 b - - 0 1"]
+
+{Black to move}
+1... Ka2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "371"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/5p2/8/p3NKpk/7p/7P/8 w - - 0 1"]
+
+{White to move}
+1. Ng3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "372"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4Pk1n/2K5/2N5/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kd7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "373"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "k7/8/KP1N4/8/n7/8/8/8 w - - 0 1"]
+
+{White to move}
+1. b7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "374"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4N1n1/5K1k/7p/7P/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Ke6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "375"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/7P/N6K/1p6/8/p7/8/8 w - - 0 1"]
+
+{White to move}
+1. Nb4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "376"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/7P/8/5N2/1k6/1p3b2/1K6 w - - 0 1"]
+
+{White to move}
+1. Ne6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "377"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6N1/5nP1/4k3/8/1p6/pK6/8/8 w - - 0 1"]
+
+{White to move}
+1. Ka2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "378"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/6N1/4N3/8/1R6/1n2k1K1 w - - 0 1"]
+
+{White to move}
+1. Rd2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "379"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/6N1/5pKp/8/5kn1/8 b - - 0 1"]
+
+{Black to move}
+1... Ke3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "380"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/7k/8/2K5/1P2N3/n7/8/8 w - - 0 1"]
+
+{White to move}
+1. Nd2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "381"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1n4N1/8/4p1P1/kp2p3/p3P3/8/K7/8 w - - 0 1"]
+
+{White to move}
+1. Ne7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "382"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/N1k1n3/6P1/1P2K3/8/1p6/8/8 w - - 0 1"]
+
+{White to move}
+1. b6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "383"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4N3/6p1/4n2p/7P/5kPK/8/8 b - - 0 1"]
+
+{Black to move}
+1... Ng4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "384"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/8/2NP4/8/3K4/8/n7/8 w - - 0 1"]
+
+{White to move}
+1. Kd5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "385"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/4K3/7P/8/4k3/5n2/8 w - - 0 1"]
+
+{White to move}
+1. h6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "386"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5k2/8/3KPP2/8/7n/8/8/8 b - - 0 1"]
+
+{Black to move}
+1... Ng6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "387"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "k7/4N3/1K6/8/3p4/3N4/8/8 w - - 0 1"]
+
+{White to move}
+1. Nc5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "388"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/p4p2/3kp3/1p1P1np1/4K1P1/PP3P1p/7P/4N3 b - - 0 1"]
+
+{Black to move}
+1... Ng3+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "389"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/2N1n1K1/1k6/7P/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Nd4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "390"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/P1n5/8/8/4K3/8/3k1N2/8 w - - 0 1"]
+
+{White to move}
+1. Ng4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "391"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/5k1P/8/2N5/8/4K2n w - - 0 1"]
+
+{White to move}
+1. Ne4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "392"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2n4p/6p1/5pP1/5Pk1/6P1/N5K1/8 w - - 0 1"]
+
+{White to move}
+1. Nc3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "393"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/4P3/n7/3K2kp/8/2N5 w - - 0 1"]
+
+{White to move}
+1. e6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "394"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6pk/1n1N1P2/5PPp/3p4/p2K4/8/8 w - - 0 1"]
+
+{White to move}
+1. f7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "395"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/5K2/7P/8/2N5/3p4/2n5/8 w - - 0 1"]
+
+{White to move}
+1. Kg6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "396"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4N3/7k/5Kpp/8/4p3/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kf7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "397"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/8/7p/4N3/5K1k w - - 0 1"]
+
+{White to move}
+1. Ng3+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "398"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/N7/8/7p/7k/5P2/3p2PK/8 w - - 0 1"]
+
+{White to move}
+1. Nb5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "399"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5nk1/8/6PP/5NK1/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Ne6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "400"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "k1N5/2p5/8/1P6/8/8/6K1/8 w - - 0 1"]
+
+{White to move}
+1. Nb6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "401"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "k3b3/2K5/3P4/8/8/2N5/8/8 w - - 0 1"]
+
+{White to move}
+1. Nd5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "402"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6kn/4K3/5P2/4N3/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Ke8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "403"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1n6/2N5/p2p1kp1/2pPp3/2P1P1K1/1P6/7P/8 w - - 0 1"]
+
+{White to move}
+1. Ne8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "404"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "K7/8/8/5pp1/2k2N2/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Ne6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "405"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/P1K1k3/8/8/2N5/5b2/8/8 w - - 0 1"]
+
+{White to move}
+1. Na5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "406"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5k2/5p2/1n3Np1/1P4P1/3K4/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kc5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "407"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6kP/6p1/1p1pP3/pP6/P1n2K2/2N5/8 w - - 0 1"]
+
+{White to move}
+1. e6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "408"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4n3/1p1N1k1p/p2p1p1P/P1pP1K2/2P1P3/1P6/8/8 w - - 0 1"]
+
+{White to move}
+1. Nf8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "409"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2Nk4/PKn5/8/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Nd5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "410"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/5p1p/1P6/K1nk4/P5P1/3p1N2/8 b - - 0 1"]
+
+{Black to move}
+1... Nb2+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "411"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5p1p/1k2p1pP/3pP1P1/2nK1P2/1N6/2P5/8 w - - 0 1"]
+
+{White to move}
+1. Nc5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "412"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "N5n1/2p1kp2/2P3p1/p4PP1/K4P2/8/8/8 w - - 0 1"]
+
+{White to move}
+1. f6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "413"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6pk/8/3N2P1/2K5/7p/8/8 w - - 0 1"]
+
+{White to move}
+1.  *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "414"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1k6/1p6/1Pp1K3/2Pp1N2/3Pp3/4Pp2/8/8 w - - 0 1"]
+
+{White to move}
+1. Kd7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "415"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5N2/6p1/3P3k/1n6/8/8/7K w - - 0 1"]
+
+{White to move}
+1. d6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "416"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/KP1n4/N2k4/8/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Nb4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "417"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/2PK4/4N3/8/7b/7k w - - 0 1"]
+
+{White to move}
+1. Nd6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "418"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/2p5/1p1p4/1P1P4/p1P1k3/1nK5/2N5 b - - 0 1"]
+
+{Black to move}
+1... Nd3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "419"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5p2/4p3/4P1k1/K5P1/8/5N2/8 w - - 0 1"]
+
+{White to move}
+1. Kb5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "420"]
+[White ""]
+[Black "Knight endings"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1N6/1p1P1n2/p1p1p3/P1P5/1P2k3/2K5/8 w - - 0 1"]
+
+{White to move}
+1. Nxc5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "421"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/4b3/8/8/2k5/8/PP3B2/2K5 b - - 0 1"]
+
+{Black to move}
+1... Ba3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "422"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/k1P5/2B2K2/8/8/8/8/4r3 b - - 0 1"]
+
+{Black to move}
+1... Re8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "423"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/k1P5/2B5/1K6/8/8/8/2r5 b - - 0 1"]
+
+{Black to move}
+1... Rb1+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "424"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6r1/P7/8/3k4/4p3/4B1b1/2R1K1P1/8 w - - 0 1"]
+
+{White to move}
+1. Rc5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "425"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/8/1K6/7R/qk6 b - - 0 1"]
+
+{Black to move}
+1... Qa8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "426"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5K1k/7b/8/8/5R2/4p3/8 w - - 0 1"]
+
+{White to move}
+1.  *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "427"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1k2b3/pp6/2q5/3Q4/8/3B4/1K6/8 w - - 0 1"]
+
+{White to move}
+1. Qd8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "428"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "B7/6pp/P3p3/n7/3k4/5P2/6PP/6K1 w - - 0 1"]
+
+{White to move}
+1. Bd5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "429"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/p7/1p2p3/4rkpp/2PK4/2P2P2/P5RP/8 w - - 0 1"]
+
+{White to move}
+1. Rxg5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "430"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6pp/p7/7P/8/1K6/5R2/qk6 b - - 0 1"]
+
+{Black to move}
+1... Qf6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "431"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6R1/2pk4/P2p3p/1P4p1/8/r5P1/7P/6K1 w - - 0 1"]
+
+{White to move}
+1. b6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "432"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5rkB/5p1R/6P1/8/8/8/8/5K2 w - - 0 1"]
+
+{White to move}
+1. Rg7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "433"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6rk/6bp/8/8/8/2B5/1P4R1/7K w - - 0 1"]
+
+{White to move}
+1. Rxg7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "434"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2k5/8/4n3/1KP4B/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Bg3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "435"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1R6/1p1k1r2/1P4Q1/3q4/8/7K/8 w - - 0 1"]
+
+{White to move}
+1. Qxf6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "436"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "7k/q6p/2p1p3/2PpPp2/3P1Q2/P7/7P/6K1 w - - 0 1"]
+
+{White to move}
+1. Qh6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "437"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4r1k1/7p/6p1/p7/1p5P/PPb3Q1/2P1r3/1K1R4 b - - 0 1"]
+
+{Black to move}
+1... Re1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "438"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/5kp1/6R1/4q3/4B3/5K2 b - - 0 1"]
+
+{Black to move}
+1... Qxe2+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "439"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3B4/5k2/1n1p4/p1pP4/PbP3B1/1K6/8/8 b - - 0 1"]
+
+{Black to move}
+1... Na8 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "440"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/1p3k1p/8/5P2/4n3/pp5P/3RR2K w - - 0 1"]
+
+{White to move}
+1. Ra1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "441"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2k5/2P5/1K2p3/7r/8/8/7p/R7 b - - 0 1"]
+
+{Black to move}
+1... h1=B *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "442"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4Q3/Pq4pk/5p1p/5P1K/6PP/8/8/8 w - - 0 1"]
+
+{White to move}
+1. a8=B *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "443"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6bN/7p/5k1K/8/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Ng6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "444"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "R7/6kp/3p3p/8/4P1K1/4qPP1/8/8 w - - 0 1"]
+
+{White to move}
+1. Ra5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "445"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/1n5p/p4R1P/kp6/3K4/8 w - - 0 1"]
+
+{White to move}
+1. Rc4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "446"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1Q3rk1/P1K5/4p1p1/3bP1P1/8/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Kb6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "447"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6qk/8/8/8/8/8/2PR4/7K w - - 0 1"]
+
+{White to move}
+1. Rh2+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "448"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2Q1p3/8/2K5/7P/8/4q3/2k5 w - - 0 1"]
+
+{White to move}
+1. Qf4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "449"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/6k1/pp2q3/3p1QP1/P2P2K1/2P5/8 b - - 0 1"]
+
+{Black to move}
+1... Qxf4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "450"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1r5k/2Bn1Bpp/p4n2/P1r5/2Q1P2P/2N3P1/1P1b4/7K w - - 0 1"]
+
+{White to move}
+1. Qxc5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "451"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/5pp1/8/B2n4/5P2/P4QPp/4K3/7q b - - 0 1"]
+
+{Black to move}
+1... Qxf3+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "452"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5r2/R4p2/5P1k/4PK2/1p6/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Rxf7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "453"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/3r2bk/p6p/5qpQ/4R3/1PpN1P2/P1P5/7K b - - 0 1"]
+
+{Black to move}
+1... Rxd3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "454"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/p3pp1p/4b3/8/2pqP3/P4PP1/5QKP/5B2 b - - 0 1"]
+
+{Black to move}
+1... Bh3+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "455"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3R4/4Qpk1/4p1p1/7p/7K/5rP1/5P2/2q5 w - - 0 1"]
+
+{White to move}
+1. Qf8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "456"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1p3pp1/p1krpn1p/P6P/2P2PP1/2B5/1PK5/4R3 w - - 0 1"]
+
+{White to move}
+1. Bxf6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "457"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6b1/7P/5nP1/6K1/8/8/8/q6k w - - 0 1"]
+
+{White to move}
+1. h8=Q+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "458"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/8/1bk5/2r5/1KP2B2/R7 w - - 0 1"]
+
+{White to move}
+1. Ra4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "459"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1k6/1P1r4/1K1N4/8/8/8/3B4/8 w - - 0 1"]
+
+{White to move}
+1. Bf4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "460"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5b1r/1p2r1pp/pB2k3/5R2/8/8/PP3PPP/1K1R4 w - - 0 1"]
+
+{White to move}
+1. Rf3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "461"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2K3N1/8/6P1/2k5/5r1N/8/8/8 w - - 0 1"]
+
+{White to move}
+1. Nf6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "462"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1r5b/4P2R/p3k3/8/8/8/2K5/5B2 w - - 0 1"]
+
+{White to move}
+1. Bh3+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "463"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "N2k4/p7/8/8/4K3/8/P7/6b1 w - - 0 1"]
+
+{White to move}
+1. Kd5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "464"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3RQ3/5p1p/4q1pk/8/8/P7/1PK5/r7 w - - 0 1"]
+
+{White to move}
+1. Qxe6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "465"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "K1k5/2r3pp/P4p2/1P6/8/5P1P/8/8 b - - 0 1"]
+
+{Black to move}
+1... Rc2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "466"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5pb1/8/p1kp2Pp/3p1P2/PP1K4/1B5P/8 w - - 0 1"]
+
+{White to move}
+1. Bxd4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "467"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "b7/p7/P7/8/2pR4/k1P5/P3p3/KB6 w - - 0 1"]
+
+{White to move}
+1. Rd1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "468"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/pR4pk/1b6/2p5/N1p5/8/PP1r2PP/6K1 b - - 0 1"]
+
+{Black to move}
+1... Rxb2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "469"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/8/6KP/8/4N3/5p2/3n2k1 w - - 0 1"]
+
+{White to move}
+1. Nf1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "470"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/2K2B2/k2P4/4p3/1p6/2p5/P4p2/8 w - - 0 1"]
+
+{White to move}
+1. Bc4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "471"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1n6/6k1/5r1p/8/2R5/3B2KP/6P1/8 w - - 0 1"]
+
+{White to move}
+1. Rc7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "472"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/8/1R5p/q5pk/PR3p2/7P/6P1/7K w - - 0 1"]
+
+{White to move}
+1. g4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "473"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3Rb2r/5kp1/p4p2/4pN2/6pP/4P3/PP3K2/8 w - - 0 1"]
+
+{White to move}
+1. Nd6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "474"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/K7/8/kp6/4b3/4p3/1p2Q3/6b1 w - - 0 1"]
+
+{White to move}
+1. Qxb2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "475"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2k5/2p5/1q1p4/pPpPp1pp/N1P1Pp2/P4PbP/KQ4P1/8 w - - 0 1"]
+
+{White to move}
+1. Nxb6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "476"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2rBN3/1p6/1P6/k7/P7/8/1K6/8 w - - 0 1"]
+
+{White to move}
+1. Nd6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "477"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "R7/8/8/1P3p1k/6n1/4ppPp/7P/6K1 w - - 0 1"]
+
+{White to move}
+1. Rh8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "478"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/b7/p1N5/8/k7/7p/8/7K b - - 0 1"]
+
+{Black to move}
+1... Kb5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "479"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5k2/8/2N1p3/P1p1pq2/4pb1P/1P6/5P2/3Q1K2 w - - 0 1"]
+
+{White to move}
+1. Qd8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "480"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "5n1Q/5kpp/2pq4/1p3p2/3B4/2P2P1P/6P1/7K b - - 0 1"]
+
+{Black to move}
+1... Qxd4 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "481"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1r5k/6p1/p2p4/2b5/1p6/PQN5/1PP5/1KN4q b - - 0 1"]
+
+{Black to move}
+1... a5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "482"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/8/8/8/7p/5Rp1/P4bBr/5K2 w - - 0 1"]
+
+{White to move}
+1. Rxf2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "483"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3q1k2/5p2/p5pN/1b2Q2P/8/8/5PPK/8 w - - 0 1"]
+
+{White to move}
+1. Qh8+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "484"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "k7/p4p2/2b5/8/8/1B6/2K1R3/3n4 w - - 0 1"]
+
+{White to move}
+1. Kc1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "485"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4rk2/6p1/p4p1p/1pnRP3/2p5/2P1KN2/PP4PP/8 b - - 0 1"]
+
+{Black to move}
+1... Nd3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "486"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6Q1/8/3p4/2pPk1p1/1p5P/1P4PK/2q5/8 b - - 0 1"]
+
+{Black to move}
+1... g4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "487"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5p2/3p1p1p/p1k1pP2/P1B1P1bP/1PK5/8/8 b - - 0 1"]
+
+{Black to move}
+1... d5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "488"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/1q2rpp1/p6p/P7/1PB1n3/5Q2/6PP/5R1K w - - 0 1"]
+
+{White to move}
+1. b5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "489"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k1r1/R6R/4p3/3b3p/7P/P4p1K/8/8 w - - 0 1"]
+
+{White to move}
+1. Rac7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "490"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/3p3B/1n2P2r/8/8/7k/R4P2/7K w - - 0 1"]
+
+{White to move}
+1. e7 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "491"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4k3/8/pN4P1/8/5r2/5p2/1P3B2/1K6 w - - 0 1"]
+
+{White to move}
+1. Nd5 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "492"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/1q6/k7/2KN4/8/8/8/3B4 w - - 0 1"]
+
+{White to move}
+1. Nb4+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "493"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/7p/2p4q/2P2k1P/4N3/5K2/3P4/6R1 w - - 0 1"]
+
+{White to move}
+1. Nd6+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "494"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "6k1/6pp/3n4/1n1p1P2/p1pP1NP1/PpP1K3/1B5P/8 b - - 0 1"]
+
+{Black to move}
+1... Nxa3 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "495"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "R4rk1/5pp1/5q1p/1p1Qp3/8/1B6/1PP2bPP/5K2 w - - 0 1"]
+
+{White to move}
+1. Qxf7+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "496"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/pp4pp/4k3/3rPp2/1Pr4P/2B1KPP1/1P6/4R3 b - - 0 1"]
+
+{Black to move}
+1... Rxc3+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "497"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "k2K4/8/1P6/8/1R6/3p4/1p2bb2/8 w - - 0 1"]
+
+{White to move}
+1.  *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "498"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "2k5/2p3p1/P1P5/5P1B/5P2/b2K3p/1R6/r7 w - - 0 1"]
+
+{White to move}
+1. Rb1 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "499"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "3N4/P6p/1P6/8/5k2/8/7p/q3B2K w - - 0 1"]
+
+{White to move}
+1. a8=Q *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "500"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/3b4/p1pN2k1/P1Pp3p/1P2pPpK/4P3/5P2/8 w - - 0 1"]
+
+{White to move}
+1. f5+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "501"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "1k6/8/7p/1p3R2/4NP2/1PP2b2/2r5/6K1 w - - 0 1"]
+
+{White to move}
+1. Nd6 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "502"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/5Rbk/3p2p1/7p/1P1Q3P/2p1p1q1/8/5K2 b - - 0 1"]
+
+{Black to move}
+1... Qh3+ *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "503"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "4R3/4rpk1/5Np1/6P1/8/P7/1p2K3/8 w - - 0 1"]
+
+{White to move}
+1. Kd2 *
+
+[Event "2000 Chess Exercises Book 4"]
+[Site "Chess Endings"]
+[Date ""]
+[Round "504"]
+[White ""]
+[Black "Transition into the endgame"]
+[Result "*"]
+[SetUp "1"]
+[FEN "8/6k1/R2p1p1p/2pPbPpK/2P5/1P6/8/8 w - - 0 1"]
+
+{White to move}
+1. Ra7+ *

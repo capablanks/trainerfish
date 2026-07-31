@@ -9,6 +9,7 @@ import java.io.FileInputStream
 import java.nio.ByteBuffer
 import kotlin.math.min
 import kotlin.random.Random
+import java.util.Locale
 
 // ---- Data ----
 data class PgnIdx(
@@ -201,12 +202,28 @@ fun buildRandomPoolFromBuckets(
         (bMin == null || b.floor >= bMin) && (bMax == null || b.floor <= bMax)
     }
 
-    val themeFilter = theme?.takeIf { it.isNotBlank() && !it.equals("all", true) }?.lowercase()
+    // Normalize theme filter (null or "all" means no filter)
+    val themeFilter = theme
+        ?.takeIf { it.isNotBlank() && !it.equals("all", true) }
+        ?.trim()
+        ?.lowercase(Locale.ROOT)
+
+    // Match a single index entry against the theme filter.
+// We split ONLY on commas/semicolons so phrases stay intact.
     fun matchesTheme(i: Int): Boolean {
-        if (themeFilter == null) return true
-        val t = index[i].theme?.lowercase() ?: return false
-        return t.split(Regex("[,;\\s]+")).any { it == themeFilter }
+        val f = themeFilter ?: return true
+
+        val t = index[i].theme
+            ?.lowercase(Locale.ROOT)
+            ?: return false
+
+        return t
+            .split(Regex("[,;]+"))       // 🔴 split only on comma / semicolon
+            .map { it.trim() }
+            .any { it == f }
     }
+
+
 
     val candidates = ArrayList<Int>()
     for (b in inRange) {

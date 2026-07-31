@@ -15,14 +15,20 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
 
     private var appContext: Context? = null
     private var billingClient: BillingClient? = null
+    private var pendingPurchaseActivity: java.lang.ref.WeakReference<Activity>? = null
 
     private val _isPro = MutableStateFlow(false)
     val isPro: StateFlow<Boolean> = _isPro.asStateFlow()
 
     fun init(context: Context) {
-        if (billingClient != null) return   // already initialised
-
         appContext = context.applicationContext
+
+        // Release policy: only Google Play Billing may unlock Pro.
+        // Clear any legacy/local testing flag from older builds before the Play query returns.
+        PremiumPrefs(appContext!!).isPro = false
+        _isPro.value = false
+
+        if (billingClient != null) return   // already initialised / connecting
 
         val client = BillingClient.newBuilder(appContext!!)
             .enablePendingPurchases()
@@ -38,9 +44,10 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
         billingClient = null
     }
 
-    // Read from prefs for initial value
+    // Sole production Pro gate: this value is true only after Play Billing reports
+    // the trainerfish_pro product as PURCHASED in this app session.
     fun isProUnlocked(context: Context): Boolean {
-        return PremiumPrefs(context).isPro || _isPro.value
+        return _isPro.value
     }
 
     private fun updatePro(isProNow: Boolean) {
@@ -54,6 +61,10 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
     override fun onBillingSetupFinished(result: BillingResult) {
         if (result.responseCode == BillingClient.BillingResponseCode.OK) {
             queryExistingPurchases()
+            pendingPurchaseActivity?.get()?.let { activity ->
+                pendingPurchaseActivity = null
+                launchPurchase(activity)
+            }
         }
     }
 
@@ -78,10 +89,9 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
                         p.purchaseState == Purchase.PurchaseState.PURCHASED
             }
 
-            if (hasPro) {
-                purchases.forEach { maybeAcknowledge(it) }
-                updatePro(true)
-            }
+             // [OK] Minimal but important: always update entitlement (handles refund/revoke correctly)
+            if (hasPro) purchases.forEach { maybeAcknowledge(it) }
+            updatePro(hasPro)
         }
     }
 
@@ -98,7 +108,12 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
     // --- Launch purchase flow from UI ---
 
     fun launchPurchase(activity: Activity) {
-        val client = billingClient ?: return
+        val client = billingClient
+        if (client == null || !client.isReady) {
+            pendingPurchaseActivity = java.lang.ref.WeakReference(activity)
+            init(activity.applicationContext)
+            return
+        }
 
         val productList = listOf(
             QueryProductDetailsParams.Product.newBuilder()
@@ -127,6 +142,40 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
             client.launchBillingFlow(activity, flowParams)
         }
     }
+
+    // --- Restore Purchases (manual user-triggered) ---
+    fun restorePurchases(
+        context: Context,
+        onDone: (Boolean) -> Unit
+    ) {
+        val client = billingClient ?: run {
+            onDone(false)
+            return
+        }
+
+        client.queryPurchasesAsync(
+            QueryPurchasesParams.newBuilder()
+                .setProductType(BillingClient.ProductType.INAPP)
+                .build()
+        ) { result, purchases ->
+
+            if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+                onDone(false)
+                return@queryPurchasesAsync
+            }
+
+            val hasPro = purchases.any { p ->
+                p.products.contains(PRODUCT_PRO) &&
+                        p.purchaseState == Purchase.PurchaseState.PURCHASED
+            }
+
+             // [OK] Minimal but important: always update entitlement (handles refund/revoke correctly)
+            if (hasPro) purchases.forEach { maybeAcknowledge(it) }
+            updatePro(hasPro)
+            onDone(hasPro)
+        }
+    }
+
 
     // --- PurchasesUpdatedListener ---
 

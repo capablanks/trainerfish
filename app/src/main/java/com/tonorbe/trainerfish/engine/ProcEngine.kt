@@ -24,18 +24,36 @@ object ProcEngine {
 
     private val running = AtomicBoolean(false)
 
+    // True only while a 'go' search is considered active. Used to ignore late 'info' lines
+    // from a previous position after we sent 'stop'.
+    private val inSearch = AtomicBoolean(false)
+
     private var readerJob: Job? = null
 
     private val _scoreCp = MutableStateFlow<Int?>(null)
     val scoreCp: StateFlow<Int?> get() = _scoreCp
 
+    /** The FEN most recently sent to the engine via [evaluateFen]. */
+    private val _activeFen = MutableStateFlow<String?>(null)
+    val activeFen: StateFlow<String?> get() = _activeFen
+
     private val _lines = MutableStateFlow<List<String>>(emptyList())
     val lines: StateFlow<List<String>> get() = _lines
 
+    /** Clear the captured output lines + score without stopping the engine. */
+    fun clearOutput() {
+        inSearch.set(false)
+        _scoreCp.value = null
+        _lines.value = emptyList()
+    }
+
     private fun resetState() {
         running.set(false)
+        inSearch.set(false)
+        inSearch.set(false)
         readerJob = null
         _scoreCp.value = null
+        _activeFen.value = null
         _lines.value = emptyList()
     }
 
@@ -122,6 +140,7 @@ object ProcEngine {
         }
 
         _scoreCp.value = null
+        _activeFen.value = null
         _lines.value = emptyList()
     }
 
@@ -150,7 +169,16 @@ object ProcEngine {
         }
         _lines.value = next
 
-        if (line.startsWith("info ")) {
+        if (line.startsWith("bestmove")) {
+            // Mark the end of the current search so late lines don't overwrite the next position.
+            inSearch.set(false)
+        }
+
+        if (inSearch.get() && line.startsWith("info ")) {
+            // In MultiPV mode, Stockfish emits one "info" line per PV. We only want PV1 for the eval bar.
+            // Otherwise the last-arriving PV (often multipv 2/3/4) can overwrite the bar value and desync from the "Top lines" list.
+            if (line.contains(" multipv ") && !line.contains(" multipv 1 ")) return
+
             val cp = parseCp(line)
             if (cp != null) {
                 _scoreCp.value = cp
@@ -174,10 +202,38 @@ object ProcEngine {
     /** Quick evaluation used by UI. */
     fun evaluateFen(fen: String, movetimeMs: Int = 500) {
         if (!running.get()) return
+        // Track what position the currently-running search belongs to.
+        // BeatFishScreen uses this to normalize the eval bar into White POV
+        // without any race on UI state.
+        _activeFen.value = fen
+        // Important: prevent stale info lines from a previous search overwriting the score
+        // for the new position.
+        inSearch.set(false)
+        _scoreCp.value = null
+        _lines.value = emptyList()
+
         send("stop")
         send("ucinewgame")
         send("position fen $fen")
+        inSearch.set(true)
         send("go movetime $movetimeMs")
     }
+
+    /** Evaluation capped by a fixed depth (safer than long movetime searches for PGN mode). */
+    fun evaluateFenDepth(fen: String, depthMax: Int = 60) {
+        if (!running.get()) return
+        _activeFen.value = fen
+        inSearch.set(false)
+        _scoreCp.value = null
+        _lines.value = emptyList()
+
+        send("stop")
+        send("ucinewgame")
+        send("position fen $fen")
+        inSearch.set(true)
+        val d = depthMax.coerceIn(1, 80)
+        send("go depth $d")
+    }
+
 
 }

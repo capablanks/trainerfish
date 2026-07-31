@@ -132,13 +132,9 @@ private fun CyclePrefs.clearAll() {
     ptsTotal = 0
     elapsedMs = 0L
     solvedCount = 0
-    streak = 0
-    maxStreak = 0
-    xp = 0
     cycleId = 1
     globalSeenCsv = ""
     soundOn = true
-    shieldCharges = 0
 }
 
 /** Default parameter-based label for a new cycle. */
@@ -146,5 +142,5 @@ fun defaultCycleLabel(theme: String, min: Int?, max: Int?, size: Int): String {
     val t = theme.ifBlank { "All" }
     val lo = min ?: 1800
     val hi = max ?: 3210
-    return "$t • $lo–$hi • $size"
+    return "$t - $lo-$hi - $size"
 }

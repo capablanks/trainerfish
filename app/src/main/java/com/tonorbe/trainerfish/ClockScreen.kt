@@ -593,7 +593,7 @@ private fun TimerPad(
     oppBaseMs: Long,
     fontFamily: FontFamily,          // NEW
     palette: ClockPalette,           // NEW
-    fontScale: Float,                 // ← NEW PARAM
+    fontScale: Float,                 // <- NEW PARAM
 
     modifier: Modifier = Modifier
 ) {
@@ -664,7 +664,7 @@ private fun TimerPad(
             ) {
                 if (showOppBanner) {
                     Text(
-                        text = "Opponent’s time: $oppTimeText",
+                        text = "Opponent's time: $oppTimeText",
                         color = palette.barLight,      // THEMED
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.labelLarge,
@@ -1047,13 +1047,13 @@ private fun ClockTipsDialog(onDismiss: (dontShowAgain: Boolean) -> Unit) {
     var dontShow by remember { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = { onDismiss(false) },
-        title = { Text("Chess Clock — Quick Tips", color = UI_ICON) },
+        title = { Text("Chess Clock - Quick Tips", color = UI_ICON) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("• Tap a player's pad after each move to switch turns (increment is applied).", color = UI_ICON)
-                Text("• Short-press the CENTER red button to Play/Pause.", color = UI_ICON)
-                Text("• At the start, the center button starts the TOP clock.", color = UI_ICON)
-                Text("• Long-press the CENTER red button for menu: Settings / Restart / Exit.", color = UI_ICON)
+                Text("- Tap a player's pad after each move to switch turns (increment is applied).", color = UI_ICON)
+                Text("- Short-press the CENTER red button to Play/Pause.", color = UI_ICON)
+                Text("- At the start, the center button starts the TOP clock.", color = UI_ICON)
+                Text("- Long-press the CENTER red button for menu: Settings / Restart / Exit.", color = UI_ICON)
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
@@ -1065,7 +1065,7 @@ private fun ClockTipsDialog(onDismiss: (dontShowAgain: Boolean) -> Unit) {
                             checkmarkColor = SCREEN_BLACK
                         )
                     )
-                    Text("Don’t show this again", color = UI_ICON)
+                    Text("Don't show this again", color = UI_ICON)
                     Spacer(Modifier.height(6.dp))
                     CopyrightLine()
 

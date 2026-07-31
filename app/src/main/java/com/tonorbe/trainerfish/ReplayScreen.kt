@@ -1,17 +1,16 @@
 package com.tonorbe.trainerfish
 
+
 import android.app.Activity
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalIndication
@@ -19,13 +18,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,6 +36,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -47,22 +50,23 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.NavigateBefore
+import androidx.compose.material.icons.filled.NavigateNext
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
@@ -75,6 +79,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -87,7 +92,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -98,7 +105,6 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -107,28 +113,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.tonorbe.trainerfish.billing.BillingManager
 import com.tonorbe.trainerfish.engine.EnginePrefs
-import com.tonorbe.trainerfish.engine.JniStockfishUci
 import com.tonorbe.trainerfish.engine.ProcEngine
-import com.tonorbe.trainerfish.opening.BinaryOpeningBook
 import com.tonorbe.trainerfish.opening.BookMove
-import com.tonorbe.trainerfish.opening.EcoClassifier
-import com.tonorbe.trainerfish.opening.OpeningArrowsOverlay
-import com.tonorbe.trainerfish.opening.OpeningPack
 import com.tonorbe.trainerfish.pgn.PgnGameInfo
 import com.tonorbe.trainerfish.pgn.PgnSession
-import com.tonorbe.trainerfish.pgn.RatingBucket
-import com.tonorbe.trainerfish.pgn.countGamesInResource
-import com.tonorbe.trainerfish.pgn.listThemesCached
-import com.tonorbe.trainerfish.pgn.listThemesInRawQuick
 import com.tonorbe.trainerfish.pgn.loadGamesByIndexes
-import com.tonorbe.trainerfish.pgn.loadRatingBuckets
-import com.tonorbe.trainerfish.pgn.loadThemeIndex
-import com.tonorbe.trainerfish.pgn.sampleIdsFromBucketsQuick
-import com.tonorbe.trainerfish.pgn.sampleIdsFromThemeAndBucketsQuick
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -139,16 +133,86 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.coroutines.yield
+import java.util.Locale
 import kotlin.coroutines.coroutineContext
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
+private const val START_FEN =
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+private typealias UiPiece = Piece
+data class BoardTheme(val light: Color, val dark: Color)
+
+private data class TrainerFishUiBoxPalette(
+    val key: String,
+    val label: String,
+    val colors: List<Color>
+)
+
+private val TrainerFishUiBoxPalettes = listOf(
+    TrainerFishUiBoxPalette(
+        key = "sunset",
+        label = "Sunset (orange/purple)",
+        colors = listOf(Color(0xFFEF4444), Color(0xFFF97316), Color(0xFF7C3AED))
+    ),
+    TrainerFishUiBoxPalette(
+        key = "ocean",
+        label = "Ocean blue",
+        colors = listOf(Color(0xFF0F172A), Color(0xFF2563EB), Color(0xFF06B6D4))
+    ),
+    TrainerFishUiBoxPalette(
+        key = "royal",
+        label = "Royal purple",
+        colors = listOf(Color(0xFF312E81), Color(0xFF7C3AED), Color(0xFFDB2777))
+    ),
+    TrainerFishUiBoxPalette(
+        key = "emerald",
+        label = "Emerald green",
+        colors = listOf(Color(0xFF064E3B), Color(0xFF059669), Color(0xFF14B8A6))
+    ),
+    TrainerFishUiBoxPalette(
+        key = "slate",
+        label = "Night slate",
+        colors = listOf(Color(0xFF020617), Color(0xFF1E293B), Color(0xFF334155))
+    ),
+    TrainerFishUiBoxPalette(
+        key = "rose",
+        label = "Rose violet",
+        colors = listOf(Color(0xFF881337), Color(0xFFDB2777), Color(0xFF7C3AED))
+    ),
+    TrainerFishUiBoxPalette(
+        key = "azure",
+        label = "Azure",
+        colors = listOf(Color(0xFF0C4A6E), Color(0xFF0284C7), Color(0xFF38BDF8))
+    ),
+    TrainerFishUiBoxPalette(
+        key = "walnut",
+        label = "Walnut",
+        colors = listOf(Color(0xFF3F2A1D), Color(0xFF7C4A2D), Color(0xFFB7794A))
+    ),
+    TrainerFishUiBoxPalette(
+        key = "moss",
+        label = "Moss",
+        colors = listOf(Color(0xFF132A13), Color(0xFF31572C), Color(0xFF4F772D))
+    ),
+    TrainerFishUiBoxPalette(
+        key = "graphite",
+        label = "Graphite",
+        colors = listOf(Color(0xFF111827), Color(0xFF374151), Color(0xFF6B7280))
+    )
+)
+
+private fun trainerFishUiBoxPalette(key: String): TrainerFishUiBoxPalette =
+    TrainerFishUiBoxPalettes.firstOrNull { it.key == key }
+        ?: TrainerFishUiBoxPalettes.first { it.key == "graphite" }
 
 // ---------- Utilities ----------
 private fun sign(v: Int) = when {
@@ -157,7 +221,78 @@ private fun sign(v: Int) = when {
     else -> 0
 }
 
+
+private const val TRAINER_ELO_INITIAL = 1200
+private const val TRAINER_ELO_K = 5
+
+private fun expectedEloScore(playerRating: Int, opponentRating: Int): Double {
+    return 1.0 / (1.0 + Math.pow(10.0, (opponentRating - playerRating) / 400.0))
+}
+
+private fun computeTrainerElo(
+    playerRating: Int,
+    opponentRatingRaw: Int?,
+    result: Double,
+    k: Int = TRAINER_ELO_K
+): Int {
+    val opponentRating = opponentRatingRaw?.takeIf { it > 0 } ?: TRAINER_ELO_INITIAL
+    val expected = expectedEloScore(playerRating, opponentRating)
+    return (playerRating + k * (result - expected))
+        .roundToInt()
+        .coerceIn(100, 4000)
+}
+
+private fun formatEloDelta(delta: Int): String = if (delta >= 0) "+$delta" else delta.toString()
+
 private const val CYCLE_MAX = 500
+
+// --- ReplayScreen snapshot helpers (top-level to reduce composable bytecode size) ---
+private fun saveTacticsSnapshot(
+    games: List<PgnGameInfo>,
+    session: PgnSession?,
+    current: PgnGameInfo?,
+    currentIndex: Int,
+    whiteBottom: Boolean
+) {
+    if (games.isEmpty() || current == null || currentIndex < 0) return
+
+    ReplaySnapshot.save(
+        games = games,
+        session = session,
+        current = current,
+        index = currentIndex,
+        whiteBottom = whiteBottom,
+        mode = TrainerMode.WOODPECKER
+    )
+}
+
+private fun restoreTacticsFromSnapshot(
+    onRestore: (
+        games: List<PgnGameInfo>,
+        session: PgnSession?,
+        current: PgnGameInfo,
+        index: Int,
+        whiteBottom: Boolean
+    ) -> Unit,
+    onAfterRestore: () -> Unit
+): Boolean {
+    if (!ReplaySnapshot.has) return false
+
+    val g = ReplaySnapshot.games ?: return false
+    val cur = ReplaySnapshot.current ?: return false
+    val idx = ReplaySnapshot.index
+    if (idx < 0) return false
+
+    onRestore(
+        g,
+        ReplaySnapshot.session,
+        cur,
+        idx,
+        ReplaySnapshot.whiteBottom
+    )
+    onAfterRestore()
+    return true
+}
 
 
 
@@ -178,117 +313,299 @@ private fun squareFromAlgebra(algebra: String): com.github.bhlangonijr.chesslib.
 private fun userPlaysWhiteFromFen(startFen: String?): Boolean = !fenWhiteToMove(startFen)
 
 
-// Simple mapping from XP → fish badge emoji (or null if none yet)
-// ----- Fish badge helpers -----
 
-private fun fishBadgeForXp(xp: Int): String? = when {
-    xp >= 10000 -> "Rainbow Fish"
-    xp >= 8000 -> "Black Fish"
-    xp >= 6000 -> "Orange Fish"
-    xp >= 4000 -> "Red Fish"
-    xp >= 2000 -> "Blue Fish"
-    else -> null
+// Return the exact position the user is asked to solve: PGN start FEN after the
+// first reference/blunder move has been applied. This is independent of when the
+// user taps Bookmark, so previews do not accidentally save the solved final board.
+private fun tacticsPromptFenAfterFirstMove(gameInfo: PgnGameInfo): String {
+    val start = gameInfo.startFen?.trim()?.takeIf { it.isNotBlank() } ?: START_FEN
+    return runCatching {
+        val b = com.github.bhlangonijr.chesslib.Board().apply { loadFromFen(start) }
+        val firstUci = gameInfo.game.halfMoves
+            ?.firstOrNull()
+            ?.toString()
+            ?.trim()
+            ?.lowercase()
+
+        if (!firstUci.isNullOrBlank() && firstUci.length >= 4) {
+            val mv = uciToMoveOnBoard(b, firstUci)
+            b.doMove(mv)
+        }
+        b.fen
+    }.getOrElse { start }
 }
 
-fun fishBadgeLabel(xp: Int): String? = when {
-    xp >= 10000 -> "GM🐟"
-    xp >= 8000 -> "IM🐟"
-    xp >= 6000 -> "FM🐟"
-    xp >= 4000 -> "CM🐟"
-    xp >= 2000 -> "🐟"
-    else -> null
+private fun tacticsPromptPlyAfterFirstMove(gameInfo: PgnGameInfo): Int =
+    if (gameInfo.game.halfMoves?.isNotEmpty() == true) 1 else 0
+
+// Rewards removed for free revamp build.
+private fun fishBadgeForXp(xp: Int): String? = null
+
+// --- External PGN helpers (top-level to reduce composable bytecode size) ---
+private val PGN_TAG_RE = Regex("""(?m)^\s*\[([A-Za-z0-9_]+)\s+\"([^\"]*)\"\]\s*$""")
+
+
+// --- External PGN multi-game index helpers ---
+// Resilient header-block scanner:
+// - Records only the FIRST tag line of each header block as a game boundary.
+// - Allows blank lines BETWEEN tag lines (common in book PGNs).
+// - Leaves header-block mode when we see movetext (non-blank line not starting with '[').
+
+private fun uciSquareToIdx(sq: String, whiteAtBottom: Boolean): Int {
+    if (sq.length < 2) return -1
+    val file = sq[0].lowercaseChar() - 'a'
+    val rank = sq[1] - '1'
+    if (file !in 0..7 || rank !in 0..7) return -1
+
+    val logical = rank * 8 + file   // a1 = 0 (matches your ChessBoard indexing)
+    return if (whiteAtBottom) logical else 63 - logical
 }
 
+private fun sanToFan(raw: String): String {
+    if (raw.isBlank()) return raw
+
+    fun glyph(ch: Char): String = when (ch) {
+        'K' -> "♔"
+        'Q' -> "♕"
+        'R' -> "♖"
+        'B' -> "♗"
+        'N' -> "♘"
+        else -> ch.toString()
+    }
+
+    var s = raw
+
+    // Piece move at the start: Nf3, R1e2, Qxd5, Nbd2, or long form Qd1-h5.
+    if (s.isNotEmpty() && s[0] in "KQRBN") {
+        s = glyph(s[0]) + s.drop(1)
+    }
+
+    // Promotion suffixes: e8=Q, exd8=N+, or long form e7-e8=Q.
+    s = s
+        .replace("=K", "=♔")
+        .replace("=Q", "=♕")
+        .replace("=R", "=♖")
+        .replace("=B", "=♗")
+        .replace("=N", "=♘")
+
+    return s
+}
+
+private fun uciToFanOnBoard(
+    board: com.github.bhlangonijr.chesslib.Board,
+    uci: String
+): String = runCatching {
+    sanToFan(uciToSanOnBoard(board, uci))
+}.getOrElse {
+    sanToFan(uci)
+}
+
+
+fun whiteToMoveFen(fen: String): Boolean =
+    fen.split(' ').getOrNull(1) == "w"
 
 // --- UI: indicator that always shows the USER's side (not whose turn it is) --
-@Composable
-private fun TurnIndicatorUserSide(
-    userIsWhite: Boolean,
-    nickname: String,
-    elapsedLabel: String?,
-    xp: Int
-) {
-    val who = if (userIsWhite) "White" else "Black"
-    val trimmedNick = nickname.trim()
-    val playLabel = if (trimmedNick.isEmpty()) {
-        "Play $who"
+
+// ---------- Tactics bookmark UI helpers ----------
+private fun difficultyLabelForTacticsRating(rating: Int): String = when {
+    rating <= 0 -> "Unrated"
+    rating < 1500 -> "Beginner"
+    rating < 1800 -> "Easy"
+    rating < 2100 -> "Medium"
+    rating < 2300 -> "Difficult"
+    rating < 2500 -> "Masterclass"
+    else -> "Grandmaster"
+}
+
+private fun tacticsDifficultyFloorForRating(rating: Int): Int = when {
+    rating >= 2500 -> 2500
+    rating >= 2300 -> 2300
+    rating >= 2100 -> 2100
+    rating >= 1800 -> 1800
+    rating >= 1500 -> 1500
+    else -> 1200
+}
+
+private fun tacticsDifficultyLabelForFloor(floor: Int): String = when {
+    floor >= 2500 -> "Grandmaster"
+    floor >= 2300 -> "Masterclass"
+    floor >= 2100 -> "Difficult"
+    floor >= 1800 -> "Medium"
+    floor >= 1500 -> "Easy"
+    else -> "Beginner"
+}
+
+private fun tacticsDifficultyFloorForRange(minRating: Int, maxRating: Int): Int = when {
+    minRating >= 2500 || maxRating >= 2500 -> 2500
+    minRating >= 2300 || maxRating >= 2300 -> 2300
+    minRating >= 2100 || maxRating >= 2100 -> 2100
+    minRating >= 1800 || maxRating >= 1800 -> 1800
+    minRating >= 1500 || maxRating >= 1500 -> 1500
+    else -> 1200
+}
+
+private fun splitCamelForLabel(raw: String): String =
+    raw.trim()
+        .replace('_', ' ')
+        .replace('-', ' ')
+        .replace(Regex("([a-z])([A-Z])"), "$1 $2")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+
+private fun prettyTacticsTheme(raw: String): String {
+    val text = raw.trim()
+    if (text.isBlank() || text.equals("all", ignoreCase = true)) return "Tactics puzzle"
+
+    fun keyOf(s: String): String = s.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]"), "")
+
+    val preferred = linkedMapOf(
+        "matein1" to "Mate in 1",
+        "matein2" to "Mate in 2",
+        "matein3" to "Mate in 3",
+        "matein4" to "Mate in 4",
+        "matein5" to "Mate in 5",
+        "mate" to "Mate",
+        "anastasiamate" to "Anastasia's Mate",
+        "arabianmate" to "Arabian Mate",
+        "backrankmate" to "Back Rank Mate",
+        "balestramate" to "Balestra Mate",
+        "blindswinemate" to "Blind Swine Mate",
+        "bodenmate" to "Boden's Mate",
+        "cornermate" to "Corner Mate",
+        "doublebishopmate" to "Double Bishop Mate",
+        "dovetailmate" to "Dovetail Mate",
+        "epaulettemate" to "Epaulette Mate",
+        "hookmate" to "Hook Mate",
+        "killboxmate" to "Kill Box Mate",
+        "morphysmate" to "Morphy's Mate",
+        "operamate" to "Opera Mate",
+        "pillsburysmate" to "Pillsbury's Mate",
+        "smotheredmate" to "Smothered Mate",
+        "swallowstailmate" to "Swallow's Tail Mate",
+        "trianglemate" to "Triangle Mate",
+        "vukovicmate" to "Vuković Mate",
+        "pawnendgame" to "Pawn Endgame",
+        "rookendgame" to "Rook Endgame",
+        "bishopendgame" to "Bishop Endgame",
+        "knightendgame" to "Knight Endgame",
+        "queenendgame" to "Queen Endgame",
+        "queenrookendgame" to "Queen and Rook Endgame",
+        "endgame" to "Endgame",
+        "advancedpawn" to "Advanced Pawn",
+        "attackingf2f7" to "Attacking F2/F7",
+        "attraction" to "Attraction",
+        "capturingdefender" to "Capturing Defender",
+        "castling" to "Castling",
+        "clearance" to "Clearance",
+        "collinearmove" to "Collinear Move",
+        "defensivemove" to "Defensive Move",
+        "deflection" to "Deflection",
+        "discoveredattack" to "Discovered Attack",
+        "discoveredcheck" to "Discovered Check",
+        "doublecheck" to "Double Check",
+        "enpassant" to "En Passant",
+        "exposedking" to "Exposed King",
+        "fork" to "Fork",
+        "hangingpiece" to "Hanging Piece",
+        "interference" to "Interference",
+        "intermezzo" to "Intermezzo",
+        "kingsideattack" to "Kingside Attack",
+        "pin" to "Pin",
+        "promotion" to "Promotion",
+        "queensideattack" to "Queenside Attack",
+        "quietmove" to "Quiet Move",
+        "sacrifice" to "Sacrifice",
+        "skewer" to "Skewer",
+        "trappedpiece" to "Trapped Piece",
+        "underpromotion" to "Underpromotion",
+        "xrayattack" to "X-Ray Attack",
+        "zugzwang" to "Zugzwang",
+        "crushing" to "Crushing"
+    )
+
+    val wholeKey = keyOf(text)
+    preferred[wholeKey]?.let { return it }
+
+    val tokens = text.split(Regex("[,;\\s/]+")).map { it.trim() }.filter { it.isNotBlank() }
+    val generic = setOf("crushing", "endgame", "long", "short", "middlegame", "opening")
+
+    for (t in tokens) {
+        val k = keyOf(t)
+        val label = preferred[k]
+        if (label != null && k !in generic) return label
+    }
+
+    for (t in tokens) {
+        val k = keyOf(t)
+        val label = preferred[k]
+        if (label != null) return label
+    }
+
+    return splitCamelForLabel(tokens.firstOrNull().orEmpty()).ifBlank { "Tactics puzzle" }
+}
+
+private fun primaryBookmarkTheme(cycleTheme: String, puzzleTheme: String): String {
+    val cycle = cycleTheme.trim()
+    return if (cycle.isNotBlank() && !cycle.equals("all", ignoreCase = true)) {
+        prettyTacticsTheme(cycle)
     } else {
-        "$trimmedNick, play $who"
-    }
-
-    val badgeEmoji = fishBadgeLabel(xp)
-
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(top = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (!elapsedLabel.isNullOrBlank()) {
-                Text(elapsedLabel, fontSize = 12.sp)
-                Spacer(Modifier.width(8.dp))
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (badgeEmoji != null) {
-                    Text(
-                        text = badgeEmoji,
-                        fontSize = 14.sp,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                    Spacer(Modifier.width(4.dp))
-                }
-                Text(playLabel, fontSize = 12.sp)
-            }
-        }
-
-        Box(
-            Modifier
-                .size(14.dp)
-                .border(1.dp, Color.DarkGray, CircleShape)
-                .background(if (userIsWhite) Color.White else Color.Black, CircleShape)
-        )
+        prettyTacticsTheme(puzzleTheme)
     }
 }
-
-
 
 @Composable
-private fun PuzzleHeaderRow(label: String, rating: Int?) {
-    if (label.isBlank() && rating == null) return
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-            maxLines = 1,
-            softWrap = false
-        )
-        if (rating != null) {
-            Text(
-                text = "Rating: $rating",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                softWrap = false
-            )
+private fun TacticsBookmarkMiniBoard(
+    bookmark: TacticsBookmark,
+    light: Color,
+    dark: Color,
+    pieceStyle: PieceStyle,
+    pieceSetKey: String,
+    modifier: Modifier = Modifier
+) {
+    val fen = bookmark.visibleFen.ifBlank { bookmark.startFen }.trim()
+    val previewWhiteBottom = remember(fen) {
+        // Match the real tactics board orientation: the side to move after the
+        // first/reference move is placed at the bottom.
+        runCatching { fenWhiteToMove(fen.ifBlank { START_FEN }) }.getOrDefault(true)
+    }
+    val previewBoard = remember(fen, previewWhiteBottom) {
+        runCatching {
+            val b = com.github.bhlangonijr.chesslib.Board()
+            b.loadFromFen(fen.ifBlank { START_FEN })
+            val base = boardToUiPieces(b)
+            if (previewWhiteBottom) base else Array<Piece?>(64) { i -> base[63 - i] }
+        }.getOrElse {
+            Array<Piece?>(64) { null }
         }
+    }
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        tonalElevation = 2.dp,
+        shadowElevation = 2.dp,
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        ChessBoard(
+            board = previewBoard,
+            selected = null,
+            lastMoveFrom = null,
+            lastMoveTo = null,
+            onSquareClick = {},
+            light = light,
+            dark = dark,
+            pieceStyle = pieceStyle,
+            pieceSetKey = pieceSetKey,
+            whiteBottom = previewWhiteBottom
+        )
     }
 }
 
-// ---------- Series ----------
-enum class Series(val id: String, val title: String, val rawRes: Int) {
-    CHALLENGER("challenger", "Challenger", R.raw.train_all),
-    MASTER("master", "Masterclass", R.raw.train_all)
+// ---------- Tactics cycle track ----------
+// There is only one tactics cycle bank now. Difficulty is controlled by rating bands/shards.
+enum class Series(val id: String, val title: String) {
+    TACTICS("tactics", "Tactics")
 }
 
 
@@ -383,6 +700,9 @@ class CyclePrefs(ctx: Context, key: String) {
         set(v) { sp.edit().putInt("shield_charges", v).apply() }
 
 
+
+
+
     fun resetStatsOnly() {
         ptsEarned = 0
         ptsTotal = 0
@@ -394,10 +714,16 @@ class CyclePrefs(ctx: Context, key: String) {
     }
 }
 
+
+
 data class OpeningPvLine(
     val eval: String,
     val moves: String
 )
+
+
+private data class OpeningDisp(val san: String, val count: Int, val move: BookMove)
+
 
 
 // ---------- Profile (nickname) prefs ----------
@@ -406,6 +732,791 @@ class ProfilePrefs(ctx: Context) {
     var nickname: String
         get() = sp.getString("nickname", "") ?: ""
         set(v) { sp.edit().putString("nickname", v).apply() }
+
+    var eloRating: Int
+        get() = sp.getInt("elo_rating", TRAINER_ELO_INITIAL)
+        set(v) {
+            val rating = v.coerceIn(100, 4000)
+            val oldUnlocked = maxUnlockedTacticsFloor
+            val newUnlocked = max(oldUnlocked, tacticsDifficultyFloorForRating(rating))
+            sp.edit()
+                .putInt("elo_rating", rating)
+                .putInt("max_unlocked_tactics_floor", newUnlocked)
+                .apply()
+        }
+
+    var maxUnlockedTacticsFloor: Int
+        get() = sp.getInt("max_unlocked_tactics_floor", 1200).coerceIn(1200, 4000)
+        set(v) { sp.edit().putInt("max_unlocked_tactics_floor", v.coerceIn(1200, 4000)).apply() }
+
+    var ratingInitialized: Boolean
+        get() = sp.getBoolean("elo_initialized", false)
+        set(v) { sp.edit().putBoolean("elo_initialized", v).apply() }
+}
+
+
+
+private data class TrainerRewardEvent(
+    val kind: String,
+    val threshold: Int,
+    val headline: String,
+    val message: String,
+    val footnote: String,
+    val certificateStyle: Boolean = false
+)
+
+private data class TrainerRewardPalette(
+    val composeColors: List<Color>,
+    val androidColors: IntArray
+)
+
+private fun trainerRewardPalette(event: TrainerRewardEvent): TrainerRewardPalette {
+    fun palette(vararg hex: Long): TrainerRewardPalette {
+        val compose = hex.map { Color(it) }
+        val android = hex.map { it.toInt() }.toIntArray()
+        return TrainerRewardPalette(compose, android)
+    }
+
+    // Certificate-style rewards keep a premium metal treatment.
+    if (event.certificateStyle) {
+        return when {
+            event.threshold >= 2500 -> palette(0xFF111827, 0xFFFACC15, 0xFFB45309) // Black-gold
+            event.threshold >= 2400 -> palette(0xFF7C2D12, 0xFFF59E0B, 0xFFB91C1C) // GM gold-red
+            event.threshold >= 2300 -> palette(0xFF312E81, 0xFF7C3AED, 0xFFEAB308) // Royal-gold
+            event.threshold >= 2200 -> palette(0xFF374151, 0xFFE5E7EB, 0xFF9CA3AF) // Silver
+            else -> palette(0xFF92400E, 0xFFF59E0B, 0xFF78350F) // Bronze/gold
+        }
+    }
+
+    // Difficulty unlocks get their own identity.
+    if (event.kind == "difficulty") {
+        return when (event.threshold) {
+            1800 -> palette(0xFF059669, 0xFF10B981, 0xFF0F766E) // Medium: green
+            2100 -> palette(0xFFDC2626, 0xFFF97316, 0xFFB91C1C) // Difficult: red/orange
+            2300 -> palette(0xFF7C3AED, 0xFF2563EB, 0xFF4338CA) // Masterclass: royal
+            else -> palette(0xFF0EA5E9, 0xFF14B8A6, 0xFF2563EB)
+        }
+    }
+
+    // Elo/title posters by threshold.
+    return when {
+        event.threshold >= 2500 -> palette(0xFF111827, 0xFFFACC15, 0xFFB45309) // Super GM
+        event.threshold >= 2400 -> palette(0xFFB91C1C, 0xFFF59E0B, 0xFF7C2D12) // GM
+        event.threshold >= 2300 -> palette(0xFF581C87, 0xFF7C3AED, 0xFF312E81) // Senior Master
+        event.threshold >= 2200 -> palette(0xFF6B7280, 0xFFE5E7EB, 0xFF9CA3AF) // Master / silver
+        event.threshold >= 2100 -> palette(0xFF92400E, 0xFFF59E0B, 0xFF78350F) // Candidate Master / bronze
+        event.threshold >= 2000 -> palette(0xFFDC2626, 0xFFFB7185, 0xFF7F1D1D) // Expert
+        event.threshold >= 1900 -> palette(0xFF7C3AED, 0xFFA855F7, 0xFF4338CA) // Advanced
+        event.threshold >= 1800 -> palette(0xFF059669, 0xFF34D399, 0xFF065F46) // 1800 band
+        event.threshold >= 1700 -> palette(0xFF0F766E, 0xFF14B8A6, 0xFF155E75) // Intermediate
+        else -> palette(0xFF2563EB, 0xFF38BDF8, 0xFF1D4ED8) // Rising / 1600
+    }
+}
+
+private val TRAINER_TITLE_MILESTONES: List<Pair<Int, String>> = listOf(
+    1600 to "Rising Tactician",
+    1700 to "Intermediate Tactician",
+    1900 to "Advanced Tactician",
+    2000 to "Expert Tactician",
+    2100 to "Candidate Master Tactician",
+    2200 to "Master Tactician",
+    2300 to "Senior Master Tactician",
+    2400 to "Grandmaster Tactician",
+    2500 to "Super Grandmaster Tactician"
+)
+
+private val TRAINER_DIFFICULTY_UNLOCKS: List<Pair<Int, String>> = listOf(
+    1500 to "Easy",
+    1800 to "Medium",
+    2100 to "Difficult",
+    2300 to "Masterclass",
+    2500 to "Grandmaster"
+)
+
+class RewardPrefs(ctx: Context) {
+    private val sp = ctx.getSharedPreferences("tf_reward_prefs", Context.MODE_PRIVATE)
+
+    private fun readSet(key: String): Set<Int> =
+        sp.getString(key, "")
+            .orEmpty()
+            .split(',')
+            .mapNotNull { it.trim().toIntOrNull() }
+            .toSet()
+
+    private fun writeSet(key: String, values: Set<Int>) {
+        sp.edit().putString(key, values.sorted().joinToString(",")).apply()
+    }
+
+    fun hasEloMilestone(threshold: Int): Boolean = readSet("elo_milestones").contains(threshold)
+    fun markEloMilestone(threshold: Int) = writeSet("elo_milestones", readSet("elo_milestones") + threshold)
+
+    fun hasTitleMilestone(threshold: Int): Boolean = readSet("title_milestones").contains(threshold)
+    fun markTitleMilestone(threshold: Int) = writeSet("title_milestones", readSet("title_milestones") + threshold)
+
+    fun hasDifficultyUnlock(threshold: Int): Boolean = readSet("difficulty_unlocks").contains(threshold)
+    fun markDifficultyUnlock(threshold: Int) = writeSet("difficulty_unlocks", readSet("difficulty_unlocks") + threshold)
+}
+
+private fun collectTrainerRewardEvents(
+    rewardPrefs: RewardPrefs,
+    oldRating: Int,
+    newRating: Int,
+    oldUnlockedFloor: Int,
+    newUnlockedFloor: Int
+): List<TrainerRewardEvent> {
+    if (newRating <= oldRating) return emptyList()
+
+    val out = mutableListOf<TrainerRewardEvent>()
+
+    // Every 100 Elo climb from 1600 upward.
+    for (milestone in 1600..4000 step 100) {
+        if (newRating >= milestone && !rewardPrefs.hasEloMilestone(milestone)) {
+            rewardPrefs.markEloMilestone(milestone)
+            out += TrainerRewardEvent(
+                kind = "milestone",
+                threshold = milestone,
+                headline = "$milestone Elo reached!",
+                message = "Congratulations! You have climbed to $milestone Elo in TrainerFish tactics.",
+                footnote = "Share your milestone with fellow chess improvers.",
+                certificateStyle = false
+            )
+        }
+    }
+
+    // Levels / titles.
+    for ((threshold, title) in TRAINER_TITLE_MILESTONES) {
+        if (newRating >= threshold && !rewardPrefs.hasTitleMilestone(threshold)) {
+            rewardPrefs.markTitleMilestone(threshold)
+            val certificate = threshold >= 2100
+            out += TrainerRewardEvent(
+                kind = if (certificate) "certificate" else "title",
+                threshold = threshold,
+                headline = if (certificate) "$title title awarded" else "$title reached!",
+                message = if (certificate) {
+                    "Congrats! You have earned the $title title."
+                } else {
+                    "Congrats! You have reached $title."
+                },
+                footnote = if (certificate) "TrainerFish Certificate of Achievement" else "Keep climbing for the next title.",
+                certificateStyle = certificate
+            )
+        }
+    }
+
+    // Difficulty unlocks.
+    for ((threshold, label) in TRAINER_DIFFICULTY_UNLOCKS) {
+        if (newUnlockedFloor >= threshold && !rewardPrefs.hasDifficultyUnlock(threshold)) {
+            rewardPrefs.markDifficultyUnlock(threshold)
+            out += TrainerRewardEvent(
+                kind = "difficulty",
+                threshold = threshold,
+                headline = "$label unlocked!",
+                message = "$label puzzles are now permanently unlocked through your Elo progress.",
+                footnote = "Well earned — take on the next challenge.",
+                certificateStyle = false
+            )
+        }
+    }
+
+    return out
+}
+
+private fun trainerFishPosterNickname(context: Context): String =
+    ProfilePrefs(context).nickname.trim().ifBlank { "TrainerFish Student" }
+
+private fun trainerFishPosterIconId(context: Context): Int {
+    val candidates = listOf(
+        "ic_launcher_playstore" to "raw",
+        "ic_launcher_playstore" to "drawable",
+        "ic_launcher" to "mipmap",
+        "ic_launcher_foreground" to "drawable"
+    )
+    for ((name, type) in candidates) {
+        val id = context.resources.getIdentifier(name, type, context.packageName)
+        if (id != 0) return id
+    }
+    return 0
+}
+
+private fun trainerRewardShareText(event: TrainerRewardEvent, nickname: String): String = buildString {
+    appendLine(event.headline)
+    appendLine(event.message)
+    append("Player: ").appendLine(nickname)
+    appendLine(event.footnote)
+    append("TrainerFish Tactics")
+}
+
+private fun drawTrainerPosterWrappedText(
+    canvas: android.graphics.Canvas,
+    text: String,
+    x: Float,
+    startY: Float,
+    maxWidth: Float,
+    paint: android.graphics.Paint,
+    lineHeight: Float,
+    maxLines: Int = 8
+): Float {
+    val words = text.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+    if (words.isEmpty()) return startY
+
+    val lines = ArrayList<String>()
+    var line = ""
+    for (word in words) {
+        val candidate = if (line.isBlank()) word else "$line $word"
+        if (paint.measureText(candidate) <= maxWidth || line.isBlank()) {
+            line = candidate
+        } else {
+            lines += line
+            line = word
+            if (lines.size >= maxLines) break
+        }
+    }
+    if (line.isNotBlank() && lines.size < maxLines) lines += line
+
+    var y = startY
+    for ((idx, ln) in lines.withIndex()) {
+        val out = if (idx == maxLines - 1 && lines.size >= maxLines && idx < lines.lastIndex) ln.trimEnd('.') + "…" else ln
+        canvas.drawText(out, x, y, paint)
+        y += lineHeight
+    }
+    return y
+}
+
+private fun createTrainerAchievementPosterUri(context: Context, event: TrainerRewardEvent): Uri? = runCatching {
+    val width = 1080
+    val height = 1350
+    val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+
+    val nickname = trainerFishPosterNickname(context)
+    val palette = trainerRewardPalette(event)
+
+    val bgPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+    bgPaint.shader = android.graphics.LinearGradient(
+        0f,
+        0f,
+        width.toFloat(),
+        height.toFloat(),
+        palette.androidColors,
+        null,
+        android.graphics.Shader.TileMode.CLAMP
+    )
+    canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
+
+    val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        textAlign = android.graphics.Paint.Align.CENTER
+    }
+
+    // soft decorative circles
+    val circlePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.argb(46, 255, 255, 255)
+    }
+    canvas.drawCircle(135f, 170f, 150f, circlePaint)
+    canvas.drawCircle(940f, 1220f, 210f, circlePaint)
+    canvas.drawCircle(955f, 130f, 80f, circlePaint)
+
+    val cardPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.argb(42, 0, 0, 0)
+    }
+    val card = android.graphics.RectF(74f, 94f, width - 74f, height - 94f)
+    canvas.drawRoundRect(card, 42f, 42f, cardPaint)
+
+    val strokePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        style = android.graphics.Paint.Style.STROKE
+        strokeWidth = 3.5f
+        color = android.graphics.Color.argb(86, 255, 255, 255)
+    }
+    canvas.drawRoundRect(card, 42f, 42f, strokePaint)
+
+    // App mark: prefer the Play Store icon placed in res/raw/ic_launcher_playstore.png.
+    val iconId = trainerFishPosterIconId(context)
+    val icon = if (iconId != 0) android.graphics.BitmapFactory.decodeResource(context.resources, iconId) else null
+    if (icon != null) {
+        val iconRect = android.graphics.RectF(420f, 132f, 660f, 372f)
+        canvas.drawBitmap(icon, null, iconRect, null)
+    } else {
+        paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        paint.textSize = 88f
+        canvas.drawText("🐟", width / 2f, 280f, paint)
+    }
+
+    paint.shader = null
+    paint.color = android.graphics.Color.argb(220, 255, 255, 255)
+    paint.textSize = 34f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+    paint.letterSpacing = 0.08f
+    canvas.drawText(
+        if (event.certificateStyle) "TRAINERFISH CERTIFICATE" else "TRAINERFISH ACHIEVEMENT",
+        width / 2f,
+        415f,
+        paint
+    )
+    paint.letterSpacing = 0f
+
+    paint.color = android.graphics.Color.WHITE
+    paint.textSize = 38f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+    drawTrainerPosterWrappedText(
+        canvas = canvas,
+        text = "Awarded to $nickname",
+        x = width / 2f,
+        startY = 475f,
+        maxWidth = 780f,
+        paint = paint,
+        lineHeight = 44f,
+        maxLines = 2
+    )
+
+    paint.color = android.graphics.Color.WHITE
+    paint.textSize = 74f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+    val headlineY = drawTrainerPosterWrappedText(
+        canvas = canvas,
+        text = event.headline,
+        x = width / 2f,
+        startY = 585f,
+        maxWidth = 820f,
+        paint = paint,
+        lineHeight = 84f,
+        maxLines = 3
+    )
+
+    val badgePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.argb(54, 0, 0, 0)
+    }
+    val badgeTop = (headlineY + 34f).coerceAtMost(770f)
+    val badge = android.graphics.RectF(140f, badgeTop, width - 140f, badgeTop + 260f)
+    canvas.drawRoundRect(badge, 34f, 34f, badgePaint)
+
+    paint.color = android.graphics.Color.WHITE
+    paint.textSize = 43f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+    drawTrainerPosterWrappedText(
+        canvas = canvas,
+        text = event.message,
+        x = width / 2f,
+        startY = badgeTop + 84f,
+        maxWidth = 720f,
+        paint = paint,
+        lineHeight = 54f,
+        maxLines = 4
+    )
+
+    paint.color = android.graphics.Color.argb(222, 255, 255, 255)
+    paint.textSize = 34f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.NORMAL)
+    drawTrainerPosterWrappedText(
+        canvas = canvas,
+        text = event.footnote,
+        x = width / 2f,
+        startY = badge.bottom + 80f,
+        maxWidth = 780f,
+        paint = paint,
+        lineHeight = 44f,
+        maxLines = 3
+    )
+
+    paint.color = android.graphics.Color.WHITE
+    paint.textSize = 44f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+    canvas.drawText("TrainerFish Tactics", width / 2f, height - 190f, paint)
+
+    paint.color = android.graphics.Color.argb(212, 255, 255, 255)
+    paint.textSize = 29f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.NORMAL)
+    canvas.drawText("Train. Solve. Climb.", width / 2f, height - 138f, paint)
+
+    val dir = java.io.File(context.cacheDir, "share").apply { mkdirs() }
+    val safeName = event.kind.replace(Regex("[^A-Za-z0-9_-]"), "_")
+    val file = java.io.File(dir, "trainerfish_${safeName}_${event.threshold}_${System.currentTimeMillis()}.png")
+    java.io.FileOutputStream(file).use { out ->
+        bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+        out.flush()
+    }
+    bitmap.recycle()
+
+    androidx.core.content.FileProvider.getUriForFile(
+        context,
+        context.packageName + ".fileprovider",
+        file
+    )
+}.getOrNull()
+
+private fun trainerPuzzleShareText(
+    theme: String,
+    rating: Int?,
+    solvedMs: Long?
+): String {
+    val themeText = theme.trim().ifBlank { "tactics" }
+    val ratingText = rating?.takeIf { it > 0 }?.toString() ?: "TrainerFish"
+    val timeText = solvedMs?.let { formatHms(it) } ?: "record time"
+    return "I solved this $themeText puzzle rated $ratingText in $timeText. Can you?\n\nTrain tactics with TrainerFish."
+}
+
+private fun composeColorToAndroid(color: Color): Int = android.graphics.Color.argb(
+    (color.alpha * 255f).roundToInt().coerceIn(0, 255),
+    (color.red * 255f).roundToInt().coerceIn(0, 255),
+    (color.green * 255f).roundToInt().coerceIn(0, 255),
+    (color.blue * 255f).roundToInt().coerceIn(0, 255)
+)
+
+private fun drawTacticsShareBoard(
+    context: Context,
+    canvas: android.graphics.Canvas,
+    board: Array<Piece?>,
+    left: Float,
+    top: Float,
+    size: Float,
+    light: Color,
+    dark: Color,
+    pieceSetKey: String
+) {
+    val square = size / 8f
+    val lightPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = composeColorToAndroid(light)
+    }
+    val darkPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = composeColorToAndroid(dark)
+    }
+    val piecePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = android.graphics.Paint.Align.CENTER
+        textSize = square * 0.72f
+        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+    }
+    val pieceCache = HashMap<String, android.graphics.Bitmap?>()
+
+    for (row in 0 until 8) {
+        val rank = 7 - row
+        for (file in 0 until 8) {
+            val x = left + file * square
+            val y = top + row * square
+            val isDark = ((rank + file) % 2 == 0)
+            canvas.drawRect(x, y, x + square, y + square, if (isDark) darkPaint else lightPaint)
+
+            val piece = board.getOrNull(rank * 8 + file)
+            if (piece != null) {
+                val cacheKey = "$pieceSetKey:${piece.type}:${piece.isWhite}"
+                val bmp = pieceCache.getOrPut(cacheKey) { loadPieceAssetBitmap(context, pieceSetKey, piece) }
+                if (bmp != null && !bmp.isRecycled) {
+                    val inset = square * 0.08f
+                    val dst = android.graphics.RectF(x + inset, y + inset, x + square - inset, y + square - inset)
+                    canvas.drawBitmap(bmp, null, dst, null)
+                } else {
+                    piecePaint.color = if (piece.isWhite) android.graphics.Color.WHITE else android.graphics.Color.BLACK
+                    canvas.drawText(piece.glyph, x + square / 2f, y + square * 0.74f, piecePaint)
+                }
+            }
+        }
+    }
+
+    val stroke = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        style = android.graphics.Paint.Style.STROKE
+        strokeWidth = 4f
+        color = android.graphics.Color.argb(150, 255, 255, 255)
+    }
+    canvas.drawRoundRect(android.graphics.RectF(left - 6f, top - 6f, left + size + 6f, top + size + 6f), 18f, 18f, stroke)
+}
+
+private fun createTacticsSolvedPosterUri(
+    context: Context,
+    board: Array<Piece?>,
+    theme: String,
+    rating: Int?,
+    solvedMs: Long?,
+    light: Color,
+    dark: Color,
+    pieceSetKey: String
+): Uri? = runCatching {
+    val width = 1080
+    val height = 1350
+    val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+
+    val paletteKey = context.getSharedPreferences("gm_cosmetics", Context.MODE_PRIVATE)
+        .getString("ui_box_theme", "graphite") ?: "graphite"
+    val palette = trainerFishUiBoxPalette(paletteKey)
+    val paletteColors = palette.colors.map { composeColorToAndroid(it) }.toIntArray()
+
+    val bgPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        shader = android.graphics.LinearGradient(
+            0f, 0f, width.toFloat(), height.toFloat(),
+            paletteColors, null, android.graphics.Shader.TileMode.CLAMP
+        )
+    }
+    canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
+
+    val circlePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.argb(32, 255, 255, 255)
+    }
+    canvas.drawCircle(120f, 130f, 150f, circlePaint)
+    canvas.drawCircle(950f, 1220f, 210f, circlePaint)
+    canvas.drawCircle(980f, 160f, 88f, circlePaint)
+
+    val card = android.graphics.RectF(58f, 58f, width - 58f, height - 58f)
+    val cardPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.argb(52, 0, 0, 0)
+    }
+    canvas.drawRoundRect(card, 42f, 42f, cardPaint)
+    val strokePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        style = android.graphics.Paint.Style.STROKE
+        strokeWidth = 3.5f
+        color = android.graphics.Color.argb(92, 255, 255, 255)
+    }
+    canvas.drawRoundRect(card, 42f, 42f, strokePaint)
+
+    val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        textAlign = android.graphics.Paint.Align.CENTER
+    }
+
+    paint.textSize = 34f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+    paint.letterSpacing = 0.08f
+    paint.color = android.graphics.Color.argb(228, 255, 255, 255)
+    canvas.drawText("TRAINERFISH PUZZLE CHALLENGE", width / 2f, 126f, paint)
+
+    paint.letterSpacing = 0f
+    paint.textSize = 62f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+    paint.color = android.graphics.Color.WHITE
+    drawTrainerPosterWrappedText(
+        canvas = canvas,
+        text = theme.trim().ifBlank { "Tactics Puzzle" },
+        x = width / 2f,
+        startY = 212f,
+        maxWidth = 820f,
+        paint = paint,
+        lineHeight = 74f,
+        maxLines = 2
+    )
+
+    val metaPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.argb(218, 255, 255, 255)
+        textAlign = android.graphics.Paint.Align.CENTER
+        textSize = 31f
+        typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+    }
+    val ratingText = rating?.takeIf { it > 0 }?.let { "Puzzle rating $it" } ?: "TrainerFish tactics"
+    val timeText = solvedMs?.let { "Solved in ${formatHms(it)}" } ?: "Solved"
+    canvas.drawText("$ratingText  •  $timeText", width / 2f, 286f, metaPaint)
+
+    val boardSize = 720f
+    val boardLeft = (width - boardSize) / 2f
+    val boardTop = 332f
+    drawTacticsShareBoard(
+        context = context,
+        canvas = canvas,
+        board = board,
+        left = boardLeft,
+        top = boardTop,
+        size = boardSize,
+        light = light,
+        dark = dark,
+        pieceSetKey = pieceSetKey
+    )
+
+    val badgePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.argb(60, 0, 0, 0)
+    }
+    val badge = android.graphics.RectF(118f, 1092f, width - 118f, 1218f)
+    canvas.drawRoundRect(badge, 30f, 30f, badgePaint)
+
+    paint.color = android.graphics.Color.WHITE
+    paint.textSize = 41f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+    drawTrainerPosterWrappedText(
+        canvas = canvas,
+        text = "I solved this puzzle. Can you?",
+        x = width / 2f,
+        startY = 1172f,
+        maxWidth = 700f,
+        paint = paint,
+        lineHeight = 48f,
+        maxLines = 2
+    )
+
+    paint.color = android.graphics.Color.argb(228, 255, 255, 255)
+    paint.textSize = 40f
+    paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+    canvas.drawText("TrainerFish Tactics", width / 2f, height - 100f, paint)
+
+    val dir = java.io.File(context.cacheDir, "share").apply { mkdirs() }
+    val safeTheme = theme.ifBlank { "tactics" }.replace(Regex("[^A-Za-z0-9_-]"), "_")
+    val file = java.io.File(dir, "trainerfish_puzzle_${safeTheme}_${System.currentTimeMillis()}.png")
+    java.io.FileOutputStream(file).use { out ->
+        bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+        out.flush()
+    }
+    bitmap.recycle()
+
+    androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
+}.getOrNull()
+
+private fun shareTacticsSolvedText(
+    context: Context,
+    theme: String,
+    rating: Int?,
+    solvedMs: Long?,
+    board: Array<Piece?>? = null,
+    light: Color? = null,
+    dark: Color? = null,
+    pieceSetKey: String? = null
+) {
+    val body = trainerPuzzleShareText(theme, rating, solvedMs)
+    val posterUri = if (board != null && light != null && dark != null) {
+        createTacticsSolvedPosterUri(
+            context = context,
+            board = board,
+            theme = theme,
+            rating = rating,
+            solvedMs = solvedMs,
+            light = light,
+            dark = dark,
+            pieceSetKey = pieceSetKey?.trim().orEmpty().ifBlank { "original" }
+        )
+    } else null
+
+    runCatching {
+        val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            putExtra(android.content.Intent.EXTRA_SUBJECT, "TrainerFish puzzle challenge")
+            if (posterUri != null) {
+                type = "image/png"
+                putExtra(android.content.Intent.EXTRA_STREAM, posterUri)
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                clipData = android.content.ClipData.newUri(context.contentResolver, "TrainerFish puzzle", posterUri)
+                // Facebook often ignores EXTRA_TEXT on image shares, so the poster itself carries the caption.
+            } else {
+                type = "text/plain"
+                putExtra(android.content.Intent.EXTRA_TEXT, body)
+            }
+        }
+        val chooser = android.content.Intent.createChooser(sendIntent, if (posterUri != null) "Share puzzle image" else "Share puzzle").apply {
+            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (posterUri != null) addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(chooser)
+    }.onFailure {
+        Toast.makeText(context, "Unable to open share sheet.", Toast.LENGTH_SHORT).show()
+    }
+}
+
+private fun shareTrainerAchievement(context: Context, event: TrainerRewardEvent) {
+    val posterUri = createTrainerAchievementPosterUri(context, event)
+    val body = trainerRewardShareText(event, trainerFishPosterNickname(context))
+
+    runCatching {
+        val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            putExtra(android.content.Intent.EXTRA_SUBJECT, event.headline)
+            putExtra(android.content.Intent.EXTRA_TEXT, body)
+            if (posterUri != null) {
+                type = "image/png"
+                putExtra(android.content.Intent.EXTRA_STREAM, posterUri)
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                clipData = android.content.ClipData.newUri(context.contentResolver, "TrainerFish achievement", posterUri)
+            } else {
+                type = "text/plain"
+            }
+        }
+        val chooser = android.content.Intent.createChooser(sendIntent, "Share achievement").apply {
+            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (posterUri != null) addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(chooser)
+    }
+}
+
+@Composable
+private fun TrainerRewardDialog(
+    event: TrainerRewardEvent,
+    onDismiss: () -> Unit,
+    onShare: () -> Unit
+) {
+    val palette = trainerRewardPalette(event)
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .clip(RoundedCornerShape(28.dp))
+                .background(
+                    Brush.linearGradient(palette.composeColors)
+                )
+                .border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(28.dp))
+                .padding(18.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = if (event.certificateStyle) "TRAINERFISH CERTIFICATE" else "TRAINERFISH ACHIEVEMENT",
+                    color = Color.White.copy(alpha = 0.82f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp
+                )
+                Text(
+                    text = event.headline,
+                    color = Color.White,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 32.sp
+                )
+                Surface(
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color.Black.copy(alpha = 0.18f)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 18.dp, vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = event.message,
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 24.sp
+                        )
+                        Text(
+                            text = event.footnote,
+                            color = Color.White.copy(alpha = 0.86f),
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    PushButton(
+                        text = "Close",
+                        onClick = onDismiss,
+                        backgroundColor = Color.White.copy(alpha = 0.92f),
+                        textColor = Color(0xFF111827)
+                    )
+                    PushButton(
+                        text = if (event.certificateStyle) "Share Certificate" else "Share Poster",
+                        onClick = onShare,
+                        backgroundColor = Color.White.copy(alpha = 0.92f),
+                        textColor = Color(0xFF111827)
+                    )
+                }
+            }
+        }
+    }
 }
 
 // ---------- 3D Push Button ----------
@@ -417,7 +1528,10 @@ fun PushButton(
     enabled: Boolean = true,
     leading: (@Composable () -> Unit)? = null,
     compact: Boolean = false,
+    backgroundColor: Color? = null,
+    textColor: Color? = null,          // <--- NEW
 ) {
+
     val shape = RoundedCornerShape(if (compact) 10.dp else 14.dp)
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -439,7 +1553,10 @@ fun PushButton(
                 onClick = onClick
             ),
         shape = shape,
-        color = if (enabled) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant,
+        color = backgroundColor ?: (
+                if (enabled) MaterialTheme.colorScheme.surface
+                else MaterialTheme.colorScheme.surfaceVariant
+                ),
         tonalElevation = if (pressed) 0.dp else 2.dp
     ) {
         Row(
@@ -452,7 +1569,7 @@ fun PushButton(
                 text,
                 fontSize = fontSize,
                 fontWeight = FontWeight.Medium,
-                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (enabled) (textColor ?: MaterialTheme.colorScheme.onSurface) else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -473,7 +1590,7 @@ private fun NicknameDialog(
         title = { Text("Set your nickname") },
         text = {
             Column {
-                Text("This will be shown on your milestone posters.")
+                Text("This will be shown in TrainerFish.")
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = text,
@@ -490,264 +1607,102 @@ private fun NicknameDialog(
 
 // ---------- Helper text ----------
 private fun tierTextFor(s: Series, p: Float): String = when (s) {
-    Series.CHALLENGER ->
-        if (p >= 70f) "You're ready for Masterclass!" else "Keep training to improve!"
-    Series.MASTER -> when {
-        p >= 90f -> "Grandmaster level"
-        p >= 80f -> "Master level"
-        p >= 70f -> "Expert level"
-        p >= 60f -> "Advanced level"
-        p >= 50f -> "Intermediate level"
-        else     -> "Patzer level"
+    Series.TACTICS -> when {
+        p >= 90f -> "Grandmaster Tactician"
+        p >= 80f -> "Master Tactician"
+        p >= 70f -> "Expert Tactician"
+        p >= 60f -> "Advanced Tactician"
+        p >= 50f -> "Intermediate Tactician"
+        else     -> "Keep training to improve!"
     }
 }
 
-@Composable
-private fun LoadingGalleryDialog(
-    show: Boolean,
-    images: List<Int>,                 // e.g., many drawables
-    captions: List<String> = emptyList(),
-    message: String = "Preparing your puzzles… This may take a minute.",
-    sampleCount: Int = 12,             // how many distinct images to cycle (random subset)
-    switchMs: Long = 5000L,            // frame duration
-    onDismiss: (() -> Unit)? = null
-) {
-    if (!show || images.isEmpty()) return
 
-    // Build a random order (optionally sample a random subset) once per 'images' change
-    val order: List<Int> = remember(images, sampleCount) {
-        val idx = images.indices.shuffled()
-        idx.take(sampleCount.coerceIn(1, images.size))
+private fun normalizeEngineFenOrNull(raw: String?): String? {
+    val compact = raw?.trim()?.replace(Regex("\\s+"), " ") ?: return null
+    if (compact.isBlank()) return null
+
+    val original = compact.split(" ").filter { it.isNotBlank() }
+    if (original.size < 4) return null
+
+    val parts = when (original.size) {
+        4 -> original + listOf("0", "1")
+        5 -> original + "1"
+        else -> original.take(6)
     }
 
-    // Start at a random frame within the order
-    var frame by remember(order) { mutableStateOf(kotlin.random.Random.nextInt(order.size)) }
+    val boardPart = parts[0]
+    val side = parts[1]
+    val castling = parts[2]
+    val ep = parts[3]
+    val halfMove = parts[4].toIntOrNull() ?: return null
+    val fullMove = parts[5].toIntOrNull() ?: return null
 
-    androidx.compose.ui.window.Dialog(
-        onDismissRequest = { if (onDismiss != null) onDismiss() },
-        properties = androidx.compose.ui.window.DialogProperties(
-            usePlatformDefaultWidth = false,
-            dismissOnBackPress = onDismiss != null,
-            dismissOnClickOutside = false
-        )
-    ) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Color(0xFF0F172A))
-        ) {
-            // Advance while shown
-            LaunchedEffect(show, order, switchMs) {
-                while (show && order.isNotEmpty()) {
-                    kotlinx.coroutines.delay(switchMs)
-                    frame = (frame + 1) % order.size
+    if (side != "w" && side != "b") return null
+    if (halfMove < 0 || fullMove <= 0) return null
+    if (castling != "-" && !castling.matches(Regex("[KQkq]+"))) return null
+    if (castling != "-" && castling.toSet().size != castling.length) return null
+    if (ep != "-" && !ep.matches(Regex("[a-h][36]"))) return null
+
+    val ranks = boardPart.split('/')
+    if (ranks.size != 8) return null
+
+    var whiteKings = 0
+    var blackKings = 0
+    for ((rankIndexFromTop, rankText) in ranks.withIndex()) {
+        var count = 0
+        for (ch in rankText) {
+            when {
+                ch in '1'..'8' -> count += ch.digitToInt()
+                ch in "PNBRQKpnbrqk" -> {
+                    count += 1
+                    if (ch == 'K') whiteKings++
+                    if (ch == 'k') blackKings++
+                    if ((rankIndexFromTop == 0 || rankIndexFromTop == 7) && (ch == 'P' || ch == 'p')) return null
                 }
-            }
-
-            val cur = order[frame]
-
-            Image(
-                painter = painterResource(id = images[cur]),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 32.dp)
-                    .align(Alignment.TopCenter),
-                contentScale = ContentScale.Fit
-            )
-
-            // Optional caption aligned with the randomized order
-            captions.getOrNull(cur)?.takeIf { it.isNotBlank() }?.let { cap ->
-                Text(
-                    cap,
-                    color = Color(0xFFCBD5E1),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .align(Alignment.Center),
-                    style = MaterialTheme.typography.titleSmall
-                )
-            }
-
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(20.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        message,
-                        color = Color(0xFFE2E8F0),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "These are the World Champions of Chess. You could be next!",
-                    color = Color(0xFF94A3B8),
-                    style = MaterialTheme.typography.bodySmall
-                )
+                else -> return null
             }
         }
+        if (count != 8) return null
     }
+
+    if (whiteKings != 1 || blackKings != 1) return null
+
+    val fen = parts.joinToString(" ")
+    return runCatching {
+        com.github.bhlangonijr.chesslib.Board().apply { loadFromFen(fen) }.fen
+    }.getOrNull()?.takeIf { it.isNotBlank() }
 }
 
-private const val START_FEN =
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-
-// ---------- Opening: tolerant SAN → legal move matcher ----------
-
-fun normalizeSan(s: String) = s
-    .replace("+","")
-    .replace("#","")
-    .replace("e.p.","")
-    .trim()
-
-private fun pieceTypeFromLetter(ch: Char): com.github.bhlangonijr.chesslib.PieceType = when (ch) {
-    'K' -> com.github.bhlangonijr.chesslib.PieceType.KING
-    'Q' -> com.github.bhlangonijr.chesslib.PieceType.QUEEN
-    'R' -> com.github.bhlangonijr.chesslib.PieceType.ROOK
-    'B' -> com.github.bhlangonijr.chesslib.PieceType.BISHOP
-    'N' -> com.github.bhlangonijr.chesslib.PieceType.KNIGHT
-    else -> com.github.bhlangonijr.chesslib.PieceType.PAWN
+private fun evaluateFenSafely(fen: String?, movetimeMs: Int): Boolean {
+    val safeFen = normalizeEngineFenOrNull(fen) ?: return false
+    return runCatching {
+        ProcEngine.evaluateFen(fen = safeFen, movetimeMs = movetimeMs)
+        true
+    }.getOrDefault(false)
 }
 
-fun moveToUci(m: com.github.bhlangonijr.chesslib.move.Move): String {
-    val from = m.from.toString().lowercase()
-    val to   = m.to.toString().lowercase()
-    val promo = m.promotion
-    if (promo != null && promo != com.github.bhlangonijr.chesslib.Piece.NONE) {
-        val ch = when (promo.pieceType) {
-            com.github.bhlangonijr.chesslib.PieceType.QUEEN  -> 'q'
-            com.github.bhlangonijr.chesslib.PieceType.ROOK   -> 'r'
-            com.github.bhlangonijr.chesslib.PieceType.BISHOP -> 'b'
-            com.github.bhlangonijr.chesslib.PieceType.KNIGHT -> 'n'
-            else -> 'q'
-        }
-        return "$from$to$ch"
-    }
-    return "$from$to"
-}
+// ---------- Opening: tolerant SAN -> legal move matcher ----------
 
-/** Try to resolve JSON SAN to a legal Move on the current board without relying on our SAN printer. */
-fun sanToLegalMove(board: com.github.bhlangonijr.chesslib.Board, sanRaw: String): com.github.bhlangonijr.chesslib.move.Move? {
-    var san = normalizeSan(sanRaw)
 
-    // 1) Castling
-    if (san.startsWith("O-O")) {
-        val longCastle = san.startsWith("O-O-O")
-        val white = (board.sideToMove == com.github.bhlangonijr.chesslib.Side.WHITE)
-        val toSq = when {
-            white && longCastle -> com.github.bhlangonijr.chesslib.Square.C1
-            white && !longCastle-> com.github.bhlangonijr.chesslib.Square.G1
-            !white && longCastle-> com.github.bhlangonijr.chesslib.Square.C8
-            else                -> com.github.bhlangonijr.chesslib.Square.G8
-        }
-        return com.github.bhlangonijr.chesslib.move.MoveGenerator
-            .generateLegalMoves(board)
-            .firstOrNull { mv ->
-                val p = board.getPiece(mv.from)
-                p.pieceType == com.github.bhlangonijr.chesslib.PieceType.KING && mv.to == toSq
-            }
-    }
-
-    // Regexes
-    val rePromo = Regex("""^([a-h])x?([a-h][18])=([QRBN])$""")          // exd8=Q, a8=Q
-    val rePawnCap = Regex("""^([a-h])x([a-h][1-8])$""")                  // exd5
-    val rePawnPush = Regex("""^([a-h][1-8])$""")                         // e4
-    val rePiece = Regex("""^([KQRBN])([a-h1-8]?)(x?)([a-h][1-8])$""")    // Nf3, Nbd2, R1e1, Bxe6
-
-    // 2) Promotion
-    rePromo.matchEntire(san)?.let { m ->
-        val fromFile = m.groupValues[1][0]
-        val to = squareFromAlgebra(m.groupValues[2])
-        val promoType = pieceTypeFromLetter(m.groupValues[3][0])
-        return com.github.bhlangonijr.chesslib.move.MoveGenerator.generateLegalMoves(board).firstOrNull { mv ->
-            val p = board.getPiece(mv.from)
-            p.pieceType == com.github.bhlangonijr.chesslib.PieceType.PAWN &&
-                    mv.to == to &&
-                    mv.promotion?.pieceType == promoType &&
-                    mv.from.toString().lowercase()[0] == fromFile
-        }
-    }
-
-    // 3) Pawn capture (incl. en passant)
-    rePawnCap.matchEntire(san)?.let { m ->
-        val fromFile = m.groupValues[1][0]
-        val to = squareFromAlgebra(m.groupValues[2])
-        return com.github.bhlangonijr.chesslib.move.MoveGenerator.generateLegalMoves(board).firstOrNull { mv ->
-            val p = board.getPiece(mv.from)
-            p.pieceType == com.github.bhlangonijr.chesslib.PieceType.PAWN &&
-                    mv.to == to &&
-                    mv.from.toString().lowercase()[0] == fromFile
-        }
-    }
-
-    // 4) Pawn push
-    rePawnPush.matchEntire(san)?.let { m ->
-        val to = squareFromAlgebra(m.groupValues[1])
-        return com.github.bhlangonijr.chesslib.move.MoveGenerator.generateLegalMoves(board).firstOrNull { mv ->
-            val p = board.getPiece(mv.from)
-            p.pieceType == com.github.bhlangonijr.chesslib.PieceType.PAWN && mv.to == to
-        }
-    }
-
-    // 5) Piece move with optional disambiguation & capture
-    rePiece.matchEntire(san)?.let { m ->
-        val pt = pieceTypeFromLetter(m.groupValues[1][0])
-        val disamb = m.groupValues[2]              // file or rank or empty
-        val to = squareFromAlgebra(m.groupValues[4])
-        return com.github.bhlangonijr.chesslib.move.MoveGenerator.generateLegalMoves(board).firstOrNull { mv ->
-            val p = board.getPiece(mv.from)
-            if (p.pieceType != pt) return@firstOrNull false
-            if (mv.to != to) return@firstOrNull false
-            if (disamb.isNotEmpty()) {
-                val ch = disamb[0]
-                val fromStr = mv.from.toString().lowercase() // e2
-                if (ch in 'a'..'h' && fromStr[0] != ch) return@firstOrNull false
-                if (ch in '1'..'8' && fromStr[1] != ch) return@firstOrNull false
-            }
-            true
-        }
-    }
-
-    // Fallback: match by our own SAN printer if available
-    runCatching {
-        val legal = com.github.bhlangonijr.chesslib.move.MoveGenerator.generateLegalMoves(board)
-        val target = normalizeSan(san)
-        return legal.firstOrNull { mv ->
-            normalizeSan(prettyFromUci(board, moveToUci(mv))) == target
-        }
-    }.getOrNull()?.let { return it }
-
-    return null
-}
-
-// ---------- Screen ----------
-@Composable
-private fun FullscreenBlackout() {
-    Dialog(
-        onDismissRequest = {},
-        properties = DialogProperties(
-            dismissOnBackPress = false,
-            dismissOnClickOutside = false,
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-        )
-    }
-}
 // Top-level (file scope)
 private enum class EndgameResult { WIN, LOSS, DRAW }
+
+private fun loadGamesFast(
+    context: Context,
+    ids: List<Int>
+): List<PgnGameInfo> = TacticsBinaryBank.loadGames(context, ids)
+
+private fun loadGamesFast(
+    context: Context,
+    resId: Int,
+    ids: List<Int>
+): List<PgnGameInfo> = loadGamesByIndexes(
+    context = context,
+    resId = resId,
+    indexes = ids
+)
+
 
 @Composable
 fun ReplayScreen(
@@ -755,104 +1710,152 @@ fun ReplayScreen(
     onUtilities: () -> Unit = {},
     onFenChanged: (String) -> Unit = {},
     onClock: () -> Unit = {},
+    onHome: () -> Unit = {},
     autoStart: Boolean = true,
+    initialMode: TrainerMode = TrainerMode.WOODPECKER,
+    // App-wide theme (Light / Dark / Silver) from MainActivity
+    appThemeKey: String = AppThemeKeys.LIGHT,
+    onChangeAppThemeKey: (String) -> Unit = {},
+    externalPgnUri: Uri? = null,
+    onExternalPgnUriConsumed: () -> Unit = {},
+    autoContinueCycle: Boolean = false
 
 ) {
 
 
-    // Global mode switch for this screen
-    var mode by rememberSaveable { mutableStateOf(TrainerMode.WOODPECKER) }
-    // Core state
+    // Global mode switch for this screen.
+    // Important: start from WOODPECKER internally, then let the landing-route
+    // LaunchedEffect below call the same selectX() functions used by the menu.
+    // Starting directly at initialMode made selectX() no-op because of guards
+    // like `if (mode != TrainerMode.PGN)`, leaving Tactics state on screen.
+    var mode by rememberSaveable(initialMode.name) { mutableStateOf(TrainerMode.WOODPECKER) }
+
+    // Opening Explorer and PGN Reader UI state removed from ReplayScreen.
+
+    // Core state    // Core state
     var games by remember { mutableStateOf(listOf<PgnGameInfo>()) }
     var session by remember { mutableStateOf<PgnSession?>(null) }
     var current by remember { mutableStateOf<PgnGameInfo?>(null) }
     var currentIndex by remember { mutableStateOf(-1) }
-    var status by remember { mutableStateOf("Loading…") }
+    var status by remember { mutableStateOf("Loading...") }
+    var awaitingMistakeChoice by remember { mutableStateOf(false) }
+    var pendingExpectedUci by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
 
-    var engine by remember { mutableStateOf<JniStockfishUci?>(null) }
+    // ===== PGN Reader removed from ReplayScreen =====
+    // PGN Reader now lives in Trainer Chess Openings Coach.
+    val engineScope = remember { CoroutineScope(Dispatchers.IO + SupervisorJob()) }
+    var evalJob by remember { mutableStateOf<Job?>(null) }
+    var whiteBottom by remember { mutableStateOf(true) }
+    var plyTick by remember { mutableStateOf(0) }
+
+    // Last-move highlight state must be declared before PGN loader helpers,
+    // because restored PGN positions update this state during load.
+    var lastFrom by remember { mutableStateOf<Int?>(null) }
+    var lastTo   by remember { mutableStateOf<Int?>(null) }
+
+    // --- Engine UI state (declare BEFORE any usage) ---
+    var engineEnabled by remember { mutableStateOf(false) }         // UI toggle
+    var engineStatus  by remember { mutableStateOf("") }  // small status line
+
+    // NEW: start the in-process JNI engine (Frankenfish) directly
+    fun startEngineNow() {
+        // Optimistic status while we spin up the engine
+        engineStatus = "TrainerFish: starting..."
+
+        engineScope.launch(Dispatchers.IO) {
+            try {
+                // This is idempotent: if it's already running, ProcEngine.start() just returns.
+                com.tonorbe.trainerfish.engine.ProcEngine.start("inline")
+
+                withContext(Dispatchers.Main) {
+                    engineStatus = "TrainerFish: running"
+                }
+            } catch (t: Throwable) {
+                // If anything goes wrong, turn the toggle off and show the error
+                withContext(Dispatchers.Main) {
+                    engineEnabled = false
+                    engineStatus = "TrainerFish: failed (${t.message ?: "unknown error"})"
+                }
+            }
+        }
+    }
+
+    // PGN Text-to-Speech removed with PGN Reader.
+
+    var tacticsPuzzleCount by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        tacticsPuzzleCount = withContext(Dispatchers.IO) { TacticsBinaryBank.totalPuzzleCount(context) }
+    }
 
     // Scoring / puzzle
-    var plyTick by remember { mutableStateOf(0) }
-    var whiteBottom by remember { mutableStateOf(true) }
+
     var puzzleStartMs by remember { mutableStateOf(0L) }
     var puzzleSteps by remember { mutableStateOf(0) }
     var puzzleTotalPoints by remember { mutableStateOf(0) }
     var earnedPoints by remember { mutableStateOf(0) }
     var scoringEnabled by remember { mutableStateOf(true) }
+    var solutionShown by remember { mutableStateOf(false) }
     var didApplaud by remember { mutableStateOf(false) }
 
-    var lastFrom by remember { mutableStateOf<Int?>(null) }
-    var lastTo   by remember { mutableStateOf<Int?>(null) }
-    // Changing between Tactics / Endgame / Opening → start with no last-move highlight.
+    // Full-review move list (after puzzle is over)
+    var reviewMoves by remember { mutableStateOf<List<String>>(emptyList()) }
+    var reviewIndex by remember { mutableStateOf(0) }
+
+    // Tactics review promotion chooser: stores the selected from/to squares until
+    // the user chooses Queen/Rook/Bishop/Knight.
+    var pendingTacticsReviewPromotionFromTo by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+
+    // -1 = no branch yet; otherwise this is the ply where we started replacing PGN with user moves
+    var reviewBranchPly by remember { mutableStateOf(-1) }
+
+
+    var reviewBasePly by remember { mutableStateOf(0) }      // where we are inside PGN (0..totalPly)
+    var branchStartPly by remember { mutableStateOf(-1) }    // -1 = not branched yet
+
+
+
+    // Changing between Tactics / Endgame / Opening -> start with no last-move highlight.
     LaunchedEffect(mode) {
         lastFrom = null
         lastTo = null
     }
 
-    // Read once, synchronously, so the very first frame is already gated
+    // The old first-run tour is disabled. Contextual help will replace it later.
     val firstRun = remember { FirstRunPrefs(context) }
-    var showFirstRun by rememberSaveable { mutableStateOf(!firstRun.seenWelcome) }
-    var showWelcome  by rememberSaveable { mutableStateOf(firstRun.seenWelcome) }
+    LaunchedEffect(Unit) { firstRun.seenWelcome = true }
+    var showFirstRun by rememberSaveable { mutableStateOf(false) }
+    var showWelcome  by rememberSaveable(initialMode.name) { mutableStateOf(initialMode == TrainerMode.WOODPECKER) }
     var showCycleComplete by remember { mutableStateOf(false) }
 
 
     // NEW: Settings & nested menus
     var showSettings by remember { mutableStateOf(false) }
+    var showOrientationDialog by remember { mutableStateOf(false) }
     var showCelebrationDialog by remember { mutableStateOf(false) }
+
+    // Board color theme (existing)
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showPieceSetDialog by remember { mutableStateOf(false) }
+
+    // NEW: App-wide theme (Light / Dark / Silver)
+    var showAppThemeDialog by remember { mutableStateOf(false) }
+    var showUiBoxThemeDialog by remember { mutableStateOf(false) }
+
     var showSoundDialog by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
 
+    var showHelpDialog by remember { mutableStateOf(false) }
 
+    var endgameLoadJob by remember { mutableStateOf<Job?>(null) }
 
     // ---- TACTICS SNAPSHOT HELPERS ----
+    // Kept as top-level functions (see header) to reduce composable bytecode size.
 
-     fun saveTacticsSnapshot() {
-        val g   = games
-        val cur = current
-        if (g.isNullOrEmpty() || cur == null || currentIndex < 0) return
-
-        ReplaySnapshot.save(
-            games       = g,
-            session     = session,      // PgnSession?
-            current     = cur,          // PgnGameInfo?
-            index       = currentIndex,
-            whiteBottom = whiteBottom,
-            mode        = TrainerMode.WOODPECKER
-        )
-    }
-
-
-    fun restoreTacticsFromSnapshot(): Boolean {
-        if (!ReplaySnapshot.has) return false
-
-        val g   = ReplaySnapshot.games ?: return false
-        val cur = ReplaySnapshot.current ?: return false
-        val idx = ReplaySnapshot.index
-        if (idx < 0) return false
-
-        games        = g
-        session      = ReplaySnapshot.session
-        current      = cur
-        currentIndex = idx
-        whiteBottom  = ReplaySnapshot.whiteBottom
-
-        // No welcome / gallery — go straight to the board
-        showWelcome = false
-        status      = "Trainer — continue cycle."
-
-        return true
-    }
-
-
-
-
-
-    // ---- Wall clock timer (elapsed since puzzle start) ----
     var wallStartMs by remember { mutableStateOf<Long?>(null) }
     var wallElapsedSec by remember { mutableStateOf(0) }
     fun startWallTimer() { wallStartMs = SystemClock.elapsedRealtime(); wallElapsedSec = 0 }
+    fun stopWallTimer() { wallStartMs = null }          // <--- add this line
     fun formatWallMmSs(sec: Int) = "%02d:%02d".format(sec / 60, sec % 60)
 
     // Restart wall timer whenever the current puzzle changes (use your existing index)
@@ -870,29 +1873,38 @@ fun ReplayScreen(
         }
     }
 
-    // --- Engine UI state (declare BEFORE any usage) ---
-    var engineEnabled by remember { mutableStateOf(false) }         // UI toggle
-    var engineStatus  by remember { mutableStateOf("TrainerFish: off") }  // small status line
-
-
     // Multi-PV for OPENING explorer only
     var multiPv by remember { mutableStateOf(1) }   // 1..4 from the UI
-    var openingPvLines by remember { mutableStateOf<List<String>>(emptyList()) }
 
     val appCtx = LocalContext.current
 
     // ---- Endgame Trainer state ----
 
     var endgameEvents by remember { mutableStateOf(listOf<String>()) }
-    var showEndgameVerdict by remember { mutableStateOf(false) } // reveal verdict after 2s wait
     val enginePrefs = remember { EnginePrefs(appCtx) }   // remembers BUILTIN/LATEST choice
     // Stream job for continuous eval
-    var evalJob by remember { mutableStateOf<Job?>(null) }
-    val engineScope = remember { CoroutineScope(Dispatchers.IO + SupervisorJob()) }
 
 
 
-    // ==== Endgame Trainer: picker + progress ====
+
+
+    // PGN file picker removed; PGN opens are forwarded to Chess Openings Coach.
+
+    // External Android "Open with TrainerFish" / ACTION_VIEW PGN handoff.    // External Android "Open with TrainerFish" / ACTION_VIEW PGN handoff.
+    // PGN Reader has moved to Trainer Chess Openings Coach, so forward the URI.
+    LaunchedEffect(externalPgnUri) {
+        val uri = externalPgnUri ?: return@LaunchedEffect
+        val opened = context.openChessOpeningsCoach(CocTarget.PGN_READER, uri)
+        if (!opened) {
+            context.openChessOpeningsCoachPlayStore()
+        }
+        onExternalPgnUriConsumed()
+    }
+
+    // PGN auto-restore removed with PGN Reader.
+
+    // ==== Endgame Trainer: picker + progress ====    // ==== Endgame Trainer: picker + progress ====
+
     val egSp = remember { context.getSharedPreferences("endgame_prefs", Context.MODE_PRIVATE) }
     var hidePlayed by rememberSaveable { mutableStateOf(egSp.getBoolean("hide_played", false)) }
     var playedSet by remember { mutableStateOf(egSp.getStringSet("eg_played", emptySet())!!.toMutableSet()) }
@@ -905,17 +1917,39 @@ fun ReplayScreen(
     // Which Endgame index is currently loaded (in endgameEvents)?
     var endgameIdx by rememberSaveable { mutableStateOf(-1) }
 
-    // ===== Opening Explorer prefs (which tree to use) =====
-    val openingSp = remember { context.getSharedPreferences("opening_prefs", Context.MODE_PRIVATE) }
-    var openingPack by rememberSaveable {
-        mutableStateOf(
-            when (openingSp.getString("opening_pack", "E4")) {
-                "D4"     -> OpeningPack.D4
-                "OTHERS" -> OpeningPack.OTHERS
-                else     -> OpeningPack.E4
-            }
-        )
+    // Simple per-endgame records: best moves and best time (seconds)
+    var endgameNewRecordMoves by remember { mutableStateOf(false) }
+    var endgameNewRecordTime  by remember { mutableStateOf(false) }
+
+    fun updateEndgameRecords(idx: Int, moves: Int, seconds: Int) {
+        if (idx < 0 || moves <= 0 || seconds <= 0) {
+            endgameNewRecordMoves = false
+            endgameNewRecordTime = false
+            return
+        }
+
+        val keyMoves = "best_moves_$idx"
+        val keyTime  = "best_time_$idx"
+
+        val prevMoves = egSp.getInt(keyMoves, Int.MAX_VALUE)
+        val prevTime  = egSp.getInt(keyTime, Int.MAX_VALUE)
+
+        var newMoves = false
+        var newTime  = false
+
+        if (moves < prevMoves) {
+            newMoves = true
+            egSp.edit().putInt(keyMoves, moves).apply()
+        }
+        if (seconds < prevTime) {
+            newTime = true
+            egSp.edit().putInt(keyTime, seconds).apply()
+        }
+
+        endgameNewRecordMoves = newMoves
+        endgameNewRecordTime  = newTime
     }
+
 
     var showOpeningArrows by rememberSaveable { mutableStateOf(true) }
 
@@ -925,21 +1959,33 @@ fun ReplayScreen(
         onDispose { engineScope.cancel() }
     }
 
-    // Selected series (persist)
-    val seriesSp = remember { context.getSharedPreferences("gm_series", Context.MODE_PRIVATE) }
-    fun readSeries(): Series = when (seriesSp.getString("selected", Series.CHALLENGER.name)) {
-        Series.MASTER.name -> Series.MASTER
-        else -> Series.CHALLENGER
-    }
-    var series by remember { mutableStateOf(readSeries()) }
-    fun saveSeries(s: Series) { seriesSp.edit().putString("selected", s.name).apply() }
+    // Single tactics cycle track. Old saved CHALLENGER/MASTER values are ignored.
+val seriesSp = remember { context.getSharedPreferences("gm_series", Context.MODE_PRIVATE) }
+fun readSeries(): Series = Series.TACTICS
+var series by remember { mutableStateOf(readSeries()) }
+fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS.name).apply() }
 
     var showExitConfirm by remember { mutableStateOf(false) }
 
     // Profile
     val profile = remember { ProfilePrefs(context) }
     var nickname by remember { mutableStateOf(profile.nickname) }
+
+    // First TrainerFish tactics Elo profile. Existing users with a nickname get the
+    // same 1500 starting point once, while brand-new users are asked for a nickname first.
+    if (!profile.ratingInitialized && nickname.isNotBlank()) {
+        profile.eloRating = TRAINER_ELO_INITIAL
+        profile.ratingInitialized = true
+    }
+    var userElo by remember { mutableStateOf(profile.eloRating) }
     var showProfile by remember { mutableStateOf(false) }
+    var showProfileOnboarding by rememberSaveable { mutableStateOf(nickname.isBlank()) }
+    var showInitialEloNotice by rememberSaveable { mutableStateOf(false) }
+
+    val rewardPrefs = remember { RewardPrefs(context) }
+    var rewardQueue by remember { mutableStateOf<List<TrainerRewardEvent>>(emptyList()) }
+    var rewardIndex by remember { mutableIntStateOf(0) }
+    var showRewardDialog by remember { mutableStateOf(false) }
 
     // Posters
     var showPoster by remember { mutableStateOf(false) }
@@ -949,11 +1995,196 @@ fun ReplayScreen(
 
     val context = LocalContext.current
 
+    val lastSession = remember { LastSessionPrefs(context) }
+
+
+    // ---------------- Screen orientation (Option A) ----------------
+    // Stored in SharedPreferences so MainActivity can apply it on next launch.
+    val orientationSp = remember { context.getSharedPreferences("tf_orientation", Context.MODE_PRIVATE) }
+    var orientationLock by remember { mutableStateOf(orientationSp.getString("orientation_lock", "auto") ?: "auto") }
+
+    fun applyOrientationLock(lock: String) {
+        orientationLock = lock
+        orientationSp.edit().putString("orientation_lock", lock).apply()
+
+        val act = (context as? Activity) ?: return
+        act.requestedOrientation = when (lock) {
+            "portrait" -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            "landscape" -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            else -> ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+    }
+
     val rnd = remember { Random(System.currentTimeMillis()) }
     // Multi-cycle: one bank per series
     val cycles = remember(series) { CycleBank(context, series.id) }
     var activeCycleId by remember(series) { mutableStateOf(cycles.ensureInit()) }
     var prefs by remember(series, activeCycleId) { mutableStateOf(cycles.prefs(activeCycleId)) }
+
+    // Tactics bookmarks: stored by encoded binary-shard puzzle ID.
+    val tacticsBookmarkStore = remember { TacticsBookmarkStore(context) }
+    var bookmarkRefresh by remember { mutableIntStateOf(0) }
+    var showBookmarksDialog by remember { mutableStateOf(false) }
+    var bookmarkReviewMode by remember { mutableStateOf(false) }
+    var bookmarkReviewAbsIndex by remember { mutableStateOf<Int?>(null) }
+    var loadedTacticsAbsIds by remember { mutableStateOf<List<Int>>(emptyList()) }
+    val lazyTacticsGameCache = remember { HashMap<Int, PgnGameInfo>() }
+    val cycleFillMutex = remember { Mutex() }
+    val cycleFillJobs = remember { HashMap<String, Job>() }
+    var nextPuzzlePreparing by remember { mutableStateOf(false) }
+
+    val initialCycleBuffer = 24
+    val backgroundCycleChunk = 64
+    val cycleLowWatermark = 12
+
+    fun provisionalCycleSlotCsv(count: Int): String =
+        (0 until count.coerceAtLeast(1)).joinToString(",")
+
+    fun readCycleIdsFromPrefs(pf: CyclePrefs): List<Int> =
+        pf.poolAbsCsv
+            .split(',')
+            .mapNotNull { it.trim().toIntOrNull() }
+
+    fun cycleTargetSizeForPrefs(pf: CyclePrefs): Int =
+        (pf.size.takeIf { it > 0 } ?: 25).coerceIn(1, CYCLE_MAX)
+
+    suspend fun sampleMoreTacticsIdsForCycle(
+        existing: List<Int>,
+        theme: String,
+        minRating: Int?,
+        maxRating: Int?,
+        targetSize: Int
+    ): List<Int> = withContext(Dispatchers.IO) {
+        val out = linkedSetOf<Int>()
+        existing.filter { it >= 0 }.forEach { out += it }
+
+        var attempts = 0
+        while (out.size < targetSize && attempts < 10) {
+            val need = targetSize - out.size
+            val ask = (need * 3).coerceAtLeast(16).coerceAtMost(CYCLE_MAX)
+            val batch = runCatching {
+                TacticsBinaryBank.samplePuzzleIds(
+                    context = context,
+                    theme = theme,
+                    limit = ask,
+                    minRating = minRating,
+                    maxRating = maxRating
+                )
+            }.getOrElse { emptyList() }
+
+            if (batch.isEmpty()) break
+            val before = out.size
+            batch.forEach { id ->
+                if (id >= 0) out += id
+                if (out.size >= targetSize) return@forEach
+            }
+            if (out.size == before) attempts++ else attempts = 0
+        }
+
+        out.take(targetSize)
+    }
+
+    fun writeCommittedCycleIds(pf: CyclePrefs, ids: List<Int>, targetSize: Int) {
+        val clean = ids.filter { it >= 0 }.distinct().take(targetSize.coerceIn(1, CYCLE_MAX))
+        pf.size = targetSize.coerceIn(1, CYCLE_MAX)
+        pf.poolAbsCsv = clean.joinToString(",")
+        pf.poolCsv = if (clean.isEmpty()) "" else provisionalCycleSlotCsv(clean.size)
+    }
+
+    suspend fun ensureCommittedSlot(
+        pf: CyclePrefs,
+        wantedSlot: Int,
+        theme: String,
+        minRating: Int?,
+        maxRating: Int?,
+        targetSize: Int
+    ): List<Int> = cycleFillMutex.withLock {
+        val safeTarget = targetSize.coerceIn(1, CYCLE_MAX)
+        if (wantedSlot < 0) return@withLock readCycleIdsFromPrefs(pf)
+
+        val existing = readCycleIdsFromPrefs(pf)
+        if (wantedSlot < existing.size || existing.size >= safeTarget) return@withLock existing
+
+        val nextTarget = max(
+            wantedSlot + 1,
+            existing.size + initialCycleBuffer
+        ).coerceAtMost(safeTarget)
+
+        val grown = sampleMoreTacticsIdsForCycle(
+            existing = existing,
+            theme = theme,
+            minRating = minRating,
+            maxRating = maxRating,
+            targetSize = nextTarget
+        )
+
+        val out = if (grown.size > existing.size) grown else existing
+        writeCommittedCycleIds(pf, out, safeTarget)
+        out
+    }
+
+    fun startBackgroundCycleFill(
+        pf: CyclePrefs,
+        theme: String,
+        minRating: Int?,
+        maxRating: Int?,
+        targetSize: Int
+    ) {
+        val safeTarget = targetSize.coerceIn(1, CYCLE_MAX)
+        val jobKey = "${series.id}:${activeCycleId}:${pf.lastTheme}:${pf.lastMin}:${pf.lastMax}:$safeTarget"
+        synchronized(cycleFillJobs) {
+            val existingJob = cycleFillJobs[jobKey]
+            if (existingJob?.isActive == true) return
+            cycleFillJobs[jobKey] = GlobalScope.launch(Dispatchers.IO) {
+                try {
+                    while (true) {
+                        val before = readCycleIdsFromPrefs(pf)
+                        if (before.size >= safeTarget) break
+
+                        val nextTarget = (before.size + backgroundCycleChunk).coerceAtMost(safeTarget)
+                        val after = cycleFillMutex.withLock {
+                            val current = readCycleIdsFromPrefs(pf)
+                            if (current.size >= safeTarget) return@withLock current
+                            val targetNow = (current.size + backgroundCycleChunk).coerceAtMost(safeTarget)
+                            val grown = sampleMoreTacticsIdsForCycle(
+                                existing = current,
+                                theme = theme,
+                                minRating = minRating,
+                                maxRating = maxRating,
+                                targetSize = targetNow
+                            )
+                            val out = if (grown.size > current.size) grown else current
+                            writeCommittedCycleIds(pf, out, safeTarget)
+                            out
+                        }
+
+                        if (after.size <= before.size || after.size >= safeTarget) break
+                    }
+                } finally {
+                    synchronized(cycleFillJobs) { cycleFillJobs.remove(jobKey) }
+                }
+            }
+        }
+    }
+
+    fun activePoolAbsIds(): List<Int> =
+        prefs.poolAbsCsv
+            .split(',')
+            .mapNotNull { it.trim().toIntOrNull() }
+
+    fun currentTacticsAbsIndex(): Int? {
+        if (mode != TrainerMode.WOODPECKER) return null
+        if (bookmarkReviewMode) return bookmarkReviewAbsIndex
+
+        // Prefer the exact absolute-ID list that was loaded together with `games`.
+        // `currentIndex` is only a position inside the current cycle list. It is NOT
+        // the absolute train_all index. Using it directly causes bookmarks to replay
+        // a different puzzle.
+        loadedTacticsAbsIds.getOrNull(currentIndex)?.let { return it }
+
+        // Fallback for cycles restored from older builds before loadedTacticsAbsIds existed.
+        return activePoolAbsIds().getOrNull(currentIndex)
+    }
 
     var soundOn by remember(series, activeCycleId) { mutableStateOf(prefs.soundOn) }
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -963,85 +2194,131 @@ fun ReplayScreen(
     // Cosmetics prefs
     val cosSp = remember { context.getSharedPreferences("gm_cosmetics", Context.MODE_PRIVATE) }
 
-    // Celebration
-    var celebration by remember { mutableStateOf(cosSp.getString("celebration", "none") ?: "none") }
-    fun setCelebration(mode: String) { celebration = mode; cosSp.edit().putString("celebration", mode).apply() }
+    // Rewards removed: celebration/confetti disabled.
+    val celebration = "none"
+    fun setCelebration(mode: String) { /* no-op while rewards are removed */ }
 
     // Board / pieces / sounds
     var boardTheme by remember { mutableStateOf(cosSp.getString("board_theme", "classic") ?: "classic") }
     fun equipBoardTheme(t: String) { boardTheme = t; cosSp.edit().putString("board_theme", t).apply() }
 
     var pieceStylePref by remember { mutableStateOf(cosSp.getString("piece_style", "solid") ?: "solid") }
+    var pieceSetPref by remember {
+        val savedPieceSet = cosSp.getString("piece_set", null)
+        val initialPieceSet = if (savedPieceSet.isNullOrBlank() || savedPieceSet == "cburnett") "original" else savedPieceSet
+        if (savedPieceSet != initialPieceSet) {
+            cosSp.edit().putString("piece_set", initialPieceSet).apply()
+        }
+        mutableStateOf(initialPieceSet)
+    }
+    fun equipPieceSet(key: String) {
+        pieceSetPref = key
+        cosSp.edit().putString("piece_set", key).apply()
+    }
 
     var soundPack by remember { mutableStateOf(cosSp.getString("sound_pack", "wood") ?: "wood") }
     fun equipSoundPack(s: String) { soundPack = s; cosSp.edit().putString("sound_pack", s).apply() }
 
-    data class BoardTheme(val light: Color, val dark: Color)
+    var uiBoxTheme by remember { mutableStateOf(cosSp.getString("ui_box_theme", "sunset") ?: "sunset") }
+    fun equipUiBoxTheme(key: String) { uiBoxTheme = key; cosSp.edit().putString("ui_box_theme", key).apply() }
+    val uiBoxPalette = trainerFishUiBoxPalette(uiBoxTheme)
+
+
+
+
+    // Board colors are independent of Light/Dark/Silver app theme.
+    // Visual Studio owns this choice; app appearance must never override it.
     val themeColors: BoardTheme = when (boardTheme) {
+        "gray" -> BoardTheme(
+            light = Color(0xFFBDBDBD),
+            dark  = Color(0xFF777777)
+        )
         "wood" -> BoardTheme(
-            light = Color(0xFFEED8B0), // light wood
-            dark  = Color(0xFF8D6E63)  // dark wood
+            light = Color(0xFFEED8B0),
+            dark  = Color(0xFFB99080)
         )
-
         "night" -> BoardTheme(
-            light = Color(0xFFB0BEC5), // light slate
-            dark  = Color(0xFF37474F)  // dark slate
+            light = Color(0xFFB0BEC5),
+            dark  = Color(0xFF78909C)
         )
-
         "blue" -> BoardTheme(
-            light = Color(0xFFBBDEFB), // pale blue
-            dark  = Color(0xFF1976D2)  // royal blue
+            light = Color(0xFFBBDEFB),
+            dark  = Color(0xFF6EA8F7)
         )
-
         "sand" -> BoardTheme(
-            light = Color(0xFFF5E0C3), // sand
-            dark  = Color(0xFFCC8E35)  // desert brown
+            light = Color(0xFFF5E0C3),
+            dark  = Color(0xFFE0B36F)
         )
-
         "forest" -> BoardTheme(
-            light = Color(0xFFC8E6C9), // soft green
-            dark  = Color(0xFF2E7D32)  // deep forest
+            light = Color(0xFFC8E6C9),
+            dark  = Color(0xFF74B678)
         )
-
+        "purple" -> BoardTheme(
+            light = Color(0xFFEDE9FE),
+            dark  = Color(0xFF8B5CF6)
+        )
+        "coffee" -> BoardTheme(
+            light = Color(0xFFE7D3B0),
+            dark  = Color(0xFF8B5E3C)
+        )
+        "olive" -> BoardTheme(
+            light = Color(0xFFDDE5B6),
+            dark  = Color(0xFF738A3D)
+        )
+        "ice" -> BoardTheme(
+            light = Color(0xFFE0F7FA),
+            dark  = Color(0xFF00ACC1)
+        )
+        "rosewood" -> BoardTheme(
+            light = Color(0xFFFADADD),
+            dark  = Color(0xFFB56576)
+        )
         else -> BoardTheme(
-            light = Color(0xFFEEEED2), // classic green board
-            dark  = Color(0xFF769656)
+            light = Color(0xFFEEEED2),
+            dark  = Color(0xFFA3BE7B)
         )
     }
+
 
     val pieceStyle = if (pieceStylePref == "outline") PieceStyle.Outline else PieceStyle.Solid
 
-    // ===== Opening Explorer state (binary book) =====
-    var openingReady by remember { mutableStateOf(false) }
-
-    val openingBoard = remember { com.github.bhlangonijr.chesslib.Board().apply { loadFromFen(START_FEN) } }
-    var openingFen by remember { mutableStateOf(openingBoard.fen) }
-    var openingPly by remember { mutableStateOf(0) }
-    val openingSanPath = remember { mutableStateListOf<String>() }
-
-
-    fun openingReset() {
-        // Reset last-move highlight whenever a new opening position/tree is shown
-        lastFrom = null
-        lastTo = null
-        openingBoard.loadFromFen(START_FEN)
-        openingFen = openingBoard.fen
-        openingPly = 0
-        openingSanPath.clear()
-    }
-
+    // Opening Explorer state removed from ReplayScreen; it now opens Chess Openings Coach.
 
     var endgameOver by remember { mutableStateOf(false) }
     var endgameResult by remember { mutableStateOf<EndgameResult?>(null) }
     var endgamePlaying by remember { mutableStateOf(false) }
 
-    // When true, we blink the "Play position" button to tell the user to press it
-    var endgamePlayHint by remember { mutableStateOf(false) }
-    LaunchedEffect(mode) {
-        if (mode != TrainerMode.ENDGAME) {
-            endgamePlayHint = false
+    var endgameDescription by remember { mutableStateOf("") }
+    var endgameNote by remember { mutableStateOf("") }
+
+
+
+    // --- Endgame result summary (for dialog) ---
+    var endgameStartMs   by remember { mutableStateOf<Long?>(null) }
+    var endgameElapsedSec by remember { mutableStateOf<Int?>(null) }
+    var showEndgameSummary by remember { mutableStateOf(false) }
+
+    // Reset on new endgame position
+    LaunchedEffect(session) {
+        if (mode == TrainerMode.ENDGAME) {
+            endgameOver = false
+            endgameResult = null
+            endgameStartMs = null
+            endgameElapsedSec = null
+            showEndgameSummary = false
+            endgameNewRecordMoves = false
+            endgameNewRecordTime  = false
         }
     }
+
+
+    // ===== Beat the Fish state =====
+    var beatFishFen by rememberSaveable { mutableStateOf(START_FEN) }
+    var beatFishLastFen by rememberSaveable { mutableStateOf<String?>(null) }
+    var showBeatFishIntro by remember { mutableStateOf(false) }
+    var beatFishStartRecorder by rememberSaveable { mutableStateOf(false) }
+    // Pending PGN import into BeatFish analysis board (set by PGN mode export)
+    var beatFishImportPgnChunk by remember { mutableStateOf<String?>(null) }
 
 
     // When user drags/taps a pawn to the last rank we store "from+to"
@@ -1053,6 +2330,7 @@ fun ReplayScreen(
         if (mode == TrainerMode.ENDGAME) {
             endgameOver = false
             endgameResult = null
+            showEndgameSummary = false
         }
     }
 
@@ -1060,6 +2338,11 @@ fun ReplayScreen(
     // Endgame-only UI state
     val endgameMoves = remember { mutableStateListOf<String>() }
     var endgameUserIsWhite by remember { mutableStateOf(true) }
+    // Prevent overlapping engine moves in Endgame (Pass to Fish + normal reply)
+    var endgameEngineThinking by remember { mutableStateOf(false) }
+
+    val endgameHasPosition =
+        mode == TrainerMode.ENDGAME && endgameIdx >= 0 && session != null
 
 
     // On loading an Endgame (FEN-only) position, clear move list and lock user color.
@@ -1073,27 +2356,28 @@ fun ReplayScreen(
         }
     }
 
-    // Reset when a new FEN-only session is loaded
-    LaunchedEffect(session) {
-        if (mode == TrainerMode.ENDGAME) endgameOver = false
-    }
-
-
-    // Reset on new endgame position
-    LaunchedEffect(session) {
-        if (mode == TrainerMode.ENDGAME) {
-            endgameOver = false
-            endgameResult = null
-        }
-    }
-
-
-    // Mistakes/timeouts for streak logic
+    // Mistakes/timeouts for scoring logic
     var madeMistake by remember { mutableStateOf(false) }
+    var mistakePenalty by remember { mutableStateOf(0) }
     var timedOut by remember { mutableStateOf(false) }
 
     // Once true, this puzzle is considered finished and we ignore further taps
     var puzzleOver by remember { mutableStateOf(false) }
+    var engineReviewActive by remember { mutableStateOf(false) }
+    var lastPuzzleEarned by remember { mutableStateOf<Int?>(null) }
+    var lastPuzzleTotal by remember { mutableStateOf<Int?>(null) }
+    var lastPuzzleElapsedMs by remember { mutableStateOf<Long?>(null) }
+    var lastRatingBefore by remember { mutableStateOf<Int?>(null) }
+    var lastRatingAfter by remember { mutableStateOf<Int?>(null) }
+    var lastRatingDelta by remember { mutableStateOf<Int?>(null) }
+
+    // Engine review now starts only after the user taps Review on a completed puzzle.
+    LaunchedEffect(mode, puzzleOver) {
+        if (mode != TrainerMode.WOODPECKER || !puzzleOver) {
+            engineReviewActive = false
+        }
+    }
+
 
     // Sounds & haptics
     val feedback = rememberFeedback(context)
@@ -1114,31 +2398,80 @@ fun ReplayScreen(
     var animJob by remember { mutableStateOf<Job?>(null) }
 
     var openingLoading by remember { mutableStateOf(false) }
+    var openingWarningDismissed by remember { mutableStateOf(false) }
+    // NEW: when true, ECO line is being auto-played and board input should be ignored
+    var openingAutoPlaying by remember { mutableStateOf(false) }
+
 
     // Raw PV lines coming from ProcEngine ("+0.20 e2e4 e7e5 ...")
     var enginePvLines by remember { mutableStateOf(emptyList<String>()) }
 
+    // Engine best-move hint (Opening only), UI indices 0-63
+    var openingEngineHintFrom by remember { mutableStateOf<Int?>(null) }
+    var openingEngineHintTo by remember { mutableStateOf<Int?>(null) }
+
+    // Eval bar: latest engine evaluation (White = positive)
+    var evalCp by remember { mutableStateOf<Int?>(null) }     // centipawns, white's point of view
+    var evalMate by remember { mutableStateOf<Int?>(null) }   // mate in N (white mates = +, black mates = -)
+
+
     val scope = rememberCoroutineScope()
 
-    // 5-minute per-move timer
-    var deadlineAtMs by remember { mutableStateOf<Long?>(null) }
-    fun resetTurnTimer() { /* disabled: no per-move countdown */ }
-    fun stopTurnTimer()  { deadlineAtMs = null /* keep null so any UI reads are safe */ }
+    var preparing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(autoStart, series, showFirstRun, showWelcome, loading, mode, initialMode) {
+        // Landing-page routes should not be pulled back into the old Tactics
+        // welcome/resume flow. They are handled by initialLandingRouteConsumed.
+        if (initialMode != TrainerMode.WOODPECKER || mode != TrainerMode.WOODPECKER) {
+            return@LaunchedEffect
+        }
+
+        // While Tour/Welcome is up OR we're busy loading/preparing, do absolutely nothing.
+        if (showFirstRun || showWelcome || loading) return@LaunchedEffect
+
+        // Only nudge to Welcome when the screen is truly idle.
+        if (autoStart && games.isEmpty() && session == null && !lastSession.hasResume) {
+            showWelcome = true
+        }
+
+    }
+
+    fun persistResumePoint() {
+        // Persist ONLY the tactics (Woodpecker) resume info.
+        // Intentionally called ONLY from the Tactics "Next" button handler.
+        runCatching {
+            lastSession.hasResume = true
+            lastSession.seriesId = series.id
+            lastSession.modeName = TrainerMode.WOODPECKER.name
+            lastSession.activeCycleId = activeCycleId
+            lastSession.poolPos = currentIndex.coerceAtLeast(0)
+        }
+    }
+
+
 
 
     // "Good Job" state depends on timer
     val goodJobNow = session?.let { it.ply >= it.totalPly } == true
-    val iconOnlyTopBar = tinyButtons || goodJobNow
+    val iconOnlyTopBar = true
 
 
-    // Live FEN from your current session (adjust getter if needed)
-    val currentFen = remember(session?.ply) { session?.board?.fen ?: current?.startFen ?: "" }
+    // Live FEN from the *active* mode, for eval orientation
+    val currentFen = when (mode) {
+        TrainerMode.OPENING -> START_FEN
+        TrainerMode.ENDGAME, TrainerMode.WOODPECKER ->
+            session?.board?.fen ?: current?.startFen.orEmpty()
+        TrainerMode.BEAT_FISH, TrainerMode.GAME_RECORDER ->
+            beatFishFen
+        else ->
+            session?.board?.fen ?: current?.startFen.orEmpty()
+    }
 
     // Warm-up nudge so the *first* Engine ON actually produces an eval
     LaunchedEffect(engineEnabled, mode, currentFen) {
         if (!engineEnabled) return@LaunchedEffect
         // Only care in trainer modes that use the generic eval loop
-        if (mode != TrainerMode.WOODPECKER && mode != TrainerMode.OPENING) return@LaunchedEffect
+        if (mode != TrainerMode.WOODPECKER) return@LaunchedEffect
 
         // Give ProcEngine a moment to fully start the first time
         delay(400)
@@ -1150,65 +2483,71 @@ fun ReplayScreen(
         }
     }
 
-    LaunchedEffect(engineEnabled, endgameOver, currentIndex, plyTick, mode) {
+    // Persist Beat-the-Fish position continuously so cold-start can restore it.
+    LaunchedEffect(beatFishFen) {
+        runCatching {
+            if (beatFishFen.isNotBlank()) {
+                lastSession.beatFishFen = beatFishFen
+            }
+        }
+    }
+
+    LaunchedEffect(engineEnabled, endgameOver, currentIndex, plyTick, mode, multiPv) {
         if (!engineEnabled || endgameOver) return@LaunchedEffect
 
         // Only run the engine in trainer modes
-        if (mode != TrainerMode.WOODPECKER && mode != TrainerMode.OPENING) return@LaunchedEffect
+        if (mode != TrainerMode.WOODPECKER) return@LaunchedEffect
 
         // Which position should FrankenFish evaluate?
-        val fen = when (mode) {
-            TrainerMode.OPENING ->
-                openingBoard.fen
-            else ->
-                session?.board?.fen ?: current?.startFen.orEmpty()
-        }
+        val fen = session?.board?.fen ?: current?.startFen.orEmpty()
 
         if (fen.isBlank()) return@LaunchedEffect
-
-        // Temporary text until info lines start coming in
-        engineStatus = "TrainerFish: running"
 
         // Separate search settings for Tactics vs Opening:
         //  - WOODPECKER: think ~3 seconds, then stop until the position changes
         //  - OPENING: allow very deep search (up to ~1 hour) unless the board changes
         val movetimeMs =
             if (mode == TrainerMode.OPENING)
-                3_600_000          // always allow 1 hour think time
+                300_000            // compromise cap: 5 minutes
             else if (mode == TrainerMode.WOODPECKER)
                 3_000              // quick for tactics
+            else if (mode == TrainerMode.PGN)
+                2_500              // quick reader eval
             else
                 1_500
 
         runCatching {
-            com.tonorbe.trainerfish.engine.ProcEngine.evaluateFen(
-                fen = fen,
-                movetimeMs = movetimeMs
-            )
+            // 🔴 IMPORTANT: tell Stockfish how many PV lines to calculate
+            if (mode == TrainerMode.OPENING) {
+                com.tonorbe.trainerfish.engine.ProcEngine.setMultiPv(multiPv)
+            } else if (mode == TrainerMode.PGN) {
+                // PGN Reader needs a few visible analysis choices, CoC-style.
+                com.tonorbe.trainerfish.engine.ProcEngine.setMultiPv(4)
+            } else {
+                // In non-Opening trainer modes we only need the best line
+                com.tonorbe.trainerfish.engine.ProcEngine.setMultiPv(1)
+            }
+
+            // Now start the actual search
+            evaluateFenSafely(fen, movetimeMs)
         }
     }
 
 
-    // Helper: true if side-to-move is white (FEN field #2)
-    //fun whiteToMoveFen(f: String) = f.split(' ').getOrNull(1) == "w"
 
-    // 2) Read raw engine centipawns (UCI is POV = side-to-move)
-    //val rawCp by ProcEngine.scoreCp.collectAsState(initial = null)
 
-    // --- Pro/Lite gating: real purchase + dev override ---
+    // --- Pro/Lite gating: real purchase only ---
     val proCtx = LocalContext.current
 
-    // 1) Real purchase state (Play Billing)
+    // Real purchase state from Play Billing. Fresh installs must start as Lite unless
+    // BillingManager confirms an owned Pro purchase.
     val billingPro by BillingManager.isPro.collectAsState(
         initial = BillingManager.isProUnlocked(proCtx)
     )
 
-    // 2) Dev / testing override stored in shared prefs
-    val premiumPrefs = remember { PremiumPrefs(proCtx) }
-    var devProOverride by remember { mutableStateOf(premiumPrefs.isPro) }
+    // Final flag used everywhere. No local dev override is allowed to unlock Pro.
+    val proUnlocked = billingPro
 
-    // 3) Final flag used everywhere
-    val proUnlocked = billingPro || devProOverride
 
     var showProDialog by remember { mutableStateOf(false) }
     var proDialogReason by remember { mutableStateOf<String?>(null) }
@@ -1218,6 +2557,8 @@ fun ReplayScreen(
         showProDialog = true
     }
 
+// --- ENDGAME INTRO OVERLAY ---
+    var showEndgameIntro by rememberSaveable { mutableStateOf(true) }
 
     // 3) Normalize to "White advantage = positive"
     //val whiteCp = remember(rawCp, currentFen) {
@@ -1226,13 +2567,14 @@ fun ReplayScreen(
 
     val uciLines by ProcEngine.lines.collectAsState(initial = emptyList())
 
-    LaunchedEffect(uciLines, mode, multiPv) {
-        if (mode == TrainerMode.ENDGAME) return@LaunchedEffect
-
+    LaunchedEffect(uciLines, mode, multiPv, currentFen, engineEnabled, puzzleOver) {
         val infoLines = uciLines.filter { line ->
             line.startsWith("info ") && line.contains(" score ")
         }
-        if (infoLines.isEmpty()) return@LaunchedEffect
+        if (infoLines.isEmpty()) {
+            evalCp = null
+            return@LaunchedEffect
+        }
 
         val cpRegex       = Regex("""\bscore\s+cp\s+(-?\d+)""")
         val mateRegex     = Regex("""\bscore\s+mate\s+(-?\d+)""")
@@ -1243,6 +2585,9 @@ fun ReplayScreen(
             val cpSort: Int,
             val raw: String
         )
+
+
+
 
         val map = mutableMapOf<Int, LineInfo>()
 
@@ -1261,35 +2606,75 @@ fun ReplayScreen(
             map[mp] = LineInfo(mp, cpSort, raw)
         }
 
-        if (map.isEmpty()) return@LaunchedEffect
+        if (map.isEmpty()) {
+            evalCp = null
+            evalMate = null
+            return@LaunchedEffect
+        }
 
         val ordered = map.values
             .sortedByDescending { it.cpSort }
-            .take(multiPv.coerceAtLeast(1))
+            .take(if (mode == TrainerMode.PGN) 4 else multiPv.coerceAtLeast(1))
 
-        val showPv = (mode == TrainerMode.OPENING)
+        // Who is to move in the current position?
+        val whiteToMoveNow = whiteToMoveFen(currentFen)
 
-        // Human-readable strings (used for header + optional text list)
+        // ---------- Eval bar (White POV) ----------
+        val best = ordered.firstOrNull()
+        if (best != null) {
+            val raw  = best.raw
+            val mate = mateRegex.find(raw)?.groupValues?.getOrNull(1)?.toIntOrNull()
+            val cp   = cpRegex.find(raw)?.groupValues?.getOrNull(1)?.toIntOrNull()
+
+            // Raw engine score: side-to-move POV
+            val signed: Int? = when {
+                cp != null -> cp
+                mate != null && mate > 0 -> 900      // treat mates as big scores
+                mate != null && mate < 0 -> -900
+                else -> null
+            }
+
+            // Convert to White's point of view:
+            //   + = White better, - = Black better
+            evalCp = signed?.let { s ->
+                if (whiteToMoveNow) s else -s
+            }
+        } else {
+            evalCp = null
+        }
+
+        val showPv = (mode == TrainerMode.WOODPECKER && puzzleOver && engineEnabled)
+
+        // ---------- Center text using the SAME POV as the bar ----------
         val prettyLines: List<String> = ordered.map { li ->
-            val full = buildEngineStatusFromInfo(li.raw, showPv = showPv)
-            full.removePrefix("TrainerFish:").trim()
+            val full = buildEngineStatusFromInfo(
+                line = li.raw,
+                showPv = showPv,
+                maxPvPlies = 6,
+                whiteToMove = whiteToMoveNow,
+                fen = currentFen,
+                useFan = (mode == TrainerMode.WOODPECKER)
+            )
+            full.removePrefix("").trim()
         }
 
         if (prettyLines.isNotEmpty()) {
-            engineStatus = "TrainerFish: " + prettyLines.first()
+            engineStatus = if (mode == TrainerMode.PGN) {
+                prettyLines.take(4).joinToString("\n")
+            } else {
+                " " + prettyLines.first()
+            }
         }
 
-        // For the simple text list (if you still use openingPvLines)
-        openingPvLines = if (mode == TrainerMode.OPENING) prettyLines else emptyList()
 
-        // ⬇️ NEW: raw PV lines for the colored multi-PV panel
+
+
         if (mode == TrainerMode.OPENING) {
             val pvRegex = Regex("""\bpv\s+(.+)$""")
 
             val lines = ordered.mapNotNull { li ->
                 val raw = li.raw
 
-                // Extract eval again (cp or mate) for display
                 val mate = mateRegex.find(raw)?.groupValues?.getOrNull(1)?.toIntOrNull()
                 val cp   = cpRegex.find(raw)?.groupValues?.getOrNull(1)?.toIntOrNull()
 
@@ -1299,35 +2684,86 @@ fun ReplayScreen(
                     else         -> "0.00"
                 }
 
-                // Extract the PV moves (UCI list after "pv")
                 val pvMatch   = pvRegex.find(raw) ?: return@mapNotNull null
                 val movesPart = pvMatch.groupValues.getOrNull(1)?.trim().orEmpty()
                 if (movesPart.isBlank()) return@mapNotNull null
 
-                // Format expected by prettyOpeningPv: "eval uci1 uci2 ..."
                 "$evalStr $movesPart"
             }
 
             enginePvLines = lines
+
+            if (lines.isNotEmpty()) {
+                val bestLine = lines.first()
+                val tokens = bestLine.split(" ")
+                if (tokens.size >= 2) {
+                    val firstUci = tokens[1]
+                    if (firstUci.length >= 4) {
+                        val fromAlg = firstUci.substring(0, 2)
+                        val toAlg   = firstUci.substring(2, 4)
+
+                        openingEngineHintFrom = uciSquareToIdx(fromAlg, whiteBottom)
+                        openingEngineHintTo   = uciSquareToIdx(toAlg,   whiteBottom)
+                    } else {
+                        openingEngineHintFrom = null
+                        openingEngineHintTo   = null
+                    }
+                } else {
+                    openingEngineHintFrom = null
+                    openingEngineHintTo = null
+                }
+            } else {
+                enginePvLines = emptyList()
+                openingEngineHintFrom = null
+                openingEngineHintTo = null
+            }
         } else {
             enginePvLines = emptyList()
+            openingEngineHintFrom = null
+            openingEngineHintTo = null
         }
     }
-
 
 
     fun stopEngineNow(setState: Boolean = true) {
         if (setState) engineEnabled = false      // make the toggle reflect OFF immediately
-        engineStatus = "TrainerFish: OFF"
+        engineStatus = " OFF"
         engineScope.launch {
             runCatching { ProcEngine.stop() }.onFailure { /* engine may already be gone; ignore */ }
             enginePvLines = emptyList()
-
+            openingEngineHintFrom = null
+            openingEngineHintTo = null
         }
+
     }
 
     // Confetti
     var showConfetti by remember { mutableStateOf(false) }
+
+    fun enqueueTrainerRewardEvents(events: List<TrainerRewardEvent>) {
+        if (events.isEmpty()) return
+        rewardQueue = if (showRewardDialog) rewardQueue + events else events
+        if (!showRewardDialog) {
+            rewardIndex = 0
+            showRewardDialog = true
+        }
+        showConfetti = true
+        GlobalScope.launch {
+            delay(CONFETTI_DURATION_MS.toLong())
+            showConfetti = false
+        }
+    }
+
+    fun advanceTrainerRewardDialog() {
+        if (rewardIndex + 1 < rewardQueue.size) {
+            rewardIndex += 1
+        } else {
+            rewardQueue = emptyList()
+            rewardIndex = 0
+            showRewardDialog = false
+        }
+    }
+
 
     // Restore snapshot (from Clock OR tab switch) when we enter that mode
     LaunchedEffect(ReplaySnapshot.has, mode) {
@@ -1343,7 +2779,7 @@ fun ReplayScreen(
             currentIndex = ReplaySnapshot.index
             whiteBottom  = ReplaySnapshot.whiteBottom
 
-            // Safety: if we’re in Endgame, don’t let the Woodpecker eval ticker run.
+            // Safety: if we're in Endgame, don't let the Woodpecker eval ticker run.
             if (mode == TrainerMode.ENDGAME) {
                 try { evalJob?.cancel() } catch (_: Throwable) {}
                 evalJob = null
@@ -1351,7 +2787,7 @@ fun ReplayScreen(
                 engineEnabled = false
                 // If you want to reopen the Endgame picker/UI, do it here:
                 // showEndgames = true
-                // status = "Endgame trainer — choose a position"
+                // status = "Endgame trainer - choose a position"
             }
 
             showWelcome = false
@@ -1360,133 +2796,53 @@ fun ReplayScreen(
         }
     }
 
-    // ---- Endgame Trainer helpers ----
-    fun listEventLabels(context: android.content.Context, @androidx.annotation.RawRes resId: Int): List<String> {
-        val out = ArrayList<String>()
-        val re = Regex("""^\s*\[Event\s+"([^"]*)"]\s*$""")
-        context.resources.openRawResource(resId).bufferedReader(Charsets.UTF_8).useLines { lines ->
-            lines.forEach { line -> re.find(line)?.let { out += it.groupValues[1] } }
-        }
-        return out
-    }
+    fun rebuildBoardForReview(s: PgnSession) {
+        // Always rebuild from start (deterministic)
+        while (s.ply > 0) s.prev()
 
-
-
-    // NEW: start the in-process JNI engine (Frankenfish) directly
-    fun startEngineNow() {
-        // Optimistic status while we spin up the engine
-        engineStatus = "TrainerFish: starting…"
-
-        engineScope.launch(Dispatchers.IO) {
-            try {
-                // This is idempotent: if it's already running, ProcEngine.start() just returns.
-                com.tonorbe.trainerfish.engine.ProcEngine.start("inline")
-
-                withContext(Dispatchers.Main) {
-                    engineStatus = "TrainerFish: running"
-                }
-            } catch (t: Throwable) {
-                // If anything goes wrong, turn the toggle off and show the error
-                withContext(Dispatchers.Main) {
-                    engineEnabled = false
-                    engineStatus = "TrainerFish: failed (${t.message ?: "unknown error"})"
-                }
-            }
-        }
-    }
-
-
-    suspend fun loadEndgameAt(index: Int) {
-
-            // Lite: only the first 20 positions are playable
-            if (!proUnlocked && index >= 20) {
-                withContext(Dispatchers.Main) {
-                    requirePro("Only the first 20 endgame positions are available in the free version of TrainerFish.")
-                }
-                return
-            }
-
-        // New endgame position → no stale highlight from the previous one
-            lastFrom = null
-            lastTo = null
-
-            // Always stop any ongoing engine/eval before changing the position
-            try { evalJob?.cancel() } catch (_: Throwable) {}
-
-
-            // Always stop any ongoing engine/eval before changing the position
-        try { evalJob?.cancel() } catch (_: Throwable) {}
-        evalJob = null
-        stopEngineNow(setState = true)
-        engineEnabled = false
-        endgamePlaying = false
-        showEndgameVerdict = false
-
-        // Clear board while loading so the user sees a clean preview
-        session = null
-        current = null
-        currentIndex = -1
-        status = "Loading endgame…"
-        mode = TrainerMode.ENDGAME
-
-        val info = withContext(Dispatchers.IO) {
-            com.tonorbe.trainerfish.pgn
-                .loadGamesByIndexes(context, R.raw.endgames, listOf(index))
-                .firstOrNull()
-        }
-        if (info == null) {
-            status = "Failed to load endgame."
+        if (reviewBranchPly < 0) {
+            // No branch: just follow PGN up to reviewIndex
+            val target = reviewIndex.coerceIn(0, s.totalPly)
+            while (s.ply < target) s.next()
             return
         }
 
-        val sess = com.tonorbe.trainerfish.pgn.PgnSession(info.game).apply {
-            reset(info.startFen)
-        }
-        session = sess
-        current = info
-        currentIndex = index
-        // Keep selected index in sync so the list highlight matches the board
-        endgameIdx = index
+        // Branch exists:
+        // 1) follow PGN up to min(reviewIndex, reviewBranchPly)
+        val baseTarget = minOf(reviewIndex, reviewBranchPly).coerceIn(0, s.totalPly)
+        while (s.ply < baseTarget) s.next()
 
-        status = if (info.event.isNotBlank()) info.event else "Endgame preview"
-    }
+        // 2) if we are past the branch ply, apply user moves up to (reviewIndex - reviewBranchPly)
+        if (reviewIndex > reviewBranchPly) {
+            // Ensure PGN is positioned exactly at the branch ply before applying reviewMoves
+            while (s.ply < reviewBranchPly && s.ply < s.totalPly) s.next()
 
+            val toApply = (reviewIndex - reviewBranchPly).coerceIn(0, reviewMoves.size)
+            for (i in 0 until toApply) {
+                val uci = reviewMoves[i]
+                val mv = runCatching { uciToMoveOnBoard(s.board, uci) }.getOrNull()
 
-    // ======================= Endgame: start playing the current position =======================
+                val applied = if (mv != null) {
+                    runCatching {
+                        if (s.board.isMoveLegal(mv, true)) {
+                            s.board.doMove(mv)
+                            true
+                        } else {
+                            false
+                        }
+                    }.getOrElse { t ->
+                        // chesslib can throw here on stale/corrupt review branches, especially
+                        // after a user-made branch is replayed from a different board state.
+                        // The safe behavior is to stop rebuilding the branch, not crash the app.
+                        Log.w("ReplayScreen", "Skipping invalid review branch move $uci at review index $i", t)
+                        false
+                    }
+                } else {
+                    false
+                }
 
-    fun startEndgamePlay() {
-        try {
-            if (mode != TrainerMode.ENDGAME) {
-                status = "Switch to Endgame Trainer first."
-                return
+                if (!applied) break
             }
-            val s = session ?: run {
-                status = "Pick a position first."
-                return
-            }
-            if (endgamePlaying) {
-                status = "Already playing this position."
-                return
-            }
-
-            // Fresh state for this position
-            try { evalJob?.cancel() } catch (_: Throwable) {}
-            evalJob = null
-            try { stopEngineNow(setState = false) } catch (_: Throwable) {}
-            showEndgameVerdict = false
-            endgameOver = false
-            endgameResult = null
-            endgameMoves.clear()
-
-            endgamePlaying = true
-
-            // Engine is completely idle until AFTER the first user move.
-            engineStatus = "Your move."
-            status = "Your move."
-            // We leave engineEnabled as-is; the Endgame logic will drive the fish explicitly.
-        } catch (t: Throwable) {
-            Log.e("TrainerFish", "startEndgamePlay error", t)
-            status = "Error starting endgame."
         }
     }
 
@@ -1498,9 +2854,6 @@ fun ReplayScreen(
 
     fun interruptAnimation() { animJob?.cancel() }
 
-    fun capFor(s: Series): Int =
-        if (series == s && games.isNotEmpty()) kotlin.math.min(games.size, CYCLE_MAX) else CYCLE_MAX
-
     fun csvToSet(csv: String): MutableSet<Int> =
         if (csv.isBlank()) mutableSetOf() else csv.split(',').mapNotNull { it.toIntOrNull() }.toMutableSet()
     fun setToCsv(s: Set<Int>): String = s.joinToString(",")
@@ -1511,10 +2864,18 @@ fun ReplayScreen(
         val size = kotlin.math.max(25, kotlin.math.min(sizeReq, capLocal))
 
         val unseen = (0 until totalGames).filter { idx ->
-            val hasBestTime = wp.puzzleBestMs(idx) > 0L
-            val (bestPts, bestTot) = wp.puzzleBestPoints(idx)
-            !(hasBestTime || bestTot > 0)
+            val info = games.getOrNull(idx)
+            val id = info?.event.orEmpty()
+            if (id.isBlank()) {
+                // No stable ID -> treat as unseen for cycle-building purposes
+                true
+            } else {
+                val hasBestTime = wp.puzzleBestMs(id) > 0L
+                val (bestPts, bestTot) = wp.puzzleBestPoints(id)
+                !(hasBestTime || bestTot > 0)
+            }
         }
+
 
         val pick = mutableSetOf<Int>()
         pick += unseen.shuffled(rnd).take(size)
@@ -1537,26 +2898,35 @@ fun ReplayScreen(
     }
 
 
-    // Build the same caption used in Welcome: "<Theme> • <min>–<max> • <size>"
+    // Build the same caption used in Welcome: "<Theme> - <min>-<max> - <size>"
     fun cycleCaptionFor(pf: CyclePrefs): String {
         val theme = pf.lastTheme.ifBlank { "All" }
         val min   = (pf.lastMin.takeIf { it > 0 } ?: 1800)
         val max   = (pf.lastMax.takeIf { it > 0 } ?: 3210)
         val size  = (pf.size.takeIf { it > 0 } ?: 25)
-        return "$theme • $min–$max • $size"
+        return "$theme - ${min}-${max} - $size"
     }
 
 
     fun currentPool(): Set<Int> {
         val s = csvToSet(prefs.poolCsv)
-        return if (s.isEmpty() && games.isNotEmpty()) buildNewCyclePool(games.size, prefs.size) else s
+        if (s.isNotEmpty()) return s
+
+        // Binary tactics cycles are streamed. A slot exists only after its encoded
+        // puzzle ID has been committed in poolAbsCsv. This prevents Next from
+        // advancing to a missing ID while background fill is still running.
+        val committed = activePoolAbsIds().size
+        if (committed > 0) return (0 until committed).toMutableSet()
+
+        return if (games.isNotEmpty()) buildNewCyclePool(games.size, prefs.size) else mutableSetOf()
     }
     fun solvedSet(): MutableSet<Int> = csvToSet(prefs.solvedCsv)
     fun nextIndexFromPool(): Int? {
         val pool = currentPool()
         val solved = solvedSet()
-        val remaining = pool.filterNot { it in solved }
-        return if (remaining.isEmpty()) null else remaining.random(rnd)
+        // Binary cycles store poolCsv as ordered slot numbers: 0,1,2,...
+        // Continue/Next should advance to the first unsolved slot, not choose randomly.
+        return pool.firstOrNull { it !in solved }
     }
 
     fun markSolvedForCycle(idx: Int, spentMs: Long, earnedForRecord: Int) {
@@ -1570,81 +2940,18 @@ fun ReplayScreen(
         solved += idx
         prefs.solvedCsv = setToCsv(solved)
         val pool = currentPool()
-        if (solved.size >= pool.size) {
+        val targetSize = cycleTargetSizeForPrefs(prefs)
+        val committedCount = activePoolAbsIds().size.takeIf { it > 0 } ?: pool.size
+        if (solved.size >= targetSize) {
             val seen = csvToSet(prefs.globalSeenCsv)
             seen += pool
             prefs.globalSeenCsv = setToCsv(seen)
             showCycleComplete = true
+        } else if (solved.size >= committedCount) {
+            status = "Preparing fresh puzzles..."
         }
     }
 
-    // Keep pool size without wiping stats (unless there is no pool yet).
-    fun ensurePoolSize(totalGames: Int, requestedSize: Int) {
-        val cap = kotlin.math.max(25, kotlin.math.min(CYCLE_MAX, totalGames))
-        val req = requestedSize.coerceIn(25, cap)
-
-        // If there is no pool yet (first start or after "Reset stats") create a new one.
-        if (prefs.poolCsv.isBlank()) {
-            buildNewCyclePool(totalGames, req)
-            return
-        }
-
-        val pool = csvToSet(prefs.poolCsv).toMutableSet()
-        val solved = csvToSet(prefs.solvedCsv)
-        val curSize = pool.size
-        if (curSize == req) return
-
-        if (req > curSize) {
-            // Grow
-            val need = req - curSize
-            val unseen = (0 until totalGames)
-                .filter { idx ->
-                    val hasBestTime = wp.puzzleBestMs(idx) > 0L
-                    val (bp, bt) = wp.puzzleBestPoints(idx)
-                    !(hasBestTime || bt > 0)
-                }
-                .filterNot { it in pool }
-                .shuffled(rnd)
-                .toMutableList()
-
-            val add = mutableListOf<Int>()
-            while (add.size < need && unseen.isNotEmpty()) add += unseen.removeAt(0)
-
-            if (add.size < need) {
-                val rest = (0 until totalGames)
-                    .filterNot { it in pool || it in add }
-                    .shuffled(rnd)
-                for (i in rest) {
-                    add += i
-                    if (add.size == need) break
-                }
-            }
-            pool.addAll(add)
-            prefs.poolCsv = setToCsv(pool)
-        } else {
-            // Shrink
-            val removeCount = curSize - req
-            val toRemove = mutableSetOf<Int>()
-
-            val unsolvedInPool = pool.filterNot { it in solved }.shuffled(rnd).toMutableList()
-            while (toRemove.size < removeCount && unsolvedInPool.isNotEmpty()) {
-                toRemove += unsolvedInPool.removeAt(0)
-            }
-            if (toRemove.size < removeCount) {
-                val rest = (pool - toRemove).shuffled(rnd)
-                for (i in rest) {
-                    toRemove += i
-                    if (toRemove.size == removeCount) break
-                }
-            }
-
-            pool.removeAll(toRemove)
-            prefs.poolCsv = setToCsv(pool)
-
-            val newSolved = solved.filter { it in pool }.toSet()
-            if (newSolved.size != solved.size) prefs.solvedCsv = setToCsv(newSolved)
-        }
-    }
 
     fun startPuzzleClock() { puzzleStartMs = SystemClock.elapsedRealtime() }
 
@@ -1656,12 +2963,7 @@ fun ReplayScreen(
         val rank = '1' + (base / 8)
         return "$file$rank"
     }
-    fun uciSquareToIdx(sq: String, whiteAtBottom: Boolean): Int {
-        val file = "abcdefgh".indexOf(sq[0])
-        val rank = (sq[1] - '1').coerceIn(0,7)
-        val base = rank * 8 + file
-        return if (whiteAtBottom) base else 63 - base
-    }
+
     fun idxCenter(idx: Int): Offset {
         val (file, rank) = idxToFileRank(idx)
         val sq = cellSize()
@@ -1669,59 +2971,7 @@ fun ReplayScreen(
     }
 
     // User move handler for Opening Explorer (2-tap input on the board)
-    fun performOpeningUserMove(fromIdx: Int, toIdx: Int) {
-        // Bounds + trivial sanity
-        if (fromIdx !in 0..63 || toIdx !in 0..63) return
-        if (fromIdx == toIdx) return
 
-        // --- FREE GATE: only first 8 full moves (16 plies) from the starting position ---
-        if (!proUnlocked && openingSanPath.size >= 16) {
-            requirePro(
-                "In the free version, the Opening Explorer is limited to the first 8 moves. " +
-                        "The full version unlocks the complete opening tree."
-            )
-            return
-        }
-
-        // Convert UI indices to UCI squares, respecting board orientation
-        val fromUci = idxToUci(fromIdx, whiteBottom)  // e.g. "e2"
-        val toUci   = idxToUci(toIdx,   whiteBottom)  // e.g. "e4"
-
-        // Find a legal move on the underlying chesslib board matching from/to
-        val legalMove = openingBoard.legalMoves().firstOrNull { mv ->
-            val fromSq = mv.from.toString().lowercase() // "E2" -> "e2"
-            val toSq   = mv.to.toString().lowercase()
-            fromSq == fromUci && toSq == toUci
-        } ?: run {
-            // Illegal move: just ignore for now
-            return
-        }
-
-        // Build SAN-ish text BEFORE mutating the board
-        val uciString = moveToUci(legalMove)
-        val sanText = runCatching {
-            prettyFromUci(openingBoard, uciString)
-        }.getOrElse {
-            "${fromUci}-${toUci}"
-        }
-
-        // Apply move on the opening board
-        openingBoard.doMove(legalMove)
-        openingFen = openingBoard.fen
-
-        // Update path / ply
-        openingSanPath.add(sanText)
-        openingPly = openingSanPath.size
-
-        // Last-move highlight in UI coordinates
-        lastFrom = fromIdx
-        lastTo   = toIdx
-
-        // Let the shared engine loop (if enabled) pick up the new FEN
-        if (engineEnabled) {
-            plyTick++
-        }
-    }
 
     // Move animation
     suspend fun animateUci(uci: String) {
@@ -1781,8 +3031,8 @@ fun ReplayScreen(
         val s = session ?: return@LaunchedEffect
         // Only for Woodpecker: PGN-based (totalPly > 0), at the start (ply == 0)
         if (mode == TrainerMode.WOODPECKER && (s.totalPly ?: 0) > 0 && s.ply == 0) {
-            // Make sure we’re not mid-timer animation; then auto-play the reference move.
-            stopTurnTimer()
+            // Make sure we're not mid-timer animation; then auto-play the reference move.
+
             s.peekNextMoveUci()?.let { animateUci(uci = it) }
             // (No need to restart any countdown here since we removed it.)
         }
@@ -1790,49 +3040,144 @@ fun ReplayScreen(
 
 
 
-
     fun finishIfEndOfGame(s: PgnSession, force: Boolean = false) {
+        if (puzzleOver) return
         if ((s.ply >= s.totalPly || force) && currentIndex >= 0) {
             // Mark puzzle as finished so we ignore any further taps
             puzzleOver = true
-            // stop the engine cleanly and show OFF
-            try {
-                evalJob?.cancel()
-            } catch (_: Throwable) {
-            }
+
+            // Start review line from the end position (empty line initially)
+            reviewMoves = emptyList()
+            reviewIndex = 0
+
+            // ---- Full review init (must reset per puzzle) ----
+            reviewBranchPly = -1
+            reviewMoves = emptyList()
+            reviewIndex = s.ply.coerceIn(0, s.totalPly)
+
+            // Stop eval/engine cleanly. The engine review is now started only by the Review button.
+            try { evalJob?.cancel() } catch (_: Throwable) {}
             evalJob = null
-            stopEngineNow(setState = true)
+            engineReviewActive = false
+            engineEnabled = false
+            engineStatus = ""
+            runCatching { ProcEngine.send("stop") }
+            runCatching { ProcEngine.clearOutput() }
 
+            try { wallStartMs = null } catch (_: Throwable) {}
 
-            try {
-                wallStartMs = null
-            } catch (_: Throwable) {
-            }
-            stopTurnTimer()
             val spent = SystemClock.elapsedRealtime() - puzzleStartMs
 
-
-            // score & streak
-            // If we closed the puzzle early via a mate override, treat it as a full score.
-            val baseEarn = if (force && earnedPoints > 0) puzzleTotalPoints else earnedPoints
-            var streakBonusXp = 0
-
-            if (scoringEnabled) {
-                if (!madeMistake && !timedOut) {
-                    prefs.streak = prefs.streak + 1
-                    prefs.maxStreak = kotlin.math.max(prefs.maxStreak, prefs.streak)
-                    streakBonusXp = (2 * prefs.streak).coerceAtMost(20)
-                } else {
-                    prefs.streak = 0
+            if (bookmarkReviewMode) {
+                if (!didApplaud) {
+                    feedback.applause()
+                    didApplaud = true
                 }
-                prefs.xp += baseEarn + streakBonusXp
+                status = "Bookmarked puzzle complete. Tap Next to return to bookmarks."
+                return
             }
 
-            wp.markSolved(currentIndex, spent, baseEarn, puzzleTotalPoints)
+            // ---------------- Score & streak ----------------
+            // If we closed the puzzle early via a mate override, treat it as a full score,
+            // BUT still apply a small penalty if the user made any mistake(s) during the run.
+            val baseEarnRaw = when {
+                // If the user asked for the solution, this puzzle is still recorded,
+                // but it is recorded as a full miss: 0 / total points.
+                solutionShown -> 0
+                force && earnedPoints > 0 -> puzzleTotalPoints
+                else -> earnedPoints
+            }
+
+            // IMPORTANT: A "Try Again" still counts as a mistake for accuracy.
+            // We treat any mistake during the run as a -10 penalty (one move) to the final points.
+            val mistakePenalty = if (madeMistake) 10 else 0
+            val baseEarn = (baseEarnRaw - mistakePenalty).coerceIn(0, puzzleTotalPoints)
+
+            // Rewards removed: no XP or streak side effects.
+            val streakBonusXp = 0
+
+            // Capture previous bests before we update them
+            val currentId = current?.event
+                ?: games.getOrNull(currentIndex)?.event
+                ?: ""
+
+            val prevBestTime = if (currentId.isNotBlank()) wp.puzzleBestMs(currentId) else 0L
+            val (prevBestPts, prevBestTot) =
+                if (currentId.isNotBlank()) wp.puzzleBestPoints(currentId) else (0 to 0)
+
+            if (currentId.isNotBlank()) {
+                wp.markSolved(currentId, spent, baseEarn, puzzleTotalPoints)
+            }
             markSolvedForCycle(currentIndex, spent, baseEarn)
+            lastPuzzleEarned = baseEarn
+            lastPuzzleTotal = puzzleTotalPoints
+            lastPuzzleElapsedMs = spent
+
+            // ---------------- TrainerFish tactics Elo ----------------
+            // Elo result is binary by design:
+            //   100% = win, anything less = loss.
+            if (scoringEnabled && puzzleTotalPoints > 0) {
+                val eloBefore = userElo
+                val unlockedBefore = profile.maxUnlockedTacticsFloor
+                val puzzleRatingForElo = current?.rating
+                    ?: games.getOrNull(currentIndex)?.rating
+                    ?: TRAINER_ELO_INITIAL
+                val eloResult = if (baseEarn == puzzleTotalPoints) 1.0 else 0.0
+                val eloAfter = computeTrainerElo(
+                    playerRating = eloBefore,
+                    opponentRatingRaw = puzzleRatingForElo,
+                    result = eloResult
+                )
+                val eloAfterFinal = if (eloResult == 0.0 && eloAfter >= eloBefore) {
+                    (eloBefore - 1).coerceAtLeast(100)
+                } else {
+                    eloAfter
+                }
+                profile.eloRating = eloAfterFinal
+                profile.ratingInitialized = true
+                userElo = eloAfterFinal
+                val unlockedAfter = profile.maxUnlockedTacticsFloor
+                lastRatingBefore = eloBefore
+                lastRatingAfter = eloAfterFinal
+                lastRatingDelta = eloAfterFinal - eloBefore
+                enqueueTrainerRewardEvents(
+                    collectTrainerRewardEvents(
+                        rewardPrefs = rewardPrefs,
+                        oldRating = eloBefore,
+                        newRating = eloAfterFinal,
+                        oldUnlockedFloor = unlockedBefore,
+                        newUnlockedFloor = unlockedAfter
+                    )
+                )
+            } else {
+                lastRatingBefore = null
+                lastRatingAfter = null
+                lastRatingDelta = null
+            }
+
+            // Check if this run set a new record for this puzzle
+            val newBestTime = if (currentId.isNotBlank()) wp.puzzleBestMs(currentId) else 0L
+            val (newBestPts, newBestTot) =
+                if (currentId.isNotBlank()) wp.puzzleBestPoints(currentId) else (0 to 0)
+
+            // Only treat as "new record" if there WAS an old record
+            val betterTime = prevBestTime > 0L && newBestTime > 0L && newBestTime < prevBestTime
+
+            val prevPct = if (prevBestTot > 0) prevBestPts.toFloat() / prevBestTot else -1f
+            val newPct = if (newBestTot > 0) newBestPts.toFloat() / newBestTot else -1f
+            val betterScore = newPct > prevPct
+
+            if (betterTime || betterScore) {
+                val parts = mutableListOf<String>()
+                if (betterTime) parts += "best time ${formatMs(newBestTime)}"
+                if (betterScore) parts += "best accuracy ${"%.0f".format(newPct * 100)}%"
+                val msg = "New record! " + parts.joinToString(" & ")
+                Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show()
+            }
 
             if (!didApplaud) {
-                feedback.applause(); didApplaud = true
+                feedback.applause()
+                didApplaud = true
             }
 
             if (celebration == "confetti" || celebration == "gold") {
@@ -1843,22 +3188,22 @@ fun ReplayScreen(
                 }
             }
 
-
             val pct = if (puzzleTotalPoints > 0) (baseEarn * 100 / puzzleTotalPoints) else 0
-            status = if (scoringEnabled) {
-                val xpMsg = if (streakBonusXp > 0) " (+$streakBonusXp XP streak)" else ""
-                "🎉 $baseEarn/$puzzleTotalPoints ($pct%). Tap Next$xpMsg"
-            } else {
-                "📝 Review complete (no score recorded). Tap Next"
+            status = when {
+                solutionShown -> "📝 Solution shown: 0/$puzzleTotalPoints (0%). Tap Next"
+                scoringEnabled -> {
+                    "\uD83C\uDF89 $baseEarn/$puzzleTotalPoints ($pct%). Tap Next"
+                }
+                else -> "Tap Next"
             }
 
-            // --- Milestone posters & toasts ---
+            // ---------------- Milestones ----------------
             val solvedNow = prefs.solvedCount
             val accPctNow =
                 if (prefs.ptsTotal > 0) (prefs.ptsEarned * 100f / prefs.ptsTotal) else 0f
             val cycle = prefs.cycleId
 
-            // ---- Fish badge milestone (XP-based) ----
+            // Fish badge milestone (XP-based)
             if (scoringEnabled) {
                 val totalGain = baseEarn + streakBonusXp
                 if (totalGain > 0) {
@@ -1880,66 +3225,102 @@ fun ReplayScreen(
 
                         if (!showPoster) {
                             posterHeadline = headline
-                            posterSub = "${series.title} • Cycle #$cycle  •  XP ${prefs.xp}"
+                            posterSub = "${series.title} - Cycle #$cycle  -  XP ${prefs.xp}"
                             posterFoot = "Trainer Fish"
                             showPoster = true
                         }
                     }
                 }
             }
-            // 90% accuracy poster only at 25-game milestones:
-            // 25, 50, 75, ... (so it doesn't fire every single puzzle)
-            if (accPctNow >= 90f && solvedNow >= 25 && solvedNow % 25 == 0 && !showPoster) {
-                posterHeadline = "90% Accuracy!"
-                posterSub = "${series.title} • Cycle #$cycle  •  $solvedNow solved"
-                posterFoot = "Trainer Fish"
-                showPoster = true
-            }
 
-
-            // Every 25 solved (25, 50, 75, ...)
-            // Always show the toast, but only show the poster if
-            // another poster (like the 90% one) hasn't already claimed it.
-            if (solvedNow >= 25 && solvedNow % 25 == 0) {
-                Toast.makeText(
-                    ctx,
-                    "🏆 Milestone: Solved $solvedNow puzzles!",
-                    Toast.LENGTH_LONG
-                ).show()
-                if (!showPoster) {
-                    posterHeadline = "Solved $solvedNow puzzles!"
-                    posterSub =
-                        "${series.title} • Cycle #$cycle  •  Accuracy ${"%.0f".format(accPctNow)}%"
-                    posterFoot = "Trainer Fish"
-                    showPoster = true
-                }
-            }
-
-            // 10-streak poster
-            if (prefs.maxStreak == 10 && !showPoster) {
-                posterHeadline = "🔥 10-puzzle streak!"
-                posterSub =
-                    "${series.title} • Cycle #$cycle  •  Accuracy ${"%.0f".format(accPctNow)}%"
-                posterFoot = "Trainer Fish"
-                showPoster = true
-            }
-
-            // If no nickname yet and a milestone popped, nudge for one first
-            if (showPoster && nickname.isBlank()) {
-                showPoster = false
-                showProfile = true
-            }
         }
-
     }
-    fun loadGameAt(idx: Int) {
-        if (idx !in games.indices) return
 
-        // New puzzle → drop any previous last-move highlight
+
+    fun loadGameAt(idx: Int, fromBookmarkReview: Boolean = false) {
+        bookmarkReviewMode = fromBookmarkReview
+        if (!fromBookmarkReview) bookmarkReviewAbsIndex = null
+
+        // New puzzle -> drop any previous last-move highlight
         lastFrom = null
         lastTo = null
 
-        val gi = games[idx]
+        val cachedOrLoaded: PgnGameInfo? =
+            games.getOrNull(idx)
+                ?: lazyTacticsGameCache[idx]
+
+        if (cachedOrLoaded == null) {
+            val encodedId = if (mode == TrainerMode.WOODPECKER && !fromBookmarkReview) {
+                loadedTacticsAbsIds.getOrNull(idx) ?: activePoolAbsIds().getOrNull(idx)
+            } else {
+                null
+            }
+
+            if (encodedId == null && mode == TrainerMode.WOODPECKER && !fromBookmarkReview && idx >= 0) {
+                status = "Preparing fresh puzzles..."
+                nextPuzzlePreparing = true
+
+                // Streamed cycle repair/top-up: generate only enough committed IDs to
+                // make this slot real. Do not block on completing the whole cycle.
+                GlobalScope.launch(Dispatchers.IO) {
+                    val pf = prefs
+                    val targetSize = cycleTargetSizeForPrefs(pf)
+                    val minR = pf.lastMin.takeIf { it > 0 }
+                    val maxR = pf.lastMax.takeIf { it > 0 }
+                    val th = pf.lastTheme.ifBlank { "All" }
+
+                    val idsNow = ensureCommittedSlot(
+                        pf = pf,
+                        wantedSlot = idx,
+                        theme = th,
+                        minRating = minR,
+                        maxRating = maxR,
+                        targetSize = targetSize
+                    )
+
+                    val loaded = idsNow.getOrNull(idx)?.let { id ->
+                        runCatching { loadGamesFast(context, listOf(id)).firstOrNull() }.getOrNull()
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        nextPuzzlePreparing = false
+                        if (idsNow.isNotEmpty()) loadedTacticsAbsIds = idsNow.toList()
+                        if (loaded != null) {
+                            lazyTacticsGameCache[idx] = loaded
+                            loadGameAt(idx, fromBookmarkReview)
+                        } else {
+                            status = "Could not prepare next puzzle."
+                        }
+                    }
+                }
+                return
+            }
+
+            if (encodedId != null) {
+                status = "Loading puzzle..."
+
+                // Do NOT use runBlocking here. This function runs from UI events.
+                // Load exactly one binary puzzle in the background, cache it, then re-enter.
+                GlobalScope.launch(Dispatchers.IO) {
+                    val loaded = runCatching {
+                        loadGamesFast(context, listOf(encodedId)).firstOrNull()
+                    }.getOrNull()
+
+                    withContext(Dispatchers.Main) {
+                        if (loaded != null) {
+                            lazyTacticsGameCache[idx] = loaded
+                            loadGameAt(idx, fromBookmarkReview)
+                        } else {
+                            status = "Could not load puzzle."
+                        }
+                    }
+                }
+            }
+
+            return
+        }
+
+        val gi: PgnGameInfo = cachedOrLoaded
         val ns = PgnSession(gi.game).also { it.reset(gi.startFen) }
 
         session = ns
@@ -1958,52 +3339,366 @@ fun ReplayScreen(
         madeMistake = false
         timedOut = false
         puzzleOver = false
+        engineReviewActive = false
+        lastPuzzleEarned = null
+        lastPuzzleTotal = null
+        lastPuzzleElapsedMs = null
+        lastRatingBefore = null
+        lastRatingAfter = null
+        lastRatingDelta = null
+        engineEnabled = false
+        engineStatus = ""
+        solutionShown = false
 
         // Puzzle meta
         puzzleSteps = computePuzzleSteps(ns.totalPly)
         puzzleTotalPoints = puzzleSteps * 10
-        status = "$puzzleTotalPoints pts (${puzzleSteps} moves). Get ready…"
+        status = "$puzzleTotalPoints pts (${puzzleSteps} moves). Get ready..."
 
         // Draw initial FEN
         plyTick++
 
-        // 1) auto-play the FIRST PGN move (reference move),
+        // 1) auto-play the FIRST PGN move/reference move
         // 2) then hand the turn to the user and start timers
         GlobalScope.launch {
-            stopTurnTimer()
-            session?.peekNextMoveUci()?.let { firstUci ->
-                animateUci(firstUci)  // uses your existing animation timing
-            }
-            startWallTimer()              // <— add this line
-            resetTurnTimer()              // (kept as-is if you want to preserve internal logic)
-            startPuzzleClock()
-            status = cycleCaptionFor(prefs)
+            val firstUci = ns.peekNextMoveUci()
 
-            plyTick++  // let UI recompose after the reference move
+            val blunderMessage: String? = if (firstUci != null) {
+                val preBoard = com.github.bhlangonijr.chesslib.Board().apply {
+                    loadFromFen(gi.startFen)
+                }
+
+                val blunderIsWhite =
+                    (preBoard.sideToMove == com.github.bhlangonijr.chesslib.Side.WHITE)
+
+                val blunderSide = if (blunderIsWhite) "White" else "Black"
+                val contSide = if (blunderIsWhite) "Black" else "White"
+
+                val pretty = uciToFanOnBoard(preBoard, firstUci)
+
+                "$blunderSide played $pretty which is a big mistake. Find the correct continuation as $contSide."
+            } else {
+                null
+            }
+
+            if (firstUci != null) {
+                animateUci(firstUci)
+            }
+
+            startWallTimer()
+            startPuzzleClock()
+
+            status = blunderMessage ?: cycleCaptionFor(prefs)
+            plyTick++
+        }
+    }
+    
+    fun toggleCurrentTacticsBookmark() {
+        val absIndex = currentTacticsAbsIndex()
+        val cur = current
+        if (mode != TrainerMode.WOODPECKER || absIndex == null || cur == null) {
+            Toast.makeText(context, "No tactics puzzle is open.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val label = cur.event.ifBlank {
+            cur.theme.ifBlank { "Tactics puzzle #$absIndex" }
+        }
+
+        val nowSaved = tacticsBookmarkStore.toggle(
+            TacticsBookmark(
+                absIndex = absIndex,
+                eventId = cur.event.trim(),
+                title = label,
+                theme = primaryBookmarkTheme(prefs.lastTheme, cur.theme),
+                rating = cur.rating ?: 0,
+                startFen = cur.startFen.orEmpty(),
+                visibleFen = tacticsPromptFenAfterFirstMove(cur),
+                savedPly = tacticsPromptPlyAfterFirstMove(cur),
+                savedAt = System.currentTimeMillis()
+            )
+        )
+        bookmarkRefresh++
+        Toast.makeText(
+            context,
+            if (nowSaved) "Puzzle bookmarked." else "Bookmark removed.",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    fun openBookmarkedTacticsPuzzle(bookmark: TacticsBookmark) {
+        if (!bookmarkReviewMode && games.isNotEmpty() && current != null && currentIndex >= 0) {
+            saveTacticsSnapshot(
+                games = games,
+                session = session,
+                current = current,
+                currentIndex = currentIndex,
+                whiteBottom = whiteBottom
+            )
+        }
+
+        showBookmarksDialog = false
+        loading = false
+        preparing = false
+        showWelcome = false
+        mode = TrainerMode.WOODPECKER
+        status = "Loading bookmarked puzzle..."
+
+        engineScope.launch(Dispatchers.IO) {
+            val loaded = runCatching {
+                // No PGN scan. Use the saved encoded binary-shard puzzle ID.
+                loadGamesFast(context, listOf(bookmark.absIndex))
+            }.getOrElse { emptyList() }
+
+            withContext(Dispatchers.Main) {
+                if (loaded.isEmpty()) {
+                    status = "Could not load bookmarked puzzle."
+                    return@withContext
+                }
+
+                val loadedGame = loaded.first()
+                val savedEvent = bookmark.eventId.trim().ifBlank { bookmark.title.trim() }
+                val loadedEvent = loadedGame.event.trim()
+
+                // If this happens, it means the bookmark was created before the index-order fix.
+                // Do not silently show another puzzle.
+                if (savedEvent.isNotBlank() && loadedEvent.isNotBlank() && savedEvent != loadedEvent) {
+                    status = "Old bookmark index mismatch. Remove this bookmark and add it again."
+                    return@withContext
+                }
+
+                games = listOf(loadedGame)
+                loadedTacticsAbsIds = listOf(bookmark.absIndex)
+                currentIndex = 0
+                bookmarkReviewAbsIndex = bookmark.absIndex
+                loadGameAt(0, fromBookmarkReview = true)
+                status = "Bookmarked puzzle review."
+            }
         }
     }
 
+    fun returnFromBookmarkReview() {
+        showBookmarksDialog = false
+        if (!bookmarkReviewMode) return
 
+        val restored = restoreTacticsFromSnapshot(
+            onRestore = { g, s, cur, idx, wb ->
+                games = g
+                loadedTacticsAbsIds = activePoolAbsIds()
+                session = s
+                current = cur
+                currentIndex = idx
+                whiteBottom = wb
+            },
+            onAfterRestore = {
+                status = "Trainer - continue cycle."
+            }
+        )
+
+        bookmarkReviewMode = false
+        bookmarkReviewAbsIndex = null
+
+        if (!restored) {
+            showWelcome = true
+            status = "Trainer - choose a cycle or continue."
+        }
+        plyTick++
+    }
 
     fun tryGoNextPuzzle() {
+        if (nextPuzzlePreparing || loading) return
+
+        if (bookmarkReviewMode) {
+            showBookmarksDialog = true
+            status = "Bookmarked puzzle review. Choose another saved puzzle or exit."
+            return
+        }
+
+        // If the user has clicked Solution but has not played/reviewed all remaining moves,
+        // record the current puzzle first as 0 / total before leaving it.
+        if (mode == TrainerMode.WOODPECKER && solutionShown && !puzzleOver) {
+            session?.let { finishIfEndOfGame(it, force = true) }
+        }
+
         val idx = nextIndexFromPool()
-        if (idx == null) showCycleComplete = true else loadGameAt(idx)
+        if (idx == null) {
+            val committed = activePoolAbsIds().size
+            val targetSize = cycleTargetSizeForPrefs(prefs)
+
+            if (mode == TrainerMode.WOODPECKER && committed < targetSize) {
+                status = "Preparing fresh puzzles..."
+                nextPuzzlePreparing = true
+                GlobalScope.launch(Dispatchers.IO) {
+                    val pf = prefs
+                    val th = pf.lastTheme.ifBlank { "All" }
+                    val minR = pf.lastMin.takeIf { it > 0 }
+                    val maxR = pf.lastMax.takeIf { it > 0 }
+                    val idsNow = ensureCommittedSlot(
+                        pf = pf,
+                        wantedSlot = committed,
+                        theme = th,
+                        minRating = minR,
+                        maxRating = maxR,
+                        targetSize = targetSize
+                    )
+                    val solved = csvToSet(pf.solvedCsv)
+                    val nextSlot = (0 until idsNow.size.coerceAtMost(targetSize)).firstOrNull { it !in solved }
+                    val loaded = nextSlot?.let { slot ->
+                        idsNow.getOrNull(slot)?.let { id ->
+                            runCatching { loadGamesFast(context, listOf(id)).firstOrNull() }.getOrNull()
+                        }
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        nextPuzzlePreparing = false
+                        loadedTacticsAbsIds = idsNow
+                        if (nextSlot != null && loaded != null) {
+                            lazyTacticsGameCache[nextSlot] = loaded
+                            loadGameAt(nextSlot)
+                            persistResumePoint()
+                            startBackgroundCycleFill(pf, th, minR, maxR, targetSize)
+                        } else {
+                            showCycleComplete = idsNow.size >= targetSize
+                            status = if (showCycleComplete) "Cycle complete." else "Could not prepare next puzzle."
+                        }
+                    }
+                }
+                return
+            }
+
+            showCycleComplete = true
+            return
+        }
+        loadGameAt(idx)
+
+        if (mode == TrainerMode.WOODPECKER) {
+            val committed = activePoolAbsIds().size
+            val targetSize = cycleTargetSizeForPrefs(prefs)
+            val solvedSlots = csvToSet(prefs.solvedCsv)
+            val remainingCommitted = (0 until committed.coerceAtMost(targetSize)).count { it !in solvedSlots }
+            if (committed < targetSize && remainingCommitted <= cycleLowWatermark) {
+                val th = prefs.lastTheme.ifBlank { "All" }
+                val minR = prefs.lastMin.takeIf { it > 0 }
+                val maxR = prefs.lastMax.takeIf { it > 0 }
+                startBackgroundCycleFill(prefs, th, minR, maxR, targetSize)
+            }
+        }
+
+        // [OK] Persist tactics resume point ONLY when Next is pressed
+        persistResumePoint()
     }
 
     fun revealSolution() {
-        if (scoringEnabled) { earnedPoints = 0; scoringEnabled = false }
         val sess = session ?: return
-        status = "Review mode: solution shown; scoring disabled."
-        GlobalScope.launch {
-            stopTurnTimer()
-            sess.peekNextMoveUci()?.let { animateUci(it) }
-            if (sess.ply < sess.totalPly) sess.peekNextMoveUci()?.let { animateUci(it) }
-            finishIfEndOfGame(sess)
-            if (sess.ply < sess.totalPly) {
-                status = "Your turn again."
-                resetTurnTimer()
-            }
+
+        // Allow Show Solution as long as there are moves remaining in the PGN.
+        val remainingNow = (sess.totalPly - sess.ply).coerceAtLeast(0)
+        if (remainingNow <= 0) {
+            status = "No more solution moves."
+            return
         }
+
+        // Don't stack solution animations
+        if (isAnimating) return
+
+        // Asking for the solution is a scored miss, not an unrecorded review.
+        // Keep scoringEnabled=true so the puzzle still updates cycle accuracy,
+        // but force all earned points to 0 and break the streak.
+        solutionShown = true
+        scoringEnabled = true
+        earnedPoints = 0
+        madeMistake = true
+
+        // If we were in the "Try Again" choice state, clear it
+        awaitingMistakeChoice = false
+        pendingExpectedUci = null
+
+        status = "Showing solution - this puzzle will score 0/$puzzleTotalPoints."
+
+        // IMPORTANT: run on the Compose scope (Main thread), not GlobalScope
+        scope.launch {
+            // Recompute remaining at the moment we start (session ply might have changed)
+            val remaining = (sess.totalPly - sess.ply).coerceAtLeast(0)
+            val pliesToPlay = minOf(2, remaining)
+
+            repeat(pliesToPlay) {
+                val uci = sess.peekNextMoveUci() ?: return@repeat
+                animateUci(uci)
+            }
+
+            // Wrap up safely if end reached
+            finishIfEndOfGame(sess)
+
+            // If not finished, keep a lightweight review status.
+            if (sess.ply < sess.totalPly && !puzzleOver) {
+                status = "📝 Solution shown: this puzzle will score 0/$puzzleTotalPoints. Continue or tap Next."
+            }
+
+            plyTick++
+        }
+    }
+
+    fun giveUpAndReview() {
+        val sess = session ?: return
+        if (puzzleOver || isAnimating) return
+
+        // Give Up is a scored miss. Keep the normal cycle bookkeeping,
+        // but force the earned score to 0 and break the perfect-run state.
+        solutionShown = true
+        scoringEnabled = true
+        earnedPoints = 0
+        madeMistake = true
+        awaitingMistakeChoice = false
+        pendingExpectedUci = null
+
+        status = "Giving up - showing the solution..."
+
+        scope.launch {
+            // Fast-forward all remaining solution moves, not only the next pair.
+            while (sess.ply < sess.totalPly) {
+                val uci = sess.peekNextMoveUci() ?: break
+                animateUci(uci)
+            }
+
+            // Record this puzzle as 0/total even if a malformed remaining move stopped playback early.
+            finishIfEndOfGame(sess, force = true)
+
+            // Go straight into review mode with the engine on.
+            engineReviewActive = true
+            if (!engineEnabled) {
+                engineEnabled = true
+                startEngineNow()
+            }
+            engineStatus = "thinking..."
+            plyTick++
+        }
+    }
+
+
+
+
+    fun reviewStep(dir: Int) {
+        val s = session ?: return
+        if (!puzzleOver) return
+        if (isAnimating) return
+
+        val maxIndex = if (reviewBranchPly >= 0) {
+            reviewBranchPly + reviewMoves.size
+        } else {
+            s.totalPly
+        }
+
+        val newIndex = when {
+            dir < 0 -> (reviewIndex - 1).coerceAtLeast(0)
+            dir > 0 -> (reviewIndex + 1).coerceAtMost(maxIndex)
+            else -> reviewIndex
+        }
+
+        if (newIndex == reviewIndex) return
+
+        reviewIndex = newIndex
+        rebuildBoardForReview(s)
+        plyTick++
     }
 
     fun isPseudoLegal(uiBoard: Array<Piece?>, from: Int, to: Int, whiteAtBottom: Boolean): Boolean {
@@ -2058,7 +3753,7 @@ fun ReplayScreen(
     }
 
     // Local helper (no visibility modifier inside a function)
-     fun finalizeEndgameResult(
+    fun finalizeEndgameResult(
         b: com.github.bhlangonijr.chesslib.Board,
         lastMoverIsUser: Boolean,
         stopEngine: () -> Unit,
@@ -2068,27 +3763,134 @@ fun ReplayScreen(
         when {
             b.isMated -> {
                 if (lastMoverIsUser) {
-                    setStatus("✅ You win! Checkmate.")
+                    setStatus("[OK] You win! Checkmate.")
                     setResult(EndgameResult.WIN)
                 } else {
                     setStatus("♟️ Fish wins by checkmate.")
                     setResult(EndgameResult.LOSS)
                 }
             }
-            b.isStaleMate -> { setStatus("½–½ Draw by stalemate."); setResult(EndgameResult.DRAW) }
-            b.isInsufficientMaterial -> { setStatus("½–½ Draw by insufficient material."); setResult(EndgameResult.DRAW) }
-            b.isDraw -> { setStatus("½–½ Draw."); setResult(EndgameResult.DRAW) }
+            b.isStaleMate -> { setStatus("1/2-1/2 Draw by stalemate."); setResult(EndgameResult.DRAW) }
+            b.isInsufficientMaterial -> { setStatus("1/2-1/2 Draw by insufficient material."); setResult(EndgameResult.DRAW) }
+            b.isDraw -> { setStatus("1/2-1/2 Draw."); setResult(EndgameResult.DRAW) }
             else -> { setStatus("Game over."); setResult(EndgameResult.DRAW) }
         }
+        // Make sure engine & timer stop once the game is done
         stopEngine()
+        stopWallTimer()          // <--- add this
+        showEndgameSummary = true
     }
 
     // ======================= Endgame: handle user's move + engine reply =======================
 
+    // Shared helper: make TrainerFish play ONE move from the current endgame position
+    fun triggerEndgameEngineMove() {
+        val s = session ?: return
+        if (endgameOver) return
+
+        // Don't start a second engine move while one is already running
+        if (endgameEngineThinking) return
+        endgameEngineThinking = true
+
+        status = "TrainerFish is thinking..."
+        engineEnabled = true
+        engineStatus = "thinking..."
+
+        scope.launch {
+            try {
+                // ❶ Use a proper think time again (~7 seconds)
+                val bm = bestMoveForFen(ctx, s.board.fen, movetimeMs = 7000)
+
+                // If the engine fails, DO NOT declare a draw - just stop and show a message
+                if (bm == null) {
+                    status = "TrainerFish couldn't find a move. Tap Pass to Fish again or Exit."
+                    engineEnabled = false
+                    engineStatus = "Engine: stopped"
+                    return@launch
+                }
+
+                val emv = uciToMoveOnBoard(s.board, bm)
+                val eLegal = emv != null && com.github.bhlangonijr.chesslib.move.MoveGenerator
+                    .generateLegalMoves(s.board)
+                    .any { it == emv }
+
+                if (!eLegal || emv == null) {
+                    status = "TrainerFish couldn't find a legal move from this position."
+                    engineEnabled = false
+                    engineStatus = "Engine: stopped"
+                    return@launch
+                }
+
+                val prettyEngine = prettyFromUci(s.board, bm)
+
+                if (!runCatching { s.board.doMove(emv) }.isSuccess) {
+                    status = "TrainerFish move failed."
+                    engineEnabled = false
+                    engineStatus = "Engine: stopped"
+                    return@launch
+                }
+
+                endgameMoves.add(prettyEngine)
+                plyTick++
+
+                // Finish detection after engine move - ONLY real game end states
+                if (s.board.isMated ||
+                    s.board.isStaleMate ||
+                    s.board.isInsufficientMaterial ||
+                    s.board.isDraw
+                ) {
+                    endgameOver = true
+                    finalizeEndgameResult(
+                        b = s.board,
+                        lastMoverIsUser = false,
+                        stopEngine = {
+                            try { stopEngineNow(setState = true) } catch (_: Throwable) {}
+                        },
+                        setStatus = { msg -> status = msg },
+                        setResult = { r ->
+                            endgameResult = r
+                            engineEnabled = false
+                            engineStatus = "Engine: stopped"
+                            endgameIdx.takeIf { it >= 0 }?.let { markEgPlayed(it) }
+
+                            // Capture elapsed time
+                            val start = endgameStartMs
+                            if (start != null) {
+                                val elapsed = ((SystemClock.elapsedRealtime() - start) / 1000L)
+                                    .toInt()
+                                    .coerceAtLeast(0)
+                                endgameElapsedSec = elapsed
+                            }
+
+                            // Update records (moves + time) for this endgame index
+                            val moves = (endgameMoves.size + 1) / 2
+                            val seconds = (endgameElapsedSec ?: wallElapsedSec).coerceAtLeast(0)
+                            updateEndgameRecords(endgameIdx, moves, seconds)
+                        }
+                    )
+                    return@launch
+                }
+
+                // Engine has just played; now it's the user's turn.
+                // Stop the engine so it is NOT thinking on the user's time.
+                status = "Your move."
+                stopEngineNow(setState = true)
+
+            } finally {
+                // Whatever happens (success, early error, or real game over),
+                // this move cycle is finished.
+                endgameEngineThinking = false
+            }
+        }
+    }
+
+
+
+    // Called from taps / drag releases (user actually makes a move)
     fun performEndgameUserMove(uciFull: String) {
         val s = session ?: return
         if (endgameOver) {
-            status = "Game over — tap Exit."
+            status = "Game over - tap Exit."
             return
         }
 
@@ -2110,7 +3912,7 @@ fun ReplayScreen(
         // Pretty BEFORE mutating board (handles =Q/R/B/N automatically)
         val prettyUser = prettyFromUci(s.board, uciFull)
 
-        // Make sure engine is completely idle while we apply the user move
+        // Make sure engine is idle while we apply the user move
         try { stopEngineNow(setState = false) } catch (_: Throwable) {}
 
         // Apply user's move
@@ -2121,6 +3923,17 @@ fun ReplayScreen(
         }
         endgameMoves.add(prettyUser)
         plyTick++
+
+        // Save a "resume point" for Endgame: after the user's last move.
+        // This matches the desired cold-start behavior (restore move line + position, then Fish can reply).
+        runCatching {
+            lastSession.hasResume = true
+            lastSession.modeName = TrainerMode.ENDGAME.name
+            lastSession.endgameIndex = endgameIdx
+            lastSession.endgameFen = s.board.fen
+            lastSession.endgameSanJson = encodeSanPathToJson(endgameMoves)
+        }
+
 
         // Check if the game already finished after user's move
         if (s.board.isMated || s.board.isStaleMate || s.board.isInsufficientMaterial || s.board.isDraw) {
@@ -2134,89 +3947,217 @@ fun ReplayScreen(
                     endgameResult = r
                     engineEnabled = false
                     engineStatus = "TrainerFish: stopped"
-                    showEndgameVerdict = false
                     endgameIdx.takeIf { it >= 0 }?.let { markEgPlayed(it) }
+
+                    // Capture elapsed time
+                    val start = endgameStartMs
+                    if (start != null) {
+                        val elapsed = ((SystemClock.elapsedRealtime() - start) / 1000L)
+                            .toInt()
+                            .coerceAtLeast(0)
+                        endgameElapsedSec = elapsed
+                    }
+
+                    // Update records (moves + time) for this endgame index
+                    val moves = (endgameMoves.size + 1) / 2
+                    val seconds = (endgameElapsedSec ?: wallElapsedSec).coerceAtLeast(0)
+                    updateEndgameRecords(endgameIdx, moves, seconds)
+
+                    showEndgameSummary = true
                 }
             )
             return
         }
 
-        // Now it's Fish's turn.
-        status = "TrainerFish is thinking…"
-        engineEnabled = true
-        engineStatus = "TrainerFish: thinking…"
+        // Now it's Fish's turn (normal reply after user's move)
+        triggerEndgameEngineMove()
+    }
 
-        scope.launch {
-            // Single 5-second search to get the engine's move.
-            val bm = bestMoveForFen(ctx, s.board.fen, movetimeMs = 5_000)
-
-            if (bm == null) {
-                // Treat as engine failure, but don't adjudicate the game.
-                try { stopEngineNow(setState = false) } catch (_: Throwable) {}
-                engineEnabled = false
-                engineStatus = "Engine: error"
-                status = "Engine error — you can keep playing or tap Back."
-                return@launch
-            }
-
-            val emv = uciToMoveOnBoard(s.board, bm)
-            val eLegal = emv != null && com.github.bhlangonijr.chesslib.move.MoveGenerator
-                .generateLegalMoves(s.board).any { it == emv }
-
-            if (!eLegal) {
-                try { stopEngineNow(setState = false) } catch (_: Throwable) {}
-                engineEnabled = false
-                engineStatus = "TrainerFish: error"
-                status = "Engine failed to find a legal move — you can keep playing or tap Back."
-                return@launch
-            }
-
-            // Apply engine move
-            s.board.doMove(emv)
-            val prettyEngine = prettyFromUci(s.board, bm)
-            endgameMoves.add(prettyEngine)
-            plyTick++
-
-            // Check result after engine move
-            if (s.board.isMated || s.board.isStaleMate || s.board.isInsufficientMaterial || s.board.isDraw) {
-                endgameOver = true
-                finalizeEndgameResult(
-                    b = s.board,
-                    lastMoverIsUser = false,
-                    stopEngine = { try { stopEngineNow(setState = true) } catch (_: Throwable) {} },
-                    setStatus = { msg -> status = msg },
-                    setResult = { r ->
-                        endgameResult = r
-                        engineEnabled = false
-                        engineStatus = "TrainerFish: stopped"
-                        showEndgameVerdict = false
-                        endgameIdx.takeIf { it >= 0 }?.let { markEgPlayed(it) }
-                    }
-                )
-            } else {
-                // Engine move done; turn engine OFF again and hand the move back to the user.
-                try { stopEngineNow(setState = false) } catch (_: Throwable) {}
-                engineEnabled = false
-                engineStatus = "Your move."
-                status = "Your move."
-            }
+    fun tacticsReviewPromotionSuffix(mv: com.github.bhlangonijr.chesslib.move.Move): Char? {
+        val promo = mv.promotion
+        if (promo == null || promo == com.github.bhlangonijr.chesslib.Piece.NONE) return null
+        return when (promo.pieceType) {
+            com.github.bhlangonijr.chesslib.PieceType.QUEEN -> 'q'
+            com.github.bhlangonijr.chesslib.PieceType.ROOK -> 'r'
+            com.github.bhlangonijr.chesslib.PieceType.BISHOP -> 'b'
+            com.github.bhlangonijr.chesslib.PieceType.KNIGHT -> 'n'
+            else -> null
         }
     }
 
+    fun tacticsReviewPromotionLabel(suffix: Char): String = when (suffix) {
+        'q' -> "Queen"
+        'r' -> "Rook"
+        'b' -> "Bishop"
+        'n' -> "Knight"
+        else -> "Piece"
+    }
+
+    fun legalTacticsReviewMovesForSquares(
+        from: String,
+        to: String
+    ): List<com.github.bhlangonijr.chesslib.move.Move> {
+        val s = session ?: return emptyList()
+        val fromSq = runCatching {
+            com.github.bhlangonijr.chesslib.Square.valueOf(from.uppercase())
+        }.getOrNull() ?: return emptyList()
+        val toSq = runCatching {
+            com.github.bhlangonijr.chesslib.Square.valueOf(to.uppercase())
+        }.getOrNull() ?: return emptyList()
+
+        return runCatching {
+            com.github.bhlangonijr.chesslib.move.MoveGenerator
+                .generateLegalMoves(s.board)
+                .filter { mv -> mv.from == fromSq && mv.to == toSq }
+        }.getOrElse { emptyList() }
+    }
+
+    fun commitTacticsReviewMove(fromIdx: Int, toIdx: Int, uciRaw: String) {
+        val s = session ?: return
+        val uci = uciRaw.lowercase()
+
+        val mv = runCatching { uciToMoveOnBoard(s.board, uci) }.getOrNull()
+        val legal = mv != null && runCatching { s.board.isMoveLegal(mv, true) }.getOrDefault(false)
+        if (!legal) {
+            status = "Illegal move."
+            return
+        }
+
+        lastFrom = fromIdx
+        lastTo = toIdx
+
+        // If no branch yet AND user played the next PGN move at this position, stay on PGN line.
+        // Promotion moves must match the full UCI when the PGN move includes a promotion suffix.
+        val expected = if (s.ply < s.totalPly) s.peekNextMoveUci()?.lowercase() else null
+        val matchesNextPgn = expected != null && expected.length >= 4 && (
+                if (expected.length >= 5) uci == expected else uci.startsWith(expected.take(4))
+                )
+
+        if (reviewBranchPly < 0 && matchesNextPgn) {
+            // Advance PGN (keeps ply counters consistent)
+            if (s.next()) {
+                reviewIndex = s.ply.coerceIn(0, s.totalPly)
+                plyTick++
+            }
+            return
+        }
+
+        // Otherwise: branch (or continue branching) starting at the CURRENT ply.
+        if (reviewBranchPly < 0) {
+            reviewBranchPly = s.ply
+        } else {
+            // If user navigated back before the previous branch point, restart branch here.
+            if (s.ply < reviewBranchPly) {
+                reviewBranchPly = s.ply
+                reviewMoves = emptyList()
+            }
+        }
+
+        // Replace the continuation from the current reviewIndex onward.
+        val offset = (reviewIndex - reviewBranchPly).coerceAtLeast(0)
+        reviewMoves = reviewMoves.take(offset) + uci
+
+        // Move to the end of the new line.
+        reviewIndex = reviewBranchPly + reviewMoves.size
+
+        // Rebuild board deterministically from start + line.
+        rebuildBoardForReview(s)
+        plyTick++
+    }
 
     fun tryUserMove(fromIdx: Int, toIdx: Int) {
+
         try {
             if (fromIdx !in 0..63 || toIdx !in 0..63) return
             val s = session ?: return
-            if (isAnimating) return
 
-            // Only block taps after a finished puzzle in Tactics mode.
+            // FULL REVIEW MODE (Tactics): after puzzle is over, allow legal moves + hybrid navigation line
             if (mode == TrainerMode.WOODPECKER && puzzleOver) {
-                // Already finished (e.g. via mate override); ignore extra taps.
+                if (pendingTacticsReviewPromotionFromTo != null) {
+                    status = "Choose a piece to promote to..."
+                    return
+                }
+
+                val from = idxToUci(fromIdx, whiteBottom)
+                val to   = idxToUci(toIdx,   whiteBottom)
+                if (from == to) return
+
+                val legalMoves = legalTacticsReviewMovesForSquares(from, to)
+                if (legalMoves.isEmpty()) {
+                    status = "Illegal move."
+                    return
+                }
+
+                val promotionMoves = legalMoves.filter { mv -> tacticsReviewPromotionSuffix(mv) != null }
+                if (promotionMoves.size > 1) {
+                    pendingTacticsReviewPromotionFromTo = fromIdx to toIdx
+                    selectedSq = null
+                    status = "Choose a piece to promote to..."
+                    return
+                }
+
+                val chosenMove = promotionMoves.firstOrNull() ?: legalMoves.first()
+                val suffix = tacticsReviewPromotionSuffix(chosenMove)?.toString().orEmpty()
+                val uci = (from + to + suffix).lowercase()
+
+                commitTacticsReviewMove(fromIdx, toIdx, uci)
                 return
             }
 
+
+            if (isAnimating) return
+
+            // Tactics: if the user has a pending mistake, allow two flows:
+            //  1) Tap "Try Again" / "Show Solution".
+            //  2) Directly try another move on the board (implicit "Try Again").
+            if (mode == TrainerMode.WOODPECKER && awaitingMistakeChoice) {
+                awaitingMistakeChoice = false
+                // Keep status quiet; the subsequent legality/strength checks will set feedback.
+            }
+
+            // Endgame: only allow moves when it's actually the user's turn
+            if (mode == TrainerMode.ENDGAME) {
+                if (endgameOver) {
+                    status = "Game over - tap Exit."
+                    return
+                }
+
+
+                val whiteToMove = (s.board.sideToMove == com.github.bhlangonijr.chesslib.Side.WHITE)
+                val userToMove =
+                    (endgameUserIsWhite && whiteToMove) ||
+                            (!endgameUserIsWhite && !whiteToMove)
+
+                if (!userToMove) {
+                    status = if (endgameEngineThinking || engineEnabled)
+                        "Wait for TrainerFish's move."
+                    else
+                        "It's not your turn."
+                    feedback.wrong()
+                    return
+                }
+            }
+
             val userUci = idxToUci(fromIdx, whiteBottom) + idxToUci(toIdx, whiteBottom)
+
+            // [OK] Wrong-side move guard: if the piece moved is NOT the side-to-move, it's illegal
+            run {
+                val fromStr = idxToUci(fromIdx, whiteBottom)
+                val fromSq = try { com.github.bhlangonijr.chesslib.Square.valueOf(fromStr.uppercase()) } catch (_: Throwable) { null }
+                val piece = try { if (fromSq != null) s.board.getPiece(fromSq) else null } catch (_: Throwable) { null }
+                val stm = s.board.sideToMove // Side.WHITE / Side.BLACK
+
+                // If there's no piece, or it's not the side to move, treat as illegal immediately.
+                if (piece == null || piece == com.github.bhlangonijr.chesslib.Piece.NONE) {
+                    status = "Illegal move."
+                    return
+                }
+                if (piece.pieceSide != stm) {
+                    status = "Illegal move."
+                    return
+                }
+            }
+
 
             // Remember last move for yellow highlight
             lastFrom = fromIdx
@@ -2224,16 +4165,15 @@ fun ReplayScreen(
 
             // --- Endgame Trainer: promotion-first, then legality in performEndgameUserMove ---
             if (mode == TrainerMode.ENDGAME) {
+                // First move automatically starts engine mode
                 if (!endgamePlaying) {
-                    status = "Tap Play position to start."
-                    feedback.wrong()
-                    endgamePlayHint = true      // ⟵ start blinking
-                    return
+                    endgamePlaying = true
+                    endgameStartMs = SystemClock.elapsedRealtime()
                 }
 
                 val s = session ?: return
-                if (endgameOver) { status = "Game over — tap Exit."; return }
-                if (pendingPromotionUci != null) { status = "Choose a piece to promote to…"; return }
+                if (endgameOver) { status = "Game over - tap Exit."; return }
+                if (pendingPromotionUci != null) { status = "Choose a piece to promote to..."; return }
 
                 val from = idxToUci(fromIdx, whiteBottom)
                 val to   = idxToUci(toIdx,   whiteBottom)
@@ -2251,13 +4191,12 @@ fun ReplayScreen(
                 if (piece?.pieceType == com.github.bhlangonijr.chesslib.PieceType.PAWN && lastRank) {
                     // Ask user; legality will be checked after they choose the piece
                     pendingPromotionUci = uciBase
-                    status = "Choose a piece to promote to…"
+                    status = "Choose a piece to promote to..."
                     return
                 }
 
-                // Not a promotion → proceed (performEndgameUserMove internally checks legality)
+                // Not a promotion -> proceed (performEndgameUserMove internally checks legality)
                 performEndgameUserMove(uciBase)
-                endgamePlayHint = false
                 endgamePlaying = true
 
                 return
@@ -2274,34 +4213,12 @@ fun ReplayScreen(
             val expected = s.peekNextMoveUci()?.lowercase() ?: ""
             val okPrefix = expected.length >= 4 && userUci.startsWith(expected.take(4))
 
-// NEW: special case – last move & user delivers checkmate
+            // NEW: special case - last move & user delivers checkmate
             val isLastMove = (s.totalPly > 0 && s.ply == s.totalPly - 1)
             var mateOverride = false
+            var mateOverrideMove: com.github.bhlangonijr.chesslib.move.Move? = null
 
-            if (!okPrefix && isLastMove) {
-                // Try to interpret the user's move on the REAL chesslib board
-                val mv = uciToMoveOnBoard(s.board, userUci)
-                if (mv != null) {
-                    val legal = com.github.bhlangonijr.chesslib.move.MoveGenerator
-                        .generateLegalMoves(s.board)
-                        .any { it == mv }
-
-                    if (legal) {
-                        // Work on a temporary board so we don't mutate the session state
-                        val tmp = com.github.bhlangonijr.chesslib.Board()
-                        tmp.loadFromFen(s.board.fen)
-                        tmp.doMove(mv)
-
-                        if (tmp.isMated) {
-                            // ✔ Any mating move on the final ply is accepted,
-                            // even if it doesn't match the official solution.
-                            mateOverride = true
-                        }
-                    }
-                }
-            }
-
-// Keep the "Illegal move" feedback, unless we’re in the mate override path
+            // Keep the "Illegal move" feedback, unless we're in the mate override path
             if (!okPrefix && !mateOverride) {
                 val orientedBoard = run {
                     val base = boardToUiPieces(s.board)
@@ -2313,21 +4230,44 @@ fun ReplayScreen(
                 }
             }
 
+            // If this is the final ply and the user played a different *legal* move
+            // that still delivers checkmate, accept it as an alternative solution.
+            if (!okPrefix && isLastMove && !mateOverride) {
+                try {
+                    val mv = uciToMoveOnBoard(s.board, userUci)
+                    if (mv != null) {
+                        val probe = com.github.bhlangonijr.chesslib.Board()
+                        probe.loadFromFen(s.board.fen)
+                        probe.doMove(mv)
+
+                        if (probe.isMated) {
+                            mateOverride = true
+                            mateOverrideMove = mv
+                        }
+                    }
+                } catch (_: Throwable) {
+                    // If anything goes wrong, just fall back to the normal behavior.
+                }
+            }
+
             when {
-                // 1) Normal “matches PGN” correct move
+                // 1) Normal "matches PGN" correct move
                 okPrefix -> {
+                    awaitingMistakeChoice = false
+                    pendingExpectedUci = null
                     if (s.next()) {
-                        if (scoringEnabled) earnedPoints += 10
+                        if (scoringEnabled && !solutionShown) earnedPoints += 10
                         feedback.correct()
-                        stopTurnTimer()
+
+                        status = "Very good! Find the follow up."
                         scope.launch {
                             if (s.ply < s.totalPly) {
                                 s.peekNextMoveUci()?.let { animateUci(it) }
                             }
-                            if (s.ply >= s.totalPly) status = "✅ Correct!"
+                            if (s.ply >= s.totalPly) status = "[OK] Correct!"
                             finishIfEndOfGame(s)
-                            if (s.ply < s.totalPly) resetTurnTimer()
                         }
+
                         plyTick++
                     } else {
                         status = s.lastError ?: "Could not advance."
@@ -2336,49 +4276,45 @@ fun ReplayScreen(
 
                 // 2) Mate override: user found a different mate-in-1 on the final ply
                 mateOverride -> {
-                    if (scoringEnabled) earnedPoints += 10
+                    awaitingMistakeChoice = false
+                    pendingExpectedUci = null
+                    if (scoringEnabled && !solutionShown) earnedPoints += 10
                     feedback.correct()
-                    stopTurnTimer()
 
-                    status = "✅ Checkmate!"
+                    // Visually apply the user's checkmating move on the main board
+                    try {
+                        val mv = mateOverrideMove ?: uciToMoveOnBoard(s.board, userUci)
+                        if (mv != null) {
+                            s.board.doMove(mv)
+                        }
+                    } catch (_: Throwable) {
+                        // If anything goes wrong, we still count the puzzle as solved;
+                        // the board will just remain in the pre-move state.
+                    }
+
+                    status = "[OK] Checkmate!"
                     finishIfEndOfGame(s, force = true)
                     // No next move, so no timer restart.
                     plyTick++
-
                 }
 
                 // 3) Wrong move
                 else -> {
-                    // ❌ No more shield logic — a wrong move is simply a mistake
+                    // 3) Wrong move:
+                    // Do NOT auto-play the solution. Let the user choose: Try Again or Show Solution.
                     madeMistake = true
+                    if (scoringEnabled) mistakePenalty += 10
                     feedback.wrong()
-                    stopTurnTimer()
 
-                    scope.launch {
-                        val pretty = if (expected.isNotEmpty()) expected else "?"
-                        status = "❌ Not quite. The correct move is $pretty."
+                    awaitingMistakeChoice = true
+                    pendingExpectedUci = expected
 
-                        // Show the correct move (or step through if we only have prefix)
-                        if (expected.length >= 4) {
-                            animateUci(expected)
-                        } else if (s.next()) {
-                            plyTick++
-                        }
-
-                        // Optionally show the next move too, like before
-                        if (s.ply < s.totalPly) {
-                            s.peekNextMoveUci()?.let { animateUci(it) }
-                        }
-
-                        finishIfEndOfGame(s)
-
-                        if (s.ply < s.totalPly) {
-                            status = "Your turn again."
-                            resetTurnTimer()
-                        }
-                    }
+                    status = "Your move is not the strongest in the position."
                 }
+
+
             }
+
 
         } catch (t: Throwable) {
             status = "Move error: ${t.javaClass.simpleName}"
@@ -2389,24 +4325,56 @@ fun ReplayScreen(
         }
     }
 
-    LaunchedEffect(autoStart, series, showFirstRun, showWelcome, loading) {
-        // While Tour/Welcome is up OR we’re busy loading/preparing, do absolutely nothing.
-        if (showFirstRun || showWelcome || loading) return@LaunchedEffect
 
-        // Only nudge to Welcome when the screen is truly idle.
-        if (autoStart && games.isEmpty() && session == null) {
-            showWelcome = true
-        }
+
+
+    val pendingTacticsReviewPromotionChoice = pendingTacticsReviewPromotionFromTo
+    if (pendingTacticsReviewPromotionChoice != null) {
+        val promoFromIdx = pendingTacticsReviewPromotionChoice.first
+        val promoToIdx = pendingTacticsReviewPromotionChoice.second
+        val promoFrom = idxToUci(promoFromIdx, whiteBottom)
+        val promoTo = idxToUci(promoToIdx, whiteBottom)
+        val promotionOrder = listOf('q', 'r', 'b', 'n')
+        val promotionChoices = legalTacticsReviewMovesForSquares(promoFrom, promoTo)
+            .mapNotNull { mv ->
+                tacticsReviewPromotionSuffix(mv)?.let { suffix ->
+                    suffix to tacticsReviewPromotionLabel(suffix)
+                }
+            }
+            .distinctBy { it.first }
+            .sortedBy { choice ->
+                promotionOrder.indexOf(choice.first).let { if (it < 0) 99 else it }
+            }
+
+        val stm = session?.board?.sideToMove ?: com.github.bhlangonijr.chesslib.Side.WHITE
+        ReplayTacticsReviewPromotionDialog(
+            show = true,
+            promotionChoices = promotionChoices,
+            whiteTurn = stm == com.github.bhlangonijr.chesslib.Side.WHITE,
+            onDismiss = {
+                pendingTacticsReviewPromotionFromTo = null
+                selectedSq = null
+            },
+            onChoose = { suffix ->
+                pendingTacticsReviewPromotionFromTo = null
+                selectedSq = null
+                commitTacticsReviewMove(
+                    promoFromIdx,
+                    promoToIdx,
+                    (promoFrom + promoTo + suffix).lowercase()
+                )
+            }
+        )
     }
 
     // Pause timer on background, resume on return
-    val lifecycleOwner = LocalLifecycleOwner.current
+    var lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_PAUSE -> {
-                    // If a turn timer were running, just stop it; we don't track “remaining seconds”.
-                    stopTurnTimer()
+                    // If a turn timer were running, just stop it; we don't track "remaining seconds".
+
                 }
                 Lifecycle.Event.ON_RESUME -> {
                     // Friendly status only; no countdown restore.
@@ -2420,83 +4388,150 @@ fun ReplayScreen(
         onDispose { lc.removeObserver(observer) }
     }
 
-    fun formatHms(ms: Long): String {
-        val sec = (ms / 1000).toInt()
-        val h = sec / 3600
-        val m = (sec % 3600) / 60
-        val s = sec % 60
-        return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%02d:%02d".format(m, s)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    runCatching {
+                        // --- global resume info ---
+                        lastSession.hasResume = true
+                        lastSession.seriesId = series.id
+                        lastSession.modeName = mode.name
+                        lastSession.activeCycleId = activeCycleId
+                        lastSession.poolPos = currentIndex.coerceAtLeast(0)
+                        lastSession.endgameIndex = endgameIdx
+
+                        // --- Endgame resume (up to last USER move)
+                        // These are updated live on each user move, but we also save whatever we have on stop.
+                        if (lastSession.endgameFen.isBlank()) {
+                            // If we haven't captured a user-last state yet, fall back to current.
+                            lastSession.endgameFen = session?.board?.fen.orEmpty()
+                        }
+                        if (lastSession.endgameSanJson.isBlank() || lastSession.endgameSanJson == "[]") {
+                            lastSession.endgameSanJson = encodeSanPathToJson(endgameMoves)
+                        }
+
+                        // --- Beat-the-Fish resume ---
+                        if (beatFishFen.isNotBlank()) {
+                            lastSession.beatFishFen = beatFishFen
+                        }
+
+                        // --- Opening mid-line ---
+                        lastSession.openingSanJson = "[]"
+                        lastSession.openingPly = 0
+                    }
+                }
+                else -> Unit
+            }
+        }
+
+        val lc = lifecycleOwner.lifecycle
+        lc.addObserver(observer)
+        onDispose { lc.removeObserver(observer) }
     }
+
 
     fun continueCycleNow(onDone: () -> Unit = {}) {
-        // Continue whatever the active cycle is
-        val pf  = cycles.prefs(cycles.activeId)
-        val ids = pf.poolAbsCsv.split(',')
-            .mapNotNull { it.trim().toIntOrNull() }
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                // Use currently selected cycle prefs. The Continue card should already
+                // assign prefs to the selected cycle before this function is called.
+                val pf = prefs
+                val targetSlots = cycleTargetSizeForPrefs(pf)
+                val th = pf.lastTheme.ifBlank { "All" }
+                val minR = pf.lastMin.takeIf { it > 0 }
+                val maxR = pf.lastMax.takeIf { it > 0 }
 
-        // Nothing saved for this cycle
-        if (ids.isEmpty()) {
-            onDone()
-            return
-        }
+                var ids = readCycleIdsFromPrefs(pf)
 
-        // NOTE: we no longer set `loading = true` here.
-        // That means the LoadingGalleryDialog is NOT shown
-        // when simply continuing an existing cycle.
-
-        GlobalScope.launch {
-            val exact = withContext(Dispatchers.IO) {
-                loadGamesByIndexes(
-                    context = context,
-                    resId   = series.rawRes,
-                    indexes = ids
-                )
-            }
-
-            withContext(Dispatchers.Main) {
-                if (exact.isNotEmpty()) {
-                    games = exact
-                    prefs = pf                // bind gameplay to this cycle
-                    prefs.size = exact.size
-                    ensurePoolSize(
-                        totalGames    = exact.size,
-                        requestedSize = exact.size
-                    )
-                    // Jump straight to the next puzzle
-                    nextIndexFromPool()?.let { loadGameAt(it) }
+                if (ids.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        showWelcome = true
+                        status = "No saved cycle to continue."
+                        onDone()
+                    }
+                    return@launch
                 }
 
-                // Leave `loading` alone so the gallery doesn't appear
-                showWelcome = false
-                onDone()
+                // Only committed IDs become playable slots.
+                writeCommittedCycleIds(pf, ids, targetSlots)
+
+                val solved = csvToSet(pf.solvedCsv)
+                var nextSlot = (0 until ids.size.coerceAtMost(targetSlots)).firstOrNull { it !in solved }
+
+                // If the user solved all committed slots but the target cycle is not full,
+                // top up just enough to create the next real slot.
+                if (nextSlot == null && ids.size < targetSlots) {
+                    ids = ensureCommittedSlot(
+                        pf = pf,
+                        wantedSlot = ids.size,
+                        theme = th,
+                        minRating = minR,
+                        maxRating = maxR,
+                        targetSize = targetSlots
+                    )
+                    nextSlot = (0 until ids.size.coerceAtMost(targetSlots)).firstOrNull { it !in solved }
+                }
+
+                if (nextSlot == null) {
+                    withContext(Dispatchers.Main) {
+                        prefs = pf
+                        loadedTacticsAbsIds = ids
+                        games = emptyList()
+                        lazyTacticsGameCache.clear()
+                        showWelcome = false
+                        showCycleComplete = true
+                        status = "Cycle complete."
+                        onDone()
+                    }
+                    return@launch
+                }
+
+                val nextGame = ids.getOrNull(nextSlot)?.let { encodedId ->
+                    runCatching { loadGamesFast(context, listOf(encodedId)).firstOrNull() }.getOrNull()
+                }
+
+                withContext(Dispatchers.Main) {
+                    prefs = pf
+                    loadedTacticsAbsIds = ids
+                    lazyTacticsGameCache.clear()
+                    games = emptyList()
+                    currentIndex = nextSlot
+
+                    if (nextGame != null) {
+                        lazyTacticsGameCache[nextSlot] = nextGame
+                        loadGameAt(nextSlot)
+                        showWelcome = false
+                        status = "Trainer - continue cycle."
+                        startBackgroundCycleFill(pf, th, minR, maxR, targetSlots)
+                    } else {
+                        showWelcome = true
+                        status = "Could not load the next puzzle. Please define a new cycle."
+                    }
+
+                    onDone()
+                }
+            } catch (t: Throwable) {
+                withContext(Dispatchers.Main) {
+                    showWelcome = true
+                    status = "TrainerFish had trouble restoring your last cycle. Please define a new cycle."
+                    onDone()
+                }
             }
         }
     }
 
-    fun handleOpeningBack() {
-        // Only if there’s at least one move in the path
-        if (openingSanPath.isNotEmpty()) {
-
-            // 1) Remove last SAN from the path
-            openingSanPath.removeAt(openingSanPath.lastIndex)
-
-            // 2) Rebuild the board from START_FEN and replay remaining moves
-            openingBoard.loadFromFen(START_FEN)
-            for (san in openingSanPath) {
-                val mv = sanToLegalMove(openingBoard, san) ?: break
-                openingBoard.doMove(mv)
+    LaunchedEffect(autoContinueCycle) {
+        if (autoContinueCycle) {
+            mode = TrainerMode.WOODPECKER
+            preparing = true
+            loading = true
+            continueCycleNow {
+                loading = false
+                preparing = false
             }
-
-            // 3) Update derived state
-            openingFen = openingBoard.fen
-            openingPly = openingSanPath.size
-
-            // 4) Clear last-move highlight
-            lastFrom = null
-            lastTo = null
         }
     }
-
 
 
     // ----------------- UI SECTION -----------------
@@ -2510,1278 +4545,466 @@ fun ReplayScreen(
     ) {
         // Show loading dialog (overlay) when preparing cycle
 
-        ReplayLoadingOverlay(loading = loading)
+        // Do not show the full loading gallery in Tactics; the Cycle Manager stays on screen.
+        // Loading gallery removed from ReplayScreen; status/progress remains in dialogs.
+
+        // Build the text shown in the top center strip (between the icons)
+        val centerLabel: String = when (mode) {
+
+            // TACTICS (WOODPECKER)
+            TrainerMode.WOODPECKER -> {
+                val rating = current?.rating
+
+                when {
+                    // Finished puzzle
+                    goodJobNow -> "Puzzle solved • Elo $userElo"
+
+                    // Engine is on (but we do NOT show engine output in the top bar; keep it branded)
+                    engineEnabled -> "Trainer Fish • Elo $userElo"
+
+                    // No engine -> show the user's live rating, with puzzle rating as context.
+                    rating != null -> "Elo: $userElo • Puzzle $rating"
+
+                    else -> "Elo: $userElo"
+                }
+            }
+
+            // ENDGAME
+            TrainerMode.ENDGAME -> {
+                when (endgameResult) {
+                    EndgameResult.WIN  -> "You Win!"
+                    EndgameResult.LOSS -> "Fish Wins"
+                    EndgameResult.DRAW -> "Draw"
+
+                    // No result yet
+                    // No result yet
+                    null -> {
+                        val s = session
+                        if (s != null && !endgameOver) {
+                            val whiteToMove =
+                                (s.board.sideToMove == com.github.bhlangonijr.chesslib.Side.WHITE)
+
+                            val userToMove =
+                                (endgameUserIsWhite && whiteToMove) ||
+                                        (!endgameUserIsWhite && !whiteToMove)
+
+                            if (!userToMove && engineEnabled) "Thinking"
+                            else "Your move."
+                        } else {
+                            "Your move."
+                        }
+                    }
+
+                }
+            }
+
+            // OPENING: keep center branded (eval already lives on right side)
+            TrainerMode.OPENING -> "Trainer Fish"
+
+            // Beat-the-Fish or anything else: show app name for screenshots/shares
+            else -> "Trainer Fish"
+		}
+
 
         // Top control strip: Mute | center label | Brain + Exit (offline)
-        ReplayTopBar(
-            mode = mode,
-            iconOnlyTopBar = iconOnlyTopBar,
-            soundOn = soundOn,
-            engineEnabled = engineEnabled,
-            endgameResult = endgameResult,
-            engineStatus = engineStatus,
-            goodJobNow = goodJobNow,
-            nickname = nickname,
-            onToggleSound = {
-                soundOn = !soundOn
-                prefs.soundOn = soundOn
-            },
-            onToggleEngine = {
+        // ---- Mode switch actions (used by the header Mode menu) ----
+        val selectTactics: () -> Unit = {
+            if (mode == TrainerMode.WOODPECKER) {
+                // Already in Tactics: reopen the Cycle Manager / Training Planner
+                // without rebuilding the screen or touching the current fast cycle state.
+                loading = false
+                preparing = false
+                showWelcome = true
+                status = "Trainer - choose a cycle or continue."
+            } else {
+
+                endgameLoadJob?.cancel()
+                endgameLoadJob = null
+                loading = false
+                preparing = false
                 try { evalJob?.cancel() } catch (_: Throwable) {}
-                if (engineEnabled) {
-                    stopEngineNow(setState = true)
-                    engineEnabled = false
-                    status = "TrainerFish: off"
+                stopEngineNow(setState = true)
+                engineEnabled = false
+                endgamePlaying = false
+                engineStatus = "TrainerFish: OFF"
+                lastSession.openingSanJson = "[]"
+                lastSession.openingPly = 0
+                lastSession.modeName = TrainerMode.WOODPECKER.name
+
+                mode = TrainerMode.WOODPECKER
+
+                val hasActiveSession =
+                    session != null &&
+                            current != null &&
+                            currentIndex >= 0
+
+                val restoredFromSnapshot =
+                    if (!hasActiveSession) {
+                        restoreTacticsFromSnapshot(
+                            onRestore = { g, s, cur, idx, wb ->
+                                games = g
+                                session = s
+                                current = cur
+                                currentIndex = idx
+                                whiteBottom = wb
+                            },
+                            onAfterRestore = {
+                                // No welcome / gallery - go straight to the board
+                                showWelcome = false
+                                status = "Trainer - continue cycle."
+                            }
+                        )
+                    } else false
+
+                if (hasActiveSession || restoredFromSnapshot) {
+                    showWelcome = false
+                    status = "Trainer - continue cycle."
                 } else {
-                    startEngineNow()
-                    engineEnabled = true
-                    status = "TrainerFish: on"
+                    showWelcome = true
+                    status = "Trainer - choose a cycle or continue."
                 }
-                plyTick++ // force a quick redraw
-            },
-            onOpenSettings = {
-                showSettings = true
-                status = "Settings"
-            },
-            onExitRequested = {
-                showExitConfirm = true
             }
-        )
-
-
-        // Top eval line: keep for Tactics, hide for Opening & Endgame
-        if (mode == TrainerMode.WOODPECKER) {
-            Text(
-                text = engineStatus,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(top = 4.dp)
-            )
         }
 
-        ReplayModeChips(
-            mode = mode,
-            openingLoading = openingLoading,
-            onSelectTactics = {
-                if (mode != TrainerMode.WOODPECKER) {
-                    try { evalJob?.cancel() } catch (_: Throwable) {}
-                    stopEngineNow(setState = true)
-                    engineEnabled = false
-                    endgamePlaying = false
-                    engineStatus = "TrainerFish: OFF"
-                    mode = TrainerMode.WOODPECKER
+        val selectEndgame: () -> Unit = {
+            if (mode != TrainerMode.ENDGAME) {
 
-                    val hasActiveSession =
-                        session != null &&
-                                current != null &&
-                                currentIndex >= 0
-
-                    val restoredFromSnapshot =
-                        if (!hasActiveSession) restoreTacticsFromSnapshot() else false
-
-                    if (hasActiveSession || restoredFromSnapshot) {
-                        showWelcome = false
-                        status = "Trainer – continue cycle."
-                    } else {
-                        showWelcome = true
-                        status = "Trainer – choose a cycle or continue."
-                    }
+                // If we are leaving Tactics, remember where we were
+                if (mode == TrainerMode.WOODPECKER) {
+                    saveTacticsSnapshot(
+                        games = games,
+                        session = session,
+                        current = current,
+                        currentIndex = currentIndex,
+                        whiteBottom = whiteBottom
+                    )
                 }
-            },
-            onSelectEndgame = {
-                if (mode != TrainerMode.ENDGAME) {
+                lastSession.openingSanJson = "[]"
+                lastSession.openingPly = 0
+                lastSession.modeName = TrainerMode.ENDGAME.name
 
-                    // If we are leaving Tactics, remember where we were
-                    if (mode == TrainerMode.WOODPECKER) {
-                        saveTacticsSnapshot()
-                    }
+                mode = TrainerMode.ENDGAME
 
-                    mode = TrainerMode.ENDGAME
+                // wipe any tactics (puzzle) session UI state
+                session = null
+                current = null
+                currentIndex = -1
 
-                    // wipe any tactics (puzzle) session UI state
-                    session = null
-                    current = null
-                    currentIndex = -1
-
-                    // make sure the generic (tactics) eval loop is not running
-                    try { evalJob?.cancel() } catch (_: Throwable) {}
-                    evalJob = null
-                    stopEngineNow(setState = true)
-                    engineEnabled = false   // will become true on first endgame selection
-                }
-            },
-            onSelectOpening = {
-                if (mode != TrainerMode.OPENING) {
-
-                    // Leaving Tactics? Save its state first.
-                    if (mode == TrainerMode.WOODPECKER) {
-                        saveTacticsSnapshot()
-                    }
-
-                    try { evalJob?.cancel() } catch (_: Throwable) {}
-                    stopEngineNow(setState = true)
-                    engineEnabled = false
-
-                    mode = TrainerMode.OPENING
-
-                    // Are we already holding THIS pack (e4 / d4 / others) in memory?
-                    val alreadyLoaded =
-                        BinaryOpeningBook.isLoaded &&
-                                BinaryOpeningBook.currentPack == openingPack
-
-                    openingReady   = alreadyLoaded
-                    openingLoading = !alreadyLoaded
-
-                    status = if (!alreadyLoaded)
-                        "Loading opening book…"
-                    else
-                        "Opening explorer — tap a move below"
-
-                    if (!alreadyLoaded) {
-                        scope.launch {
-                            status = "Loading opening book…"
-                            try {
-                                // load the correct split book (e4 / d4 / others)
-                                BinaryOpeningBook.loadIfNeeded(
-                                    context = context,
-                                    pack    = openingPack
-                                )
-                                openingReady = true
-                                status = "Opening explorer — tap a move below"
-                            } catch (t: Throwable) {
-                                status = "Failed to load opening book: ${t.message}"
-                            }
-                            openingReset()
-                            openingLoading = false
-                        }
-                    } else {
-                        // already in memory, just reset view
-                        openingReset()
-                    }
-                }
-            }
-        )
-
-
-        // ===== Endgame Trainer UI =====
-
-        // Ensure we have the labels list when entering Endgame, and keep tactics eval off
-        LaunchedEffect(mode) {
-            if (mode == TrainerMode.ENDGAME) {
-                if (endgameEvents.isEmpty()) {
-                    endgameEvents = listEventLabels(context, R.raw.endgames)
-                }
+                // make sure the generic (tactics) eval loop is not running
                 try { evalJob?.cancel() } catch (_: Throwable) {}
                 evalJob = null
                 stopEngineNow(setState = true)
-                endgamePlaying = false
-                engineEnabled = false
-                status = "Pick a position below"
+                engineEnabled = false   // will become true on first selection
             }
         }
 
-        if (mode == TrainerMode.ENDGAME) {
-            val s = session
-
-            // Lock orientation: if we have a loaded FEN, use that side as "user",
-            // otherwise default to White at the bottom on the empty board.
-            LaunchedEffect(endgameUserIsWhite, s) {
-                whiteBottom = if (s != null) endgameUserIsWhite else true
+        val selectOpening: () -> Unit = {
+            // Opening Explorer has moved to Trainer Chess Openings Coach.
+            val opened = context.openChessOpeningsCoach(CocTarget.OPENING_EXPLORER)
+            if (!opened) {
+                context.openChessOpeningsCoachPlayStore()
             }
-
-            // Build UI board snapshot (if no session yet, show a neutral START_FEN board)
-            val uiBoardEg = remember(plyTick, s, whiteBottom) {
-                val board = s?.board ?: com.github.bhlangonijr.chesslib.Board().apply {
-                    loadFromFen(START_FEN)
-                }
-                val base = boardToUiPieces(board)
-                if (whiteBottom) base else Array(64) { i -> base[63 - i] }
-            }
-            val boardForRenderEg = remember(plyTick, uiBoardEg, dragFrom, animFrom) {
-                uiBoardEg.copyOf().also {
-                    dragFrom?.takeIf { it in 0..63 }?.let { idx -> it[idx] = null }
-                    animFrom?.takeIf { it in 0..63 }?.let { idx -> it[idx] = null }
-                }
-            }
-
-            // Promotion picker overlay (only ever used once a real session is running)
-            if (pendingPromotionUci != null) {
-                val stm = session?.board?.sideToMove
-                    ?: com.github.bhlangonijr.chesslib.Side.WHITE
-                val whiteTurn = (stm == com.github.bhlangonijr.chesslib.Side.WHITE)
-                fun glyphFor(p: Char) = when (p) {
-                    'q' -> if (whiteTurn) "♕" else "♛"
-                    'r' -> if (whiteTurn) "♖" else "♜"
-                    'b' -> if (whiteTurn) "♗" else "♝"
-                    else -> if (whiteTurn) "♘" else "♞"
-                }
-
-                androidx.compose.ui.window.Dialog(
-                    onDismissRequest = { pendingPromotionUci = null },
-                    properties = androidx.compose.ui.window.DialogProperties(
-                        dismissOnClickOutside = true
-                    )
-                ) {
-                    Surface(shape = RoundedCornerShape(16.dp), tonalElevation = 2.dp) {
-                        Column(
-                            Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                "Promote pawn to",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Spacer(Modifier.height(12.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                listOf('q', 'r', 'b', 'n').forEach { p ->
-                                    Surface(
-                                        shape = CircleShape,
-                                        tonalElevation = 3.dp,
-                                        modifier = Modifier
-                                            .size(56.dp)
-                                            .clickable {
-                                                val base = pendingPromotionUci ?: return@clickable
-                                                pendingPromotionUci = null
-                                                performEndgameUserMove(base + p)
-                                            }
-                                    ) {
-                                        Box(
-                                            Modifier.fillMaxSize(),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(glyphFor(p), fontSize = 28.sp)
-                                        }
-                                    }
-                                }
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            TextButton(onClick = { pendingPromotionUci = null }) {
-                                Text("Cancel")
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Board (tap + drag) – this now always shows, even before a position is chosen.
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .onSizeChanged { boardSize = it }
-                    .pointerInput(plyTick, whiteBottom, isAnimating) {
-                        detectDragGestures(
-                            onDragStart = { pos ->
-                                if (isAnimating) interruptAnimation()
-                                if (isAnimating) return@detectDragGestures
-                                dragFrom = posToIndex(pos, boardSize)
-                                lastDragPos = pos
-                                selectedSq = dragFrom
-                            },
-                            onDrag = { change, _ ->
-                                if (!isAnimating) lastDragPos = change.position
-                            },
-                            onDragEnd = {
-                                if (!isAnimating) {
-                                    val f = dragFrom
-                                    val t = lastDragPos?.let { posToIndex(it, boardSize) }
-                                    if (f != null && t != null) tryUserMove(f, t)
-                                }
-                                dragFrom = null; lastDragPos = null
-                            },
-                            onDragCancel = {
-                                dragFrom = null; lastDragPos = null
-                            }
-                        )
-                    }
-            ) {
-                ChessBoard(
-                    board = boardForRenderEg,
-                    selected = selectedSq,
-                    lastMoveFrom = lastFrom,
-                    lastMoveTo = lastTo,
-                    onSquareClick = onSq@ { idx ->
-                        if (isAnimating) {
-                            interruptAnimation(); return@onSq
-                        }
-                        val prev = selectedSq
-                        val pieceAt = boardForRenderEg.getOrNull(idx)
-                        if (prev == null) {
-                            if (pieceAt != null) selectedSq = idx
-                        } else {
-                            if (idx == prev) {
-                                selectedSq = null
-                            } else {
-                                val prevPiece = boardForRenderEg.getOrNull(prev)
-                                if (prevPiece != null &&
-                                    pieceAt != null &&
-                                    prevPiece.isWhite == pieceAt.isWhite
-                                ) {
-                                    selectedSq = idx
-                                } else {
-                                    tryUserMove(prev, idx)
-                                    selectedSq = null
-                                }
-                            }
-                        }
-                    },
-                    light = themeColors.light,
-                    dark = themeColors.dark,
-                    pieceStyle = pieceStyle,
-                    whiteBottom = whiteBottom
-                )
-
-                // --- Drag + animation overlay for Endgame board ---
-                // Drag overlay – piece follows the finger while dragging
-                lastDragPos?.let { pos ->
-                    val fromIdx = dragFrom?.takeIf { it in 0..63 }
-                    if (fromIdx != null) {
-                        drawPieceOverlay(uiBoardEg.getOrNull(fromIdx), pos, boardSize)
-                    }
-                }
-
-                // Optional: slide animation overlay, same as tactics
-                val af = animFrom?.takeIf { it in 0..63 }
-                val at = animTo?.takeIf { it in 0..63 }
-                if (af != null && at != null && boardSize.width > 0) {
-                    val fromC = idxCenter(af)
-                    val toC   = idxCenter(at)
-                    val t     = animT.value
-                    val p = Offset(
-                        fromC.x + (toC.x - fromC.x) * t,
-                        fromC.y + (toC.y - fromC.y) * t
-                    )
-                    drawPieceOverlay(uiBoardEg.getOrNull(af), p, boardSize)
-                }
-            }
-
-            // USER turn indicator under the board
-            Spacer(Modifier.height(6.dp))
-            val timeText = wallStartMs?.let { "⏱ ${formatWallMmSs(wallElapsedSec)}" }
-            TurnIndicatorUserSide(
-                userIsWhite   = whiteBottom,
-                nickname      = nickname,
-                elapsedLabel  = timeText,
-                xp            = prefs.xp
-            )
-
-
-            // Pretty move ribbon (one line, horizontally scrollable)
-            Spacer(Modifier.height(6.dp))
-
-// Scroll state for the move ribbon
-            val movesScroll = rememberScrollState()
-
-// Whenever a new move is added, auto-scroll to the right end
-            LaunchedEffect(endgameMoves.size) {
-                if (endgameMoves.isNotEmpty()) {
-                    // Jump or animate; animateScrollTo looks nicer
-                    movesScroll.animateScrollTo(movesScroll.maxValue)
-                }
-            }
-
-            val moveLine = remember(endgameMoves.size) {
-                buildString {
-                    endgameMoves.forEachIndexed { i, m ->
-                        if (i % 2 == 0) append("${i / 2 + 1}. ")
-                        append(m).append(' ')
-                    }
-                }
-            }
-
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(movesScroll)
-                    .padding(vertical = 4.dp)
-            ) {
-                Text(
-                    moveLine,
-                    maxLines = 1,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-
-            Spacer(Modifier.height(4.dp))
-
-            // Filter row + quick counts
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Positions: ${endgameEvents.size} • Played: ${playedSet.size}",
-                    style = MaterialTheme.typography.labelMedium
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = hidePlayed, onCheckedChange = { hidePlayed = it })
-                    Text("Hide played")
-                }
-            }
-
-            Spacer(Modifier.height(4.dp))
-
-            // --- Derived list to show (Endgame selector) ---
-            val filtered = remember(endgameEvents, playedSet, hidePlayed) {
-                endgameEvents
-                    .mapIndexed { idx, label -> idx to label }
-                    .filter { (i, _) ->
-                        if (hidePlayed) !playedSet.contains(i.toString()) else true
-                    }
-            }
-
-            // Navigation + Play buttons above the list (preview + play)
-            val currentPos = filtered.indexOfFirst { (i, _) -> i == endgameIdx }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // BACK
-                PushButton(
-                    text = "Back",
-                    onClick = {
-                        if (currentPos > 0) {
-                            val (targetIdx, _) = filtered[currentPos - 1]
-                            endgameMoves.clear()
-                            scope.launch {
-                                loadEndgameAt(targetIdx)
-                                plyTick++
-                            }
-                        }
-                    },
-                    enabled = currentPos > 0,
-                    compact = true,
-                    modifier = Modifier.weight(1f)
-                )
-
-                // --- Blinking PLAY button ---
-                // Blink animation only when endgamePlayHint is true
-                val blinkTransition = rememberInfiniteTransition(label = "endgamePlayBlink")
-                val blinkPhase by blinkTransition.animateFloat(
-                    initialValue = 0f,
-                    targetValue = 1f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(durationMillis = 500),
-                        repeatMode = RepeatMode.Reverse
-                    ),
-                    label = "endgamePlayBlinkPhase"
-                )
-
-                val playHighlightColor =
-                    if (endgamePlayHint && blinkPhase < 0.5f)
-                        MaterialTheme.colorScheme.error.copy(alpha = 0.35f)
-                    else
-                        Color.Transparent
-
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(playHighlightColor, RoundedCornerShape(999.dp))
-                        .padding(2.dp)
-                ) {
-                    PushButton(
-                        text = if (endgamePlaying) "Playing…" else "Play position",
-                        onClick = {
-                            endgamePlayHint = false   // stop blinking once they actually press Play
-                            startEndgamePlay()
-                        },
-                        enabled = (session != null && !endgamePlaying),
-                        compact = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                // NEXT
-                PushButton(
-                    text = "Next",
-                    onClick = {
-                        if (currentPos >= 0 && currentPos < filtered.size - 1) {
-                            val (targetIdx, _) = filtered[currentPos + 1]
-                            endgameMoves.clear()
-                            scope.launch {
-                                loadEndgameAt(targetIdx)
-                                plyTick++
-                            }
-                        }
-                    },
-                    enabled = currentPos >= 0 && currentPos < filtered.size - 1,
-                    compact = true,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                items(filtered) { (i, label) ->
-                    val played   = playedSet.contains(i.toString())
-                    val selected = i == endgameIdx
-                    val locked   = (!proUnlocked && i >= 20)   // Pro: all open, Free: 21+ locked
-
-
-                    val bg =
-                        if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-                        else Color.Transparent
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(bg, RoundedCornerShape(10.dp))
-                            .clickable {
-                                if (locked) {
-                                    // Lite paywall message
-                                    status =
-                                        "Endgame positions 21 and above are available in the full TrainerFish Pro version."
-                                    feedback.wrong()
-                                } else {
-                                    endgameMoves.clear()
-                                    scope.launch {
-                                        loadEndgameAt(i)
-                                        plyTick++
-                                    }
-                                }
-                            }
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Number
-                        Text("${i + 1}.", modifier = Modifier.width(32.dp))
-
-                        // Label
-                        Text(
-                            text = label,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        // Played marker
-                        if (played) {
-                            Text(
-                                "✔",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-
-                        // Lock marker for Pro-only positions
-                        if (locked) {
-                            Text(
-                                "🔒",
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(start = 6.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Do not render anything else in Endgame mode:
-            return@Column
         }
 
 
-        // ===== Opening Explorer UI =====
-        if (mode == TrainerMode.OPENING) {
+        val selectBeatFish: () -> Unit = {
+            beatFishStartRecorder = false
+            if (mode != TrainerMode.BEAT_FISH) {
 
-            // Entering OPENING → load tree, reset state and hint text.
-            LaunchedEffect(mode) {
-                if (mode == TrainerMode.OPENING) {
-                    openingReset()
-                    status = "Opening Explorer — tap a move below"
+                endgameLoadJob?.cancel()
+                endgameLoadJob = null
+                loading = false
+                preparing = false
 
-                    stopEngineNow(setState = true)
-                }
-            }
-
-            // ---------- UI (your existing rendering) ----------
-
-            /// Board snapshot (Opening)
-            val uiBoardOpen = remember(openingFen, whiteBottom) {
-                val base = boardToUiPieces(openingBoard)
-                if (whiteBottom) base else Array(64) { i -> base[63 - i] }
-            }
-
-            // Hide the piece while dragging or animating, just like in Tactics
-            val boardForRenderOpen = remember(openingFen, uiBoardOpen, dragFrom, animFrom) {
-                uiBoardOpen.copyOf().also { arr ->
-                    dragFrom?.takeIf { it in 0..63 }?.let { idx -> arr[idx] = null }
-                    animFrom?.takeIf { it in 0..63 }?.let { idx -> arr[idx] = null }
-                }
-            }
-
-            /// ECO + path header (above the board)
-            // Derive ECO from current FEN using EcoClassifier (separate from the big tree)
-            val ecoEntry = remember(openingFen) {
-                EcoClassifier.classify(context, openingFen)
-            }
-
-            // Sticky ECO: remember the last seen ECO code (and name) so that
-            // when classification disappears we still show the code.
-            var stickyEcoCode by remember { mutableStateOf<String?>(null) }
-            var stickyEcoName by remember { mutableStateOf<String?>(null) }
-
-            // Whenever we *do* have an ECO entry for this FEN, update the sticky values.
-            LaunchedEffect(ecoEntry) {
-                if (ecoEntry != null && !ecoEntry.code.isNullOrBlank()) {
-                    stickyEcoCode = ecoEntry.code
-                    stickyEcoName = ecoEntry.name
-                }
-            }
-
-            // Label rules:
-            //  - If current position has ECO → show "CODE • Name" (or just CODE if name is blank)
-            //  - Else, if we have a previous ECO code → show just that CODE
-            //  - Else → show nothing
-            val ecoLabel: String? = when {
-                ecoEntry != null -> {
-                    val code = ecoEntry.code
-                    val name = ecoEntry.name
-                    if (!name.isNullOrBlank()) "$code • $name" else code
-                }
-                !stickyEcoCode.isNullOrBlank() -> stickyEcoCode
-                else -> null
-            }
-
-
-            val pathText = remember(openingSanPath.size) {
-                buildString {
-                    openingSanPath.forEachIndexed { i, san ->
-                        if (i % 2 == 0) append("${i / 2 + 1}. ")
-                        append(san).append(' ')
-                    }
-                }.trim()
-            }
-
-            // Scroll state for the opening path line
-            val openingPathScroll = rememberScrollState()
-
-            // Auto-scroll to the right whenever a new move is appended
-            LaunchedEffect(openingSanPath.size) {
-                if (openingSanPath.isNotEmpty()) {
-                    openingPathScroll.animateScrollTo(openingPathScroll.maxValue)
-                }
-            }
-
-            if (ecoLabel != null || pathText.isNotBlank()) {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = ecoLabel ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                    if (pathText.isNotBlank()) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 8.dp)
-                                .horizontalScroll(openingPathScroll)
-                        ) {
-                            Text(
-                                text = pathText,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
-                    }
-                }
-            }
-
-
-            // Clamp (10 / 8 / 6)
-            val clamp = if (openingPly < 20) 10 else 8
-
-            // Current position in the binary book (may be null if not found)
-            val bookPos = if (openingReady && BinaryOpeningBook.isLoaded) {
-                BinaryOpeningBook.lookup(openingFen)
-            } else {
-                null
-            }
-
-            fun handleEnginePvClick(pvIndex: Int) {
-                if (mode != TrainerMode.OPENING) return
-                if (pvIndex !in enginePvLines.indices) return
-
-                // Same free-version gate as the book moves
-                if (!proUnlocked && openingSanPath.size >= 16) {
-                    requirePro(
-                        "In the free version, the Opening Explorer is limited to the first 8 moves. " +
-                                "The full version unlocks the complete opening tree."
-                    )
-                    return
+                // Leaving Endgame? Clear Endgame-only UI/state so it can't "snap back" to Tactics.
+                if (mode == TrainerMode.ENDGAME) {
+                    showWelcome = false
+                    showEndgameSummary = false
+                    showEndgameIntro = false
+                    endgamePlaying = false
+                    endgameOver = false
+                    endgameResult = null
+                    endgameElapsedSec = null
+                    endgameNewRecordMoves = false
+                    endgameNewRecordTime = false
                 }
 
-                val raw = enginePvLines[pvIndex]
-                val tokens = raw.split(" ")
-                if (tokens.size < 2) return
-
-                // First PV move in UCI, e.g. "e2e4", "e7e8q"
-                val firstUci = tokens[1]
-                if (firstUci.length < 4) return
-
-                val fromAlg = firstUci.substring(0, 2)  // "e2"
-                val toAlg   = firstUci.substring(2, 4)  // "e4"
-
-                // Promotion code 0..4 (same mapping you use for the book & arrows)
-                val promoCode = when (firstUci.getOrNull(4)?.lowercaseChar()) {
-                    'q' -> 4
-                    'r' -> 3
-                    'b' -> 2
-                    'n' -> 1
-                    else -> 0
-                }
-
-                val targetFrom = uciSquareToIdx(fromAlg, true)
-                val targetTo   = uciSquareToIdx(toAlg,   true)
-
-                // Find matching legal move on the current opening board
-                val move = openingBoard.legalMoves().find { cand ->
-                    val fromIdx = uciSquareToIdx(cand.from.toString().lowercase(), true)
-                    val toIdx   = uciSquareToIdx(cand.to.toString().lowercase(),   true)
-
-                    fromIdx == targetFrom &&
-                            toIdx == targetTo &&
-                            promoMatches(cand, promoCode)
-                } ?: return
-
-                // Get a SAN-ish string for the top path line
-                val san = runCatching {
-                    prettyFromUci(openingBoard, firstUci)
-                }.getOrNull() ?: firstUci
-
-                // 1) Play the move on the board
-                openingBoard.doMove(move)
-
-                // 2) Update the PGN-ish path / FEN / ply
-                openingSanPath.add(san)
-                openingFen = openingBoard.fen
-                openingPly = openingSanPath.size
-
-                // 3) Update last-move highlight, respecting board orientation
-                val fromSq = move.from.toString().lowercase()
-                val toSq   = move.to.toString().lowercase()
-                lastFrom = uciSquareToIdx(fromSq, whiteBottom)
-                lastTo   = uciSquareToIdx(toSq,   whiteBottom)
-
-                // 4) If engine is on, nudge it to re-evaluate from the new FEN
-                if (engineEnabled) {
-                    plyTick++
-                }
-            }
-
-
-            // --- Board (Opening) with arrows overlay ---
-            var openingSelectedSq by remember { mutableStateOf<Int?>(null) }
-
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .onSizeChanged { boardSize = it }
-                    // Drag support (same pattern as Tactics, but using performOpeningUserMove)
-                    .pointerInput(openingPly, whiteBottom, isAnimating) {
-                        detectDragGestures(
-                            onDragStart = { pos ->
-                                if (isAnimating) interruptAnimation()
-                                if (isAnimating) return@detectDragGestures
-
-                                dragFrom = posToIndex(pos, boardSize)
-                                lastDragPos = pos
-                                openingSelectedSq = dragFrom
-                            },
-                            onDrag = { change, _ ->
-                                if (!isAnimating) lastDragPos = change.position
-                            },
-                            onDragEnd = {
-                                if (!isAnimating) {
-                                    val from = dragFrom
-                                    val to = lastDragPos?.let { posToIndex(it, boardSize) }
-                                    if (from != null && to != null && from != to) {
-                                        performOpeningUserMove(from, to)
-                                    }
-                                }
-                                dragFrom = null
-                                lastDragPos = null
-                            },
-                            onDragCancel = {
-                                dragFrom = null
-                                lastDragPos = null
-                            }
-                        )
-                    }
-            ) {
-                // 1) Draw the board itself (full 2-tap logic preserved)
-                ChessBoard(
-                    board = boardForRenderOpen,
-                    selected = openingSelectedSq,
-                    // Now we DO highlight last move using the shared lastFrom/lastTo
-                    lastMoveFrom = lastFrom,
-                    lastMoveTo = lastTo,
-                    onSquareClick = onSq@ { idx ->
-                        if (isAnimating) {
-                            // Re-use the same “don’t move while animating” guard as other modes
-                            interruptAnimation()
-                            return@onSq
-                        }
-
-                        val prev = openingSelectedSq
-                        val pieceAt = boardForRenderOpen.getOrNull(idx)
-
-                        if (prev == null) {
-                            // First tap: select a square if it has a piece
-                            if (pieceAt != null) openingSelectedSq = idx
-                        } else {
-                            if (idx == prev) {
-                                // Tap same square again → deselect
-                                openingSelectedSq = null
-                            } else {
-                                val prevPiece = boardForRenderOpen.getOrNull(prev)
-
-                                // Same-color piece on destination → just move selection there
-                                if (prevPiece != null &&
-                                    pieceAt != null &&
-                                    prevPiece.isWhite == pieceAt.isWhite
-                                ) {
-                                    openingSelectedSq = idx
-                                } else {
-                                    // Different color / empty → attempt a user move
-                                    performOpeningUserMove(prev, idx)
-                                    openingSelectedSq = null
-                                }
-                            }
-                        }
-                    },
-                    light = themeColors.light,
-                    dark = themeColors.dark,
-                    pieceStyle = pieceStyle,
-                    whiteBottom = whiteBottom
-                )
-
-                // 2) Drag overlay (piece follows the finger)
-                lastDragPos?.let { pos ->
-                    val fromIdx = dragFrom?.takeIf { it in 0..63 }
-                    if (fromIdx != null) {
-                        drawPieceOverlay(uiBoardOpen.getOrNull(fromIdx), pos, boardSize)
-                    }
-                }
-
-                // 3) Arrows overlay (only when enabled and we actually have book moves)
-                if (showOpeningArrows && bookPos != null) {
-                    OpeningArrowsOverlay(
-                        bookPos = bookPos,
-                        whiteBottom = whiteBottom,
-                        modifier = Modifier.matchParentSize()
-                    )
-                }
-            }
-
-
-            // Live FEN from your current session (adjust getter if needed)
-            val currentFen = remember(session?.ply) { session?.board?.fen ?: current?.startFen ?: "" }
-
-            LaunchedEffect(engineEnabled, endgameOver, currentIndex, plyTick, mode, multiPv) {
-                if (!engineEnabled) return@LaunchedEffect
-
-                // Only run the engine in trainer modes
-                if (
-                    mode != TrainerMode.WOODPECKER &&
-                    mode != TrainerMode.OPENING
-                ) return@LaunchedEffect
-
-                // Which position to evaluate?
-                val fen = when (mode) {
-                    TrainerMode.OPENING ->
-                        openingBoard.fen
+                // 1) Capture the *last position* from the mode we are LEAVING
+                val lastFen = when (mode) {
+                    TrainerMode.OPENING -> START_FEN
                     else ->
                         session?.board?.fen ?: current?.startFen.orEmpty()
-                }
+                }.ifBlank { START_FEN }
+                beatFishLastFen = lastFen
 
-                if (fen.isBlank()) return@LaunchedEffect
-
-                // Configure MultiPV: in Opening we honor the UI setting; elsewhere force 1
-                runCatching {
-                    if (mode == TrainerMode.OPENING) {
-                        com.tonorbe.trainerfish.engine.ProcEngine.setMultiPv(multiPv)
-                    } else {
-                        com.tonorbe.trainerfish.engine.ProcEngine.setMultiPv(1)
-                    }
-                }
-
-                // Temporary text until info lines start coming in
-                engineStatus = "TrainerFish: running"
-
-                // Separate search settings for Tactics vs Opening:
-
-                // FrankenFish is strong; short think time is enough here.
-                val movetimeMs = 3_600_000
-
-                val lines = multiPv.coerceIn(1, 4)
-
-                runCatching {
-                    // Tell Stockfish how many best lines to calculate
-                    com.tonorbe.trainerfish.engine.ProcEngine.send(
-                        "setoption name MultiPV value $lines"
-                    )
-                    com.tonorbe.trainerfish.engine.ProcEngine.evaluateFen(
-                        fen = fen,
-                        movetimeMs = movetimeMs
-                    )
-                }
-            }
-
-
-
-            Spacer(Modifier.height(8.dp))
-
-
-            // If not found fallback message
-            if (bookPos == null) {
-                Text(
-                    "No book moves available.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(12.dp)
-                )
-
-            }
-
-
-            // Convert BookMove → display
-            data class Disp(val san: String, val count: Int, val move: BookMove)
-
-            val dispMoves = remember(bookPos, openingFen) {
-                val bp = bookPos ?: return@remember emptyList<Disp>()
-
-                val moves = openingBoard.legalMoves().mapNotNull { mv ->
-                    // Convert chesslib Squares → 0..63 indices (always white-at-bottom)
-                    val fromIdx = uciSquareToIdx(mv.from.toString().lowercase(), true)
-                    val toIdx   = uciSquareToIdx(mv.to.toString().lowercase(),   true)
-
-                    // Promotion code 0..4 (same mapping as Python + BinaryOpeningBook)
-                    val promo = when (mv.promotion) {
-                        com.github.bhlangonijr.chesslib.Piece.WHITE_QUEEN,
-                        com.github.bhlangonijr.chesslib.Piece.BLACK_QUEEN -> 4
-                        com.github.bhlangonijr.chesslib.Piece.WHITE_ROOK,
-                        com.github.bhlangonijr.chesslib.Piece.BLACK_ROOK  -> 3
-                        com.github.bhlangonijr.chesslib.Piece.WHITE_BISHOP,
-                        com.github.bhlangonijr.chesslib.Piece.BLACK_BISHOP -> 2
-                        com.github.bhlangonijr.chesslib.Piece.WHITE_KNIGHT,
-                        com.github.bhlangonijr.chesslib.Piece.BLACK_KNIGHT -> 1
-                        else -> 0
-                    }
-
-                    // Find matching book entry
-                    val bookMatch = bp.moves.find {
-                        it.from == fromIdx && it.to == toIdx && it.promo == promo
-                    } ?: return@mapNotNull null
-
-                    // Use our existing pretty SAN-ish printer from UCI
-                    val sanText = runCatching {
-                        val uci = moveToUci(mv)
-                        prettyFromUci(openingBoard, uci)
-                    }.getOrElse {
-                        "${mv.from}-${mv.to}"
-                    }
-
-                    Disp(
-                        san = sanText,
-                        count = bookMatch.count,
-                        move = bookMatch
+                // 2) Leaving Tactics? Save its state first.
+                if (mode == TrainerMode.WOODPECKER) {
+                    saveTacticsSnapshot(
+                        games = games,
+                        session = session,
+                        current = current,
+                        currentIndex = currentIndex,
+                        whiteBottom = whiteBottom
                     )
                 }
 
-                val clamp = when {
-                    openingPly < 10 -> 10
-                    openingPly < 20 -> 8
-                    else            -> 6
+                // 3) Stop any running engine / eval loop
+                try {
+                    evalJob?.cancel()
+                } catch (_: Throwable) {
+                }
+                stopEngineNow(setState = true)
+                engineEnabled = false
+
+                // 4) Default Beat-the-Fish position = starting position
+                beatFishFen = START_FEN
+                showBeatFishIntro = true
+
+                // 5) Switch mode
+                lastSession.openingSanJson = "[]"
+                lastSession.openingPly = 0
+
+                lastSession.modeName = TrainerMode.BEAT_FISH.name
+
+
+                mode = TrainerMode.BEAT_FISH
+                status = "Beat the Fish - set up your handicap."
+            }
+        }
+
+        val selectGameRecorder: () -> Unit = {
+            if (mode != TrainerMode.GAME_RECORDER) {
+
+                endgameLoadJob?.cancel()
+                endgameLoadJob = null
+                loading = false
+                preparing = false
+
+                if (mode == TrainerMode.ENDGAME) {
+                    showWelcome = false
+                    showEndgameSummary = false
+                    showEndgameIntro = false
+                    endgamePlaying = false
+                    endgameOver = false
+                    endgameResult = null
+                    endgameElapsedSec = null
+                    endgameNewRecordMoves = false
+                    endgameNewRecordTime = false
                 }
 
-                moves.sortedByDescending { it.count }.take(clamp)
-            }
+                val lastFen = when (mode) {
+                    TrainerMode.OPENING -> START_FEN
+                    else -> session?.board?.fen ?: current?.startFen.orEmpty()
+                }.ifBlank { START_FEN }
+                beatFishLastFen = lastFen
 
-            val maxCount = dispMoves.maxOfOrNull { it.count }?.takeIf { it > 0 } ?: 1
-
-            val hasBookMoves = dispMoves.isNotEmpty()
-
-
-            val prettyOpeningPv: List<OpeningPvLine> = remember(enginePvLines, openingFen) {
-                if (enginePvLines.isEmpty()) return@remember emptyList()
-
-                enginePvLines.mapNotNull { raw ->
-                    val tokens = raw.split(" ")
-                    if (tokens.size < 2) return@mapNotNull null
-
-                    val eval = tokens[0]
-                    val uciMoves = tokens.drop(1)
-
-                    // We approximate the move number from how many moves we already played
-                    var ply = openingSanPath.size // 0-based plies from start
-                    val prettyParts = mutableListOf<String>()
-
-                    val maxPlies = 8  // 🔴 clamp: show at most 8 plies per line
-
-                    for (uci in uciMoves) {
-                        val pretty = runCatching { prettyFromUci(openingBoard, uci) }.getOrNull()
-                        if (pretty != null) {
-                            val moveNumber = ply / 2 + 1
-                            val whiteToMove = (ply % 2 == 0)
-
-                            if (whiteToMove) {
-                                // "15. Nf3"
-                                prettyParts.add("$moveNumber. $pretty")
-                            } else {
-                                // "...Nf3"
-                                prettyParts.add("$pretty")
-                            }
-                            ply++
-
-                            // 🔒 stop after maxPlies plies
-                            if (prettyParts.size >= maxPlies) break
-                        }
-                    }
-
-                    OpeningPvLine(
-                        eval = eval,
-                        moves = prettyParts.joinToString(" ")
+                if (mode == TrainerMode.WOODPECKER) {
+                    saveTacticsSnapshot(
+                        games = games,
+                        session = session,
+                        current = current,
+                        currentIndex = currentIndex,
+                        whiteBottom = whiteBottom
                     )
                 }
+
+                try { evalJob?.cancel() } catch (_: Throwable) {}
+                stopEngineNow(setState = true)
+                engineEnabled = false
+
+                beatFishFen = START_FEN
+                beatFishStartRecorder = true
+                showBeatFishIntro = false
+
+                lastSession.openingSanJson = "[]"
+                lastSession.openingPly = 0
+                lastSession.modeName = TrainerMode.GAME_RECORDER.name
+
+                mode = TrainerMode.GAME_RECORDER
+                status = "Game Recorder - input both sides, then analyze."
             }
+        }
 
 
-            // Moves list
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+        val selectPgn: () -> Unit = {
+            // PGN Reader has moved to Trainer Chess Openings Coach.
+            val opened = context.openChessOpeningsCoach(CocTarget.PGN_READER)
+            if (!opened) {
+                context.openChessOpeningsCoachPlayStore()
+            }
+        }
 
-                // LEFT: Moves list – only if we actually have book moves
-                if (hasBookMoves) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        items(dispMoves) { m ->
-                            val frac = m.count.toFloat() / maxCount.toFloat()
 
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                tonalElevation = 2.dp
-                            ) {
-                                Column(
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            // --- FREE GATE: Only first 8 moves in Opening Explorer ---
-                                            if (!proUnlocked && openingSanPath.size >= 16) {
-                                                requirePro(
-                                                    "In the free version, the Opening Explorer " +
-                                                            "is limited to the first 8 moves. " +
-                                                            "The full version unlocks the complete opening tree."
-                                                )
-                                                return@clickable
-                                            }
+        var initialLandingRouteConsumed by rememberSaveable(initialMode.name) { mutableStateOf(false) }
+        LaunchedEffect(initialMode) {
+            if (!initialLandingRouteConsumed) {
+                initialLandingRouteConsumed = true
 
-                                            // Apply the actual move by matching indices and promo
-                                            val move = openingBoard.legalMoves().find { cand ->
-                                                val fromIdx = uciSquareToIdx(
-                                                    cand.from.toString().lowercase(),
-                                                    true
-                                                )
-                                                val toIdx = uciSquareToIdx(
-                                                    cand.to.toString().lowercase(),
-                                                    true
-                                                )
-
-                                                fromIdx == m.move.from &&
-                                                        toIdx == m.move.to &&
-                                                        promoMatches(cand, m.move.promo)
-                                            }
-
-                                            if (move != null) {
-                                                // 1) Play the move on the opening board
-                                                openingBoard.doMove(move)
-
-                                                // 2) Update PGN-ish path / FEN / ply
-                                                openingSanPath.add(m.san)
-                                                openingFen = openingBoard.fen
-                                                openingPly = openingSanPath.size
-
-                                                // 3) Update last-move highlight
-                                                val fromSq = move.from.toString().lowercase()
-                                                val toSq = move.to.toString().lowercase()
-                                                lastFrom = uciSquareToIdx(fromSq, whiteBottom)
-                                                lastTo = uciSquareToIdx(toSq, whiteBottom)
-                                            }
-
-                                            if (engineEnabled) {
-                                                // Let the engine loop pick up the new FEN
-                                                plyTick++
-                                            }
-                                        }
-                                        .padding(horizontal = 12.dp, vertical = 10.dp)
-                                ) {
-                                    Row(
-                                        Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            m.san,
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                        Text(
-                                            "${m.count}",
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    }
-                                    LinearProgressIndicator(
-                                        progress = { frac.coerceIn(0f, 1f) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(6.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
+                // If the user entered from the new landing page, obey that tile.
+                // Do not let the old first-run/tactics welcome state draw over it.
+                if (initialMode != TrainerMode.WOODPECKER) {
+                    showFirstRun = false
+                    showWelcome = false
+                    loading = false
+                    preparing = false
                 }
 
-                // RIGHT: Multi-PV eval panel (only in Opening)
-                if (mode == TrainerMode.OPENING) {
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                    ) {
-                        // --- Lines/Fish row ---
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 2.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Play/stop fish
-                            IconButton(
-                                onClick = {
-                                    if (engineEnabled) {
-                                        // STOP ENGINE
-                                        stopEngineNow(setState = true)
-                                    } else {
-                                        // START ENGINE
-                                        enginePvLines = emptyList()   // clear old lines in the panel
-                                        startEngineNow()              // make sure ProcEngine is running
-                                        engineEnabled = true          // let the eval loop know we’re ON
-                                        plyTick++                     // nudge the loop to (re)evaluate
-                                    }
-                                }
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_fish),
-                                    contentDescription = null,
-                                    tint = if (engineEnabled) Color.Red else Color.Blue,
-                                    modifier = Modifier.size(50.dp)
-                                )
-                            }
-
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                TextButton(onClick = { multiPv = (multiPv - 1).coerceAtLeast(1) }) {
-                                    Text("−", fontSize = 32.sp, fontWeight = FontWeight.Bold)
-                                }
-                                TextButton(onClick = { multiPv = (multiPv + 1).coerceAtMost(4) }) {
-                                    Text("+", fontSize = 32.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-
-                        // Thin divider closer to the controls
-                        Divider(
-                            modifier = Modifier.padding(vertical = 2.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant
-                        )
-
-                        // --- Scrollable PV list ---
-                        if (prettyOpeningPv.isNotEmpty()) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .verticalScroll(rememberScrollState())
-                            ) {
-                                prettyOpeningPv.forEachIndexed { index, pv ->
-                                    Row(
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .clickable { handleEnginePvClick(index) }   // 🟢 play PV move
-                                            .padding(bottom = 4.dp),
-                                        verticalAlignment = Alignment.Top
-                                    ) {
-                                        // Red eval
-                                        Text(
-                                            text = pv.eval,
-                                            color = Color.Red,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 17.sp
-                                        )
-                                        Spacer(Modifier.width(6.dp))
-                                        // Moves
-                                        Text(
-                                            text = "• ${pv.moves}",
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            fontSize = 17.sp,
-                                            lineHeight = 22.sp
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                when (initialMode) {
+                    TrainerMode.WOODPECKER -> selectTactics()
+                    TrainerMode.ENDGAME -> selectEndgame()
+                    TrainerMode.OPENING -> selectOpening()
+                    TrainerMode.BEAT_FISH -> selectBeatFish()
+                    TrainerMode.GAME_RECORDER -> selectGameRecorder()
+                    TrainerMode.PGN -> selectPgn()
                 }
             }
+        }
 
-
-
-
-                // Back / Reset / Flip row
-            ReplayOpeningBottomBar(
-                showOpeningArrows = showOpeningArrows,
-                onBack = { handleOpeningBack() },
-                onReset = {
-                    openingReset()
-                    stopEngineNow(setState = true)   // also stops engine & clears PV
+        val headerContent: @Composable () -> Unit = {
+            ReplayTopBar(
+                mode = mode,
+                iconOnlyTopBar = iconOnlyTopBar,
+                soundOn = soundOn,
+                engineEnabled = engineEnabled,
+                openingLoading = openingLoading,
+                onSelectTactics = selectTactics,
+                onSelectEndgame = selectEndgame,
+                onSelectOpening = selectOpening,
+                onSelectBeatFish = selectBeatFish,
+                onSelectGameRecorder = selectGameRecorder,
+                onSelectPgn = selectPgn,
+                onHome = onHome,
+                endgameResult = endgameResult,
+                engineStatus = centerLabel,
+                goodJobNow = goodJobNow,
+                nickname = nickname,
+                onToggleSound = {
+                    soundOn = !soundOn
+                    prefs.soundOn = soundOn
                 },
-                onFlip = { whiteBottom = !whiteBottom },
-                onToggleArrows = { showOpeningArrows = !showOpeningArrows }
+                onToggleEngine = {
+                    try { evalJob?.cancel() } catch (_: Throwable) {}
+                    if (engineEnabled) {
+                        stopEngineNow(setState = true)
+                        engineEnabled = false
+                        status = "TrainerFish: off"
+                    } else {
+                        startEngineNow()
+                        engineEnabled = true
+                        status = "TrainerFish: on"
+                    }
+                    plyTick++
+                },
+                onOpenSettings = {
+                    showSettings = true
+                    status = "Settings"
+                },
+                onExitRequested = {
+                    showExitConfirm = true
+                },
+                currentPuzzleBookmarked = currentTacticsAbsIndex()?.let { tacticsBookmarkStore.isBookmarked(it, current?.event.orEmpty()) } == true,
+                onToggleBookmarkCurrent = { toggleCurrentTacticsBookmark() },
+                onOpenBookmarks = { showBookmarksDialog = true; bookmarkRefresh++ }
             )
 
+        }
+        if (!isLandscape) {
+            headerContent()
+        }
 
 
-            // Don’t render the Tactics UI when in Opening mode.
+
+        // Endgame UI moved to EndgameScreen.kt to keep ReplayScreen below JVM method limits.
+
+
+
+
+
+        if (mode == TrainerMode.ENDGAME) {
+            EndgameScreen(
+                light = themeColors.light,
+                dark = themeColors.dark,
+                pieceStyle = pieceStyle,
+                pieceSetKey = pieceSetPref,
+                onBackToTactics = { selectTactics() },
+                headerContent = headerContent
+            )
             return@Column
         }
 
+        if (mode == TrainerMode.OPENING) {
+            headerContent()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("Opening Explorer has moved to Trainer Chess Openings Coach.", textAlign = TextAlign.Center)
+                Spacer(Modifier.height(12.dp))
+                Button(onClick = {
+                    val opened = context.openChessOpeningsCoach(CocTarget.OPENING_EXPLORER)
+                    if (!opened) context.openChessOpeningsCoachPlayStore()
+                }) { Text("Open Chess Openings Coach") }
+            }
+            return@Column
+        }
+
+
+
+        // ===== Beat the Fish UI =====
+        if (mode == TrainerMode.BEAT_FISH || mode == TrainerMode.GAME_RECORDER) {
+            BeatFishScreen(
+                fen = beatFishFen,
+                lastFen = beatFishLastFen,
+                showIntro = showBeatFishIntro,
+                onIntroDismiss = { showBeatFishIntro = false },
+                onStartFromStart = {
+                    beatFishFen = START_FEN
+                    showBeatFishIntro = false
+                },
+                onStartFromLast = {
+                    val fen = beatFishLastFen?.takeIf { it.isNotBlank() } ?: START_FEN
+                    beatFishFen = fen
+                    showBeatFishIntro = false
+                },
+                light = themeColors.light,
+                dark = themeColors.dark,
+                pieceStyle = pieceStyle,
+                pieceSetKey = pieceSetPref,
+                whiteBottom = whiteBottom,
+                initialRecordGame = beatFishStartRecorder || mode == TrainerMode.GAME_RECORDER,
+                headerContent = headerContent
+
+            )
+
+            // IMPORTANT: do NOT draw the normal trainer board when we're in Beat-the-Fish
+            return@Column
+        }
+
+        // ===== PGN Reader redirect =====
+        if (mode == TrainerMode.PGN) {
+            headerContent()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("PGN Reader has moved to Trainer Chess Openings Coach.", textAlign = TextAlign.Center)
+                Spacer(Modifier.height(12.dp))
+                Button(onClick = {
+                    val opened = context.openChessOpeningsCoach(CocTarget.PGN_READER)
+                    if (!opened) context.openChessOpeningsCoachPlayStore()
+                }) { Text("Open PGN Reader") }
+            }
+            return@Column
+        }
+
+
+        // ===== Normal tactics / replay UI continues below =====
         val s = session
         val info = current
 
@@ -3793,23 +5016,29 @@ fun ReplayScreen(
             Regex("""Puzzle #\d+""").find(currentPuzzleEvent)?.value
                 ?: currentPuzzleEvent
         }
-        val currentPuzzleRating = games.getOrNull(currentIndex)?.rating
+        val currentPuzzleRating = current?.rating ?: games.getOrNull(currentIndex)?.rating
+        val tacticThemeLabel = primaryBookmarkTheme(
+            prefs.lastTheme,
+            games.getOrNull(currentIndex)?.theme.orEmpty()
+        )
+        val difficultyLabel = difficultyLabelForTacticsRating(currentPuzzleRating ?: 0)
 
 
         if (s != null && info != null) {
 
-            // --- Auto-play the first move (opponent's last move) once per puzzle ---
-            var firstMoveAppliedAtIndex by remember { mutableStateOf(-1) }
-            LaunchedEffect(s, currentIndex) {
-                val sess = s
-                if (sess != null && currentIndex >= 0 && currentIndex != firstMoveAppliedAtIndex) {
-                    // Ensure we are at the starting ply (0), then play first ply if available
-                    // prev() returns false at ply 0, so this is safe.
-                    while (sess.prev()) { /* rewind to start */ }
-                    if (sess.totalPly > 0) {
-                        sess.next() // play the first PGN move automatically
+            // --- Auto-play the first move only in Tactics (Woodpecker) ---
+            if (mode == TrainerMode.WOODPECKER) {
+                var firstMoveAppliedAtIndex by remember { mutableStateOf(-1) }
+                LaunchedEffect(s, currentIndex) {
+                    val sess = s
+                    if (sess != null && currentIndex >= 0 && currentIndex != firstMoveAppliedAtIndex) {
+                        // Ensure we are at the starting ply (0), then play first ply if available
+                        while (sess.prev()) { /* rewind to start */ }
+                        if (sess.totalPly > 0) {
+                            sess.next() // play the first PGN move automatically
+                        }
+                        firstMoveAppliedAtIndex = currentIndex
                     }
-                    firstMoveAppliedAtIndex = currentIndex
                 }
             }
 
@@ -3825,111 +5054,297 @@ fun ReplayScreen(
                 }
             }
 
-            val boardComposable: @Composable BoxScope.() -> Unit = {
-                ChessBoard(
-                    board = boardForRender,
-                    selected = selectedSq,
-                    lastMoveFrom = lastFrom,
-                    lastMoveTo = lastTo,
-                    onSquareClick = onSq@ { idx ->
-                        if (isAnimating) { interruptAnimation(); return@onSq }
-                        val prev = selectedSq
-                        val pieceAt = boardForRender.getOrNull(idx)
-                        if (prev == null) {
-                            if (pieceAt != null) selectedSq = idx
-                        } else {
-                            if (idx == prev) {
-                                selectedSq = null
-                            } else {
-                                val prevPiece = boardForRender.getOrNull(prev)
-                                if (prevPiece != null && pieceAt != null && prevPiece.isWhite == pieceAt.isWhite) {
-                                    selectedSq = idx
-                                } else {
-                                    tryUserMove(prev, idx)
-                                    selectedSq = null
-                                }
-                            }
-                        }
-                    },
+            val sharePuzzleAction: () -> Unit = {
+                // Share the original solving prompt, not the live board after the puzzle is solved.
+                // Tactics presents the position after the first/reference move has been auto-played.
+                val shareInfo = current ?: games.getOrNull(currentIndex)
+                val shareFen = shareInfo?.let { tacticsPromptFenAfterFirstMove(it) } ?: START_FEN
+                val shareWhiteBottom = fenWhiteToMove(shareFen)
+                val shareBoard = runCatching {
+                    val b = com.github.bhlangonijr.chesslib.Board().apply { loadFromFen(shareFen) }
+                    val base = boardToUiPieces(b)
+                    if (shareWhiteBottom) base else Array<Piece?>(64) { i -> base[63 - i] }
+                }.getOrElse {
+                    uiBoard.copyOf()
+                }
+
+                shareTacticsSolvedText(
+                    context = context,
+                    theme = tacticThemeLabel,
+                    rating = currentPuzzleRating,
+                    solvedMs = lastPuzzleElapsedMs,
+                    board = shareBoard,
                     light = themeColors.light,
                     dark = themeColors.dark,
-                    pieceStyle = pieceStyle,
-                    whiteBottom = whiteBottom
+                    pieceSetKey = pieceSetPref
                 )
+            }
 
-                // Drag overlay
-                lastDragPos?.let { pos ->
-                    val fromIdx = dragFrom?.takeIf { it in 0..63 }
-                    if (fromIdx != null) drawPieceOverlay(uiBoard.getOrNull(fromIdx), pos, boardSize)
-                }
-                // Animation overlay
-                val af = animFrom?.takeIf { it in 0..63 }
-                val at = animTo?.takeIf { it in 0..63 }
-                if (af != null && at != null && boardSize.width > 0) {
-                    val fromC = idxCenter(af); val toC = idxCenter(at)
-                    val t = animT.value
-                    val p = Offset(fromC.x + (toC.x - fromC.x) * t, fromC.y + (toC.y - fromC.y) * t)
-                    drawPieceOverlay(uiBoard.getOrNull(af), p, boardSize)
-                }
-
-                // Confetti (falling)
-                if (showConfetti) {
-                    val sq = min(boardSize.width, boardSize.height) / 8f
-                    val sizeDp = with(LocalDensity.current) { (sq * 0.9f).toDp() }
-
-                    data class Particle(
-                        val x0: Float, val y0: Float, val emoji: String,
-                        val driftAmp: Float, val phase: Float, val fallMul: Float
+            val boardComposable: @Composable BoxScope.() -> Unit = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .onSizeChanged { boardSize = it }   // keep your boardSize updated
+                ) {
+                    ChessBoard(
+                        board = boardForRender,
+                        selected = selectedSq,
+                        lastMoveFrom = lastFrom,
+                        lastMoveTo = lastTo,
+                        onSquareClick = onSq@{ idx ->
+                            if (isAnimating) {
+                                interruptAnimation(); return@onSq
+                            }
+                            val prev = selectedSq
+                            val pieceAt = boardForRender.getOrNull(idx)
+                            if (prev == null) {
+                                if (pieceAt != null) selectedSq = idx
+                            } else {
+                                if (idx == prev) {
+                                    selectedSq = null
+                                } else {
+                                    val prevPiece = boardForRender.getOrNull(prev)
+                                    if (prevPiece != null && pieceAt != null && prevPiece.isWhite == pieceAt.isWhite) {
+                                        selectedSq = idx
+                                    } else {
+                                        tryUserMove(prev, idx)
+                                        selectedSq = null
+                                    }
+                                }
+                            }
+                        },
+                        light = themeColors.light,
+                        dark = themeColors.dark,
+                        pieceStyle = pieceStyle,
+                        pieceSetKey = pieceSetPref,
+                        whiteBottom = whiteBottom
                     )
-                    val particles = remember(showConfetti, boardSize) {
-                        val r = kotlin.random.Random(System.currentTimeMillis())
-                        val emojis = if (celebration == "gold") {
-                            // Frank Marshall shower of coins ✨
-                            listOf("🪙", "🪙", "💰", "⭐")
-                        } else {
-                            listOf("🎉", "🎊", "✨", "⭐")
-                        }
 
-                        List(CONFETTI_COUNT) {
-                            Particle(
-                                x0 = r.nextFloat() * 7.8f,
-                                y0 = r.nextFloat() * 7.8f,
-                                emoji = emojis[r.nextInt(emojis.size)],
-                                driftAmp = 0.2f + r.nextFloat() * CONFETTI_MAX_DRIFT,
-                                phase = r.nextFloat() * (2f * kotlin.math.PI.toFloat() ),
-                                fallMul = 0.9f + r.nextFloat() * 0.6f
-                            )
-                        }
-                    }
-                    val progress = remember { Animatable(0f) }
-                    LaunchedEffect(showConfetti, boardSize) {
-                        progress.snapTo(0f)
-                        progress.animateTo(
-                            targetValue = 1f,
-                            animationSpec = tween(durationMillis = CONFETTI_DURATION_MS, easing = LinearEasing)
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+
+                            // [OK] 2-tap fallback (Tactics + Play) handled at overlay level
+                            .pointerInput(
+                                mode,
+                                whiteBottom,
+                                boardSize,
+                                isAnimating,
+                                boardForRender
+                            ) {
+                                if (mode == TrainerMode.WOODPECKER || mode == TrainerMode.BEAT_FISH || mode == TrainerMode.GAME_RECORDER) {
+                                    detectTapGestures(
+                                        onTap = { pos ->
+                                            if (isAnimating) {
+                                                interruptAnimation(); return@detectTapGestures
+                                            }
+
+                                            val sidePx =
+                                                min(boardSize.width, boardSize.height).toFloat()
+                                            if (sidePx <= 0f) return@detectTapGestures
+
+                                            val idx = posToIdx(pos, sidePx)
+
+                                            // ---- SAME logic you already had in ChessBoard(onSquareClick=...) ----
+                                            val prev = selectedSq
+                                            val pieceAt = boardForRender.getOrNull(idx)
+
+                                            if (prev == null) {
+                                                if (pieceAt != null) selectedSq = idx
+                                            } else {
+                                                if (idx == prev) {
+                                                    selectedSq = null
+                                                } else {
+                                                    val prevPiece = boardForRender.getOrNull(prev)
+                                                    if (prevPiece != null && pieceAt != null && prevPiece.isWhite == pieceAt.isWhite) {
+                                                        selectedSq = idx
+                                                    } else {
+                                                        tryUserMove(prev, idx)
+                                                        selectedSq = null
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+
+                            // Drag stays as-is
+                            .pointerInput(whiteBottom, boardSize, isAnimating) {
+                                detectDragGestures(
+                                    onDragStart = { pos ->
+                                        if (isAnimating) {
+                                            interruptAnimation(); return@detectDragGestures
+                                        }
+                                        val sidePx =
+                                            min(boardSize.width, boardSize.height).toFloat()
+                                        if (sidePx <= 0f) return@detectDragGestures
+
+                                        dragFrom = posToIdx(pos, sidePx)
+                                        lastDragPos = pos
+                                    },
+                                    onDrag = { change, dragAmount ->
+                                        lastDragPos =
+                                            lastDragPos?.plus(dragAmount) ?: change.position
+                                    },
+                                    onDragEnd = {
+                                        val from = dragFrom
+                                        val pos = lastDragPos
+                                        val sidePx =
+                                            min(boardSize.width, boardSize.height).toFloat()
+
+                                        dragFrom = null
+                                        lastDragPos = null
+
+                                        if (from != null && pos != null && sidePx > 0f) {
+                                            val to = posToIdx(pos, sidePx)
+                                            if (from != to) tryUserMove(from, to)
+                                        }
+                                    },
+                                    onDragCancel = {
+                                        dragFrom = null
+                                        lastDragPos = null
+                                    }
+                                )
+                            }
+                    )
+
+
+                    // Drag overlay (your existing floating piece)
+                    lastDragPos?.let { pos ->
+                        val fromIdx = dragFrom?.takeIf { it in 0..63 }
+                        if (fromIdx != null) drawPieceOverlay(
+                            uiBoard.getOrNull(fromIdx),
+                            pos,
+                            boardSize
                         )
                     }
-                    val t = progress.value
-                    for (p in particles) {
-                        val xSq = p.x0 + kotlin.math.sin(p.phase + t * 6f) * p.driftAmp
-                        val ySq = p.y0 + CONFETTI_FALL_SQUARES * p.fallMul * t
-                        val xPx = (xSq.coerceIn(0f, 7.8f) * sq).roundToInt()
-                        val yPx = ((7f - ySq.coerceAtMost(7.8f)) * sq).roundToInt()
-                        val fs = (18f + 6f * kotlin.math.abs(kotlin.math.sin(p.phase + t * 10f))).sp
-                        Box(
-                            Modifier
-                                .offset { IntOffset(xPx, yPx) }
-                                .size(sizeDp),
-                            contentAlignment = Alignment.Center
-                        ) { Text(p.emoji, fontSize = fs) }
+
+                    // Animation overlay (unchanged)
+                    val af = animFrom?.takeIf { it in 0..63 }
+                    val at = animTo?.takeIf { it in 0..63 }
+                    if (af != null && at != null && boardSize.width > 0) {
+                        val fromC = idxCenter(af);
+                        val toC = idxCenter(at)
+                        val t = animT.value
+                        val p =
+                            Offset(fromC.x + (toC.x - fromC.x) * t, fromC.y + (toC.y - fromC.y) * t)
+                        drawPieceOverlay(uiBoard.getOrNull(af), p, boardSize)
+                    }
+
+
+                    // Confetti (falling)
+                    if (showConfetti) {
+                        val sq = min(boardSize.width, boardSize.height) / 8f
+                        val sizeDp = with(LocalDensity.current) { (sq * 0.9f).toDp() }
+
+                        data class Particle(
+                            val x0: Float, val y0: Float, val emoji: String,
+                            val driftAmp: Float, val phase: Float, val fallMul: Float
+                        )
+
+                        val particles = remember(showConfetti, boardSize) {
+                            val r = kotlin.random.Random(System.currentTimeMillis())
+                            val emojis = if (celebration == "gold") {
+                                // Frank Marshall shower of coins ✨
+                                listOf("🪙", "🪙", "💰", "⭐")
+                            } else {
+                                listOf("\uD83C\uDF89", "🎊", "✨", "⭐")
+                            }
+
+                            List(CONFETTI_COUNT) {
+                                Particle(
+                                    x0 = r.nextFloat() * 7.8f,
+                                    y0 = r.nextFloat() * 7.8f,
+                                    emoji = emojis[r.nextInt(emojis.size)],
+                                    driftAmp = 0.2f + r.nextFloat() * CONFETTI_MAX_DRIFT,
+                                    phase = r.nextFloat() * (2f * kotlin.math.PI.toFloat()),
+                                    fallMul = 0.9f + r.nextFloat() * 0.6f
+                                )
+                            }
+                        }
+                        val progress = remember { Animatable(0f) }
+                        LaunchedEffect(showConfetti, boardSize) {
+                            progress.snapTo(0f)
+                            progress.animateTo(
+                                targetValue = 1f,
+                                animationSpec = tween(
+                                    durationMillis = CONFETTI_DURATION_MS,
+                                    easing = LinearEasing
+                                )
+                            )
+                        }
+                        val t = progress.value
+                        for (p in particles) {
+                            val xSq = p.x0 + kotlin.math.sin(p.phase + t * 6f) * p.driftAmp
+                            val ySq = p.y0 + CONFETTI_FALL_SQUARES * p.fallMul * t
+                            val xPx = (xSq.coerceIn(0f, 7.8f) * sq).roundToInt()
+                            val yPx = ((7f - ySq.coerceAtMost(7.8f)) * sq).roundToInt()
+                            val fs =
+                                (18f + 6f * kotlin.math.abs(kotlin.math.sin(p.phase + t * 10f))).sp
+                            Box(
+                                Modifier
+                                    .offset { IntOffset(xPx, yPx) }
+                                    .size(sizeDp),
+                                contentAlignment = Alignment.Center
+                            ) { Text(p.emoji, fontSize = fs) }
+                        }
                     }
                 }
             }
 
             // Dynamic labels for tight screens
 
-            val labelSolution = if (tinyButtons) "Sol’n" else "Solution"
+            val labelSolution = when {
+                // After puzzle end: the button becomes an Engine Review toggle.
+                puzzleOver -> "Review"
+                tinyButtons -> "Sol'n"
+                else -> "Solution"
+            }
             val labelNext = "Next"
+
+            // Engine review line (shown above buttons after puzzle end)
+            val reviewLine = remember(engineStatus, engineReviewActive, puzzleOver, mode) {
+                if (mode == TrainerMode.WOODPECKER && puzzleOver && engineReviewActive) {
+                    engineStatus.trim().removePrefix("TrainerFish:").trim()
+                } else {
+                    ""
+                }
+            }
+
+
+            // Review is now post-puzzle only: it starts the engine and reveals nav buttons.
+            val onSolutionOrReviewClick: () -> Unit = {
+                if (mode == TrainerMode.WOODPECKER && puzzleOver) {
+                    engineReviewActive = true
+                    if (!engineEnabled) {
+                        engineEnabled = true
+                        startEngineNow()
+                    }
+                    engineStatus = "thinking..."
+                    plyTick++
+                } else {
+                    giveUpAndReview()
+                }
+            }
+
+
+            // Shared stats (used in both portrait and landscape puzzle UIs)
+            val poolSize = currentPool().size
+            val solved = prefs.solvedCount
+            val avgMs = if (solved > 0) prefs.elapsedMs / solved else 0L
+            val accPct = if (prefs.ptsTotal > 0) (prefs.ptsEarned * 100f / prefs.ptsTotal) else 0f
+
+            val currentId = current?.event.orEmpty()
+            val bestMs = if (currentId.isNotBlank()) wp.puzzleBestMs(currentId) else 0L
+            val (bestPts, bestTot) =
+                if (currentId.isNotBlank()) wp.puzzleBestPoints(currentId) else (0 to 0)
+
+            val tierText = tierTextFor(series, accPct)
+            val timeText = wallStartMs?.let { "⏱ ${formatWallMmSs(wallElapsedSec)}" }
+
+
 
             val isEndgame = (session?.totalPly == 0)
             if (isEndgame) {
@@ -3944,7 +5359,7 @@ fun ReplayScreen(
                         TextButton(onClick = {
                             endgameMoves.clear()
                             showWelcome = true  // stay in ReplayScreen; just leave Endgame mode
-                        }) { Text("🚪 Exit") }
+                        }) { Text("\uD83D\uDEAA Exit") }
                     }
 
                     // Board (tap + drag identical to your main board box)
@@ -3953,30 +5368,65 @@ fun ReplayScreen(
                             .fillMaxWidth()
                             .aspectRatio(1f)
                             .onSizeChanged { boardSize = it }
-                            .pointerInput(plyTick, whiteBottom, isAnimating) {
+                            .pointerInput(plyTick, whiteBottom, isAnimating, mode) {
                                 detectDragGestures(
-                                    onDragStart = { pos ->
-                                        if (isAnimating) interruptAnimation()
-                                        if (isAnimating) return@detectDragGestures
+                                    onDragStart = onDragStart@{ pos ->
+                                        // Opening Explorer: NEVER accept input during auto animation.
+                                        if (mode == TrainerMode.OPENING && isAnimating) return@onDragStart
+
+                                        // Other modes: allow user to interrupt animation if currently animating.
+                                        if (isAnimating) {
+                                            interruptAnimation()
+                                            // If still animating after interrupt attempt, do nothing.
+                                            if (isAnimating) return@onDragStart
+                                        }
+
                                         dragFrom = posToIndex(pos, boardSize)
                                         lastDragPos = pos
                                         selectedSq = dragFrom
                                     },
                                     onDrag = { change, _ ->
-                                        if (!isAnimating) lastDragPos = change.position
+                                        // Ignore user drag updates during Opening animation
+                                        if (mode == TrainerMode.OPENING && isAnimating) return@detectDragGestures
+
+                                        if (!isAnimating) {
+                                            lastDragPos = change.position
+                                        }
                                     },
                                     onDragEnd = {
+                                        // Ignore user moves during Opening animation
+                                        if (mode == TrainerMode.OPENING && isAnimating) {
+                                            dragFrom = null; lastDragPos = null
+                                            return@detectDragGestures
+                                        }
+
                                         if (!isAnimating) {
                                             val from = dragFrom
                                             val to = lastDragPos?.let { posToIndex(it, boardSize) }
-                                            if (from != null && to != null) tryUserMove(from, to)
+                                            if (from != null && to != null && from != to) {
+                                                tryUserMove(from, to)
+                                            }
                                         }
                                         dragFrom = null; lastDragPos = null
                                     },
-                                    onDragCancel = { dragFrom = null; lastDragPos = null }
+                                    onDragCancel = {
+                                        dragFrom = null
+                                        lastDragPos = null
+                                    }
                                 )
                             }
+
                     ) { boardComposable() }
+
+                    // Thin horizontal eval bar below the board in portrait.
+                    EvalBar(
+                        scoreCp = evalCp,   // same evalCp already used in tactics
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp),
+                        whiteOnTop = !whiteBottom
+                    )
+
 
                     Spacer(Modifier.height(8.dp))
 
@@ -4000,355 +5450,266 @@ fun ReplayScreen(
                     }
                 }
             } else if (isLandscape) {
+                ReplayLandscapePuzzleBody(
+                    puzzleLabel = status,
+                    puzzleOver = puzzleOver,
+                    engineReviewLine = reviewLine,
+                    awaitingMistakeChoice = awaitingMistakeChoice,
+                    onTryAgain = {
+                        awaitingMistakeChoice = false
+                        pendingExpectedUci = null
+                        status = "Try again."
+                    },
+                    onShowSolutionChoice = {
+                        awaitingMistakeChoice = false
+                        pendingExpectedUci = null
+                        revealSolution()
+                    },
 
-                Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // LEFT: board + indicator stacked, width-bound indicator
-                    Column(Modifier.align(Alignment.CenterVertically)) {
-                        // >>> Badge above the board (landscape)
-                        if (puzzleLabel.isNotBlank()) {
-                            Column(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 6.dp)
-                            ) {
-                                // line 1: Puzzle label (left) + Rating (right)
-                                Row(
-                                    Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = puzzleLabel,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
-                                    currentPuzzleRating?.let { r ->
-                                        Text(
-                                            text = "Rating: $r",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 1,
-                                            softWrap = false
-                                        )
-                                    }
-                                }
-                                // line 2: Cycle info (restored)
-                                val poolSize = currentPool().size
-                                val solved = prefs.solvedCount
-                                Text(
-                                    text = "${series.title} • Cycle #${prefs.cycleId} • $solved/$poolSize solved",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                            }
+                    currentPuzzleRating = currentPuzzleRating,
+                    uiBoxColors = uiBoxPalette.colors,
+                    userElo = userElo,
+                    lastRatingBefore = lastRatingBefore,
+                    lastRatingAfter = lastRatingAfter,
+                    lastRatingDelta = lastRatingDelta,
+                    tacticThemeLabel = tacticThemeLabel,
+                    difficultyLabel = difficultyLabel,
+                    lastPuzzleEarned = lastPuzzleEarned,
+                    lastPuzzleTotal = lastPuzzleTotal,
+                    lastPuzzleElapsedMs = lastPuzzleElapsedMs,
+                    engineReviewActive = engineReviewActive,
+                    series = series,
+                    prefs = prefs,
+                    poolSize = poolSize,
+                    solved = solved,
+                    avgMs = avgMs,
+                    accPct = accPct,
+                    tierText = tierText,
+                    bestMs = bestMs,
+                    bestPts = bestPts,
+                    bestTot = bestTot,
+                    nickname = nickname,
+                    elapsedLabel = timeText,
+                    whiteBottom = whiteBottom,
+                    evalCp = evalCp,
+                    plyTick = plyTick,
+                    isAnimating = isAnimating,
+                    boardSize = boardSize,
+                    onBoardSizeChanged = { boardSize = it },
+                    onInterruptAnimation = { interruptAnimation() },
+                    onTryUserMove = { f, t -> tryUserMove(f, t) },
+                    onSelectedSqChange = { selectedSq = it },
+                    boardContent = boardComposable,
+                    onRevealSolution = onSolutionOrReviewClick,
+                    onNext = { tryGoNextPuzzle() },
+                    onShare = sharePuzzleAction,
+                    labelSolution = labelSolution,
+                    labelNext = labelNext,
+                    solutionAvailable = (session?.totalPly ?: 0) > 0,
+                    nextAvailable = (games.isNotEmpty() || loadedTacticsAbsIds.isNotEmpty() || lazyTacticsGameCache.isNotEmpty()),
+                    canReview = engineReviewActive && puzzleOver && (session?.totalPly ?: 0) > 0 && !isAnimating,
+                    onReviewBack = {
+                        lastFrom = null
+                        lastTo = null
+                        session?.let { s ->
+                            rebuildBoardForReview(s)
+                            reviewStep(-1)
                         }
-
-                        // BOARD + EVAL BAR (bar height = board height)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                Modifier
-                                    .weight(1f)
-                                    .aspectRatio(1f)
-                                    .onSizeChanged { boardSize = it }
-                                    .pointerInput(plyTick, whiteBottom, isAnimating) {
-                                        detectDragGestures(
-                                            onDragStart = { pos ->
-                                                if (isAnimating) interruptAnimation()
-                                                if (isAnimating) return@detectDragGestures
-                                                dragFrom = posToIndex(pos, boardSize)
-                                                lastDragPos = pos
-                                                selectedSq = dragFrom
-                                            },
-                                            onDrag = { change, _ ->
-                                                if (!isAnimating) lastDragPos = change.position
-                                            },
-                                            onDragEnd = {
-                                                if (!isAnimating) {
-                                                    val from = dragFrom
-                                                    val to = lastDragPos?.let {
-                                                        posToIndex(
-                                                            it,
-                                                            boardSize
-                                                        )
-                                                    }
-                                                    if (from != null && to != null && from != to) tryUserMove(
-                                                        from,
-                                                        to
-                                                    )
-                                                }
-                                                dragFrom = null; lastDragPos = null
-                                            },
-                                            onDragCancel = { dragFrom = null; lastDragPos = null }
-                                        )
-                                    }
-                            ) { boardComposable() }
-
+                    },
+                    onReviewForward = {
+                        lastFrom = null
+                        lastTo = null
+                        session?.let { s ->
+                            rebuildBoardForReview(s)
+                            reviewStep(+1)
                         }
-
-                        Spacer(Modifier.height(4.dp))
-                        val boardDpWidth = with(LocalDensity.current) { boardSize.width.toDp() }
-                        Box(Modifier.width(boardDpWidth)) {
-                            val userIsWhite = userPlaysWhiteFromFen(info.startFen)
-                            // 'nickname' is already defined in ReplayScreen as a state tied to ProfilePrefs
-                            val timeText = wallStartMs?.let { "⏱ ${formatWallMmSs(wallElapsedSec)}" }
-                            TurnIndicatorUserSide(
-                                userIsWhite   = whiteBottom,
-                                nickname      = nickname,
-                                elapsedLabel  = timeText,
-                                xp            = prefs.xp
-                            )
-
-
-                        }
-                    }
-
-                    // RIGHT: controls + stats
-                    Column(
-                        Modifier
-                            .weight(1f)
-                            .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.Top
-                    ) {
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
-                        ) {
-
-                            PushButton(
-                                text = labelSolution,
-                                onClick = { revealSolution() },
-                                enabled = (session?.totalPly ?: 0) > 0 && !isAnimating,
-                                compact = true
-                            )
-                            PushButton(
-                                text = labelNext,
-                                onClick = { tryGoNextPuzzle() },
-                                enabled = games.isNotEmpty() && !isAnimating,
-                                compact = true
-                            )
-                        }
-
-                        Spacer(Modifier.height(6.dp))
-
-                        // --- Cycle-wide stats (precompute) ---
-                        val poolSize = currentPool().size
-                        val solved = prefs.solvedCount
-                        val avgMs = if (solved > 0) prefs.elapsedMs / solved else 0L
-                        val accPct = if (prefs.ptsTotal > 0) (prefs.ptsEarned * 100f / prefs.ptsTotal) else 0f
-
-                        // --- Per-puzzle stats FIRST ---
-                        Text("Stats for this puzzle", fontWeight = FontWeight.SemiBold)
-                        val bestMs = if (currentIndex >= 0) wp.puzzleBestMs(currentIndex) else 0L
-                        val (bestPts, bestTot) = if (currentIndex >= 0) wp.puzzleBestPoints(currentIndex) else (0 to 0)
-                        Text("Best time: ${if (bestMs > 0) formatHms(bestMs) else "—"}")
-                        Text("Best score: ${if (bestTot > 0) "$bestPts/$bestTot (${bestPts * 100 / bestTot}%)" else "—"}")
-
-                        Spacer(Modifier.height(6.dp))
-
-                        // --- Tier line: “You’re ready for Masterclass!” ---
-                        Text(
-                            tierTextFor(series, accPct),
-                            color = MaterialTheme.colorScheme.error,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        // --- Cycle summary UNDER the tier line ---
-                        Text("${series.title} • Cycle #${prefs.cycleId} • ${solved}/${poolSize} solved")
-                        Text("Accuracy: ${String.format("%.0f", accPct)}%")
-                        Text("Average time: ${formatHms(avgMs)}")
-
-                        Spacer(Modifier.height(8.dp))
-
-                        // --- Streak stays at the bottom ---
-                        Text("Streak: ${prefs.streak} (max ${prefs.maxStreak})  •  XP: ${prefs.xp}")
-                        LinearProgressIndicator(
-                            progress = { (kotlin.math.min(prefs.streak, 10)) / 10f },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                        )
-                    }
-                }
+                    },
+                    isCurrentBookmarked = run {
+                        bookmarkRefresh
+                        val abs = currentTacticsAbsIndex()
+                        abs != null && tacticsBookmarkStore.isBookmarked(abs, current?.event?.trim().orEmpty())
+                    },
+                    onToggleBookmark = { toggleCurrentTacticsBookmark() },
+                    onShowBookmarks = { showBookmarksDialog = true },
+                    headerContent = headerContent
+                )
             } else {
+                val canReview = engineReviewActive && puzzleOver && (session?.totalPly ?: 0) > 0 && !isAnimating
 
-                // PORTRAIT
-                // >>> Badge above the board (portrait)
-                if (puzzleLabel.isNotBlank()) {
-                    PuzzleHeaderRow(
-                        label = puzzleLabel,
-                        rating = currentPuzzleRating
-                    )
-                }
+                ReplayPortraitPuzzleBody(
+                    status = status,
+                    puzzleOver = puzzleOver,
+                    currentPuzzleRating = currentPuzzleRating,
+                    uiBoxColors = uiBoxPalette.colors,
+                    userElo = userElo,
+                    lastRatingBefore = lastRatingBefore,
+                    lastRatingAfter = lastRatingAfter,
+                    lastRatingDelta = lastRatingDelta,
+                    tacticThemeLabel = tacticThemeLabel,
+                    difficultyLabel = difficultyLabel,
+                    lastPuzzleEarned = lastPuzzleEarned,
+                    lastPuzzleTotal = lastPuzzleTotal,
+                    lastPuzzleElapsedMs = lastPuzzleElapsedMs,
+                    engineReviewActive = engineReviewActive,
+                    engineReviewLine = reviewLine,
+                    awaitingMistakeChoice = awaitingMistakeChoice,
+                    onTryAgain = {
+                        awaitingMistakeChoice = false
+                        pendingExpectedUci = null
+                        status = "Try again."
+                    },
+                    onShowSolutionChoice = {
+                        awaitingMistakeChoice = false
+                        pendingExpectedUci = null
+                        revealSolution()
+                    },
+                    prefs = prefs,
+                    series = series,
+                    poolSize = poolSize,
+                    solved = solved,
+                    avgMs = avgMs,
+                    accPct = accPct,
+                    tierText = tierText,
+                    bestMs = bestMs,
+                    bestPts = bestPts,
+                    bestTot = bestTot,
+                    nickname = nickname,
+                    elapsedLabel = timeText,
+                    whiteBottom = whiteBottom,
+                    evalCp = evalCp,
+                    plyTick = plyTick,
+                    isAnimating = isAnimating,
+                    boardSize = boardSize,
+                    onBoardSizeChanged = { boardSize = it },
+                    onInterruptAnimation = { interruptAnimation() },
+                    onTryUserMove = { f, t -> tryUserMove(f, t) },
+                    onSelectedSqChange = { selectedSq = it },
+                    boardContent = boardComposable,
+                    labelSolution = labelSolution,
+                    labelNext = labelNext,
+                    solutionAvailable = (session?.totalPly ?: 0) > 0,
+                    nextAvailable = (games.isNotEmpty() || loadedTacticsAbsIds.isNotEmpty() || lazyTacticsGameCache.isNotEmpty()),
+                    canReview = canReview,
+                    onReviewBack = {
+                        lastFrom = null
+                        lastTo = null
+                        session?.let { s ->
+                            rebuildBoardForReview(s)
+                            reviewStep(dir = -1)
+                        }
+                    },
 
-                // Board + Eval bar (bar height = board height)
+                    onReviewForward = {
+                        lastFrom = null
+                        lastTo = null
+                        session?.let { s ->
+                            rebuildBoardForReview(s)
+                            reviewStep(dir = +1)
+                        }
+                    },
+
+                    isCurrentBookmarked = run {
+                        bookmarkRefresh
+                        val abs = currentTacticsAbsIndex()
+                        abs != null && tacticsBookmarkStore.isBookmarked(abs, current?.event?.trim().orEmpty())
+                    },
+                    onToggleBookmark = { toggleCurrentTacticsBookmark() },
+                    onShowBookmarks = { showBookmarksDialog = true },
 
 
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // BOARD
-                    Box(
-                        Modifier
-                            .weight(1f)
-                            .aspectRatio(1f)
-                            .onSizeChanged { boardSize = it }
-                            .pointerInput(plyTick, whiteBottom, isAnimating) {
-                                detectDragGestures(
-                                    onDragStart = { pos ->
-                                        if (isAnimating) interruptAnimation()
-                                        if (isAnimating) return@detectDragGestures
-                                        dragFrom = posToIndex(pos, boardSize)
-                                        lastDragPos = pos
-                                        selectedSq = dragFrom
-                                    },
-                                    onDrag = { change, _ ->
-                                        if (!isAnimating) lastDragPos = change.position
-                                    },
-                                    onDragEnd = {
-                                        if (!isAnimating) {
-                                            val from = dragFrom
-                                            val to = lastDragPos?.let { posToIndex(it, boardSize) }
-                                            if (from != null && to != null && from != to) tryUserMove(
-                                                from,
-                                                to
-                                            )
-                                        }
-                                        dragFrom = null; lastDragPos = null
-                                    },
-                                    onDragCancel = { dragFrom = null; lastDragPos = null }
-                                )
-                            }
-                    ) { boardComposable() }
-
-                }
-
-                Spacer(Modifier.height(4.dp))
-                val timeText = wallStartMs?.let { "⏱ ${formatWallMmSs(wallElapsedSec)}" }
-                TurnIndicatorUserSide(
-                    userIsWhite   = whiteBottom,
-                    nickname      = nickname,
-                    elapsedLabel  = timeText,
-                    xp            = prefs.xp
+                    onRevealSolution = onSolutionOrReviewClick,
+                    onNext = { tryGoNextPuzzle() },
+                    onShare = sharePuzzleAction
                 )
-
-                Spacer(Modifier.height(8.dp))
-
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
-                ) {
-                    PushButton(text = labelSolution, onClick = { revealSolution() }, enabled = (session?.totalPly ?: 0) > 0 && !isAnimating, compact = true)
-                    PushButton(text = labelNext, onClick = { tryGoNextPuzzle() }, enabled = games.isNotEmpty() && !isAnimating, compact = true)
-                }
-
-                Spacer(Modifier.height(12.dp))
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Text(status, style = MaterialTheme.typography.bodyLarge)
-
-                    Spacer(Modifier.height(6.dp))
-
-                    // --- Cycle-wide stats (precompute) ---
-                    val poolSize = currentPool().size
-                    val solved = prefs.solvedCount
-                    val avgMs = if (solved > 0) prefs.elapsedMs / solved else 0L
-                    val accPct = if (prefs.ptsTotal > 0) (prefs.ptsEarned * 100f / prefs.ptsTotal) else 0f
-
-                    // --- Per-puzzle stats first ---
-                    Text("Stats for this puzzle", fontWeight = FontWeight.SemiBold)
-                    val bestMs = if (currentIndex >= 0) wp.puzzleBestMs(currentIndex) else 0L
-                    val (bestPts, bestTot) = if (currentIndex >= 0) wp.puzzleBestPoints(currentIndex) else (0 to 0)
-                    Text("Best time: ${if (bestMs > 0) formatHms(bestMs) else "—"}")
-                    Text("Best score: ${if (bestTot > 0) "$bestPts/$bestTot (${bestPts * 100 / bestTot}%)" else "—"}")
-
-                    // --- Tier line ---
-                    Text(
-                        tierTextFor(series, accPct),
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    // --- Cycle-level summary ---
-                    Text("${series.title} • Cycle #${prefs.cycleId} • ${solved}/${poolSize} solved")
-                    Text("Accuracy: ${String.format("%.0f", accPct)}%")
-                        Text("Average time: ${formatHms(avgMs)}")
-
-
-                    Spacer(Modifier.height(6.dp))
-                    Text("Streak: ${prefs.streak} (max ${prefs.maxStreak})  •  XP: ${prefs.xp}")
-                    LinearProgressIndicator(
-                        progress = { (kotlin.math.min(prefs.streak, 10)) / 10f },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                    )
-                }
-
             }
         }
     }
 
-// Render the cover FIRST so the dialogs (declared next) appear above it.
-    val gateActive = showFirstRun || showWelcome
-    if (gateActive) {
-        FullscreenBlackout()
-    }
 
-// FIRST-RUN horizontal tour (full-screen dialog)
-    if (showFirstRun) {
-        Dialog(
-            onDismissRequest = { /* block back/outside during tour */ },
-            properties = DialogProperties(
-                dismissOnBackPress = false,
-                dismissOnClickOutside = false,
-                usePlatformDefaultWidth = false
-            )
-        ) {
-            Box(Modifier
-                .fillMaxSize()
-                .background(Color.Black)) {
-                WelcomeTour(
-                    modifier = Modifier.fillMaxSize(),
-                    onFinish = {
-                        FirstRunPrefs(context).seenWelcome = true
-                        showFirstRun = false
-                        showWelcome  = true      // → hand off to the big Welcome
+
+    if (showProfileOnboarding) {
+        var draftNickname by rememberSaveable { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { /* Profile is required before first training. */ },
+            title = { Text("Welcome to TrainerFish") },
+            text = {
+                Column(Modifier.fillMaxWidth()) {
+                    Text("Before you begin tactics training, please enter your profile name.")
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = draftNickname,
+                        onValueChange = { draftNickname = it.take(20) },
+                        label = { Text("Profile name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text("Your initial TrainerFish tactics Elo will be 1200.")
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = draftNickname.trim().isNotBlank(),
+                    onClick = {
+                        val trimmed = draftNickname.trim()
+                        nickname = trimmed
+                        profile.nickname = trimmed
+                        profile.eloRating = TRAINER_ELO_INITIAL
+                        profile.ratingInitialized = true
+                        userElo = TRAINER_ELO_INITIAL
+                        lastRatingBefore = null
+                        lastRatingAfter = null
+                        lastRatingDelta = null
+                        showProfileOnboarding = false
+                        showInitialEloNotice = true
+                        showWelcome = true
                     }
-                )
+                ) { Text("Start at 1200") }
             }
+        )
+    }
+
+    if (showInitialEloNotice) {
+        AlertDialog(
+            onDismissRequest = { showInitialEloNotice = false },
+            title = { Text("Initial rating set") },
+            text = { Text("Welcome, $nickname. Your initial TrainerFish tactics Elo is 1200.") },
+            confirmButton = {
+                TextButton(onClick = { showInitialEloNotice = false }) { Text("OK") }
+            }
+        )
+    }
+
+    // First-run tour removed from ReplayScreen. Keep the Cycle Manager as the entry UI.
+    if (showFirstRun) {
+        LaunchedEffect(Unit) {
+            showFirstRun = false
+            showWelcome = true
         }
     }
 
-    LaunchedEffect(gateActive) {
-        if (gateActive) {
-            // Give Compose a frame to lay out; if somehow no dialog is visible, force Welcome.
-            yield()
-            if (!showFirstRun && !showWelcome) {
-                showWelcome = true
-            }
-        }
-    }
+
 
 
 // --------------- Welcome ---------------
+
+
     LaunchedEffect(Unit) {
-        val dir = appCtx.applicationInfo.nativeLibraryDir
+        // New tactics flow: never auto-enter a saved cycle.
+        // Show the Cycle Manager so the user can choose Continue or New cycle.
+        if (initialMode != TrainerMode.WOODPECKER) return@LaunchedEffect
+        showFirstRun = false
+        if (autoStart && mode == TrainerMode.WOODPECKER && games.isEmpty() && session == null) {
+            showWelcome = true
+            status = "Trainer - choose whether to continue."
+        }
     }
+
+
 
     if (showWelcome) {
         var welcomeRefresh by remember { mutableStateOf(0) }
         var pick by remember(showWelcome, series) { mutableStateOf(series) }
-
-        // Reset confirmation wiring (keep if you use it below)
-        var showResetConfirm by remember { mutableStateOf(false) }
-        var nextPick by remember { mutableStateOf(series) }
-        data class NextParams(val size: Int, val theme: String, val lo: Int?, val hi: Int?)
-        var nextParams by remember { mutableStateOf<NextParams?>(null) }
 
         val context = LocalContext.current
         val scroll = rememberScrollState()
@@ -4361,23 +5722,49 @@ fun ReplayScreen(
         else
             ButtonDefaults.TextButtonContentPadding
 
-        var preparing by remember { mutableStateOf(false) }
 
-        // --- at the top of the Welcome block (once) ---
+
+        // --- at the top of the Cycle Manager block (once) ---
         var showStatsConfirm by remember { mutableStateOf(false) }
+        var showCreateCycleDialog by rememberSaveable(showWelcome) { mutableStateOf(false) }
 
 
         // --- Bounds ---
-        val minStart = 1800
-        val absoluteMax = 3210
-        val freeCap = if (proUnlocked) absoluteMax else 2000
+        val minStart = 1200
+        val absoluteMax = 4000
+        val freeCap = absoluteMax // Tactics is free: allow full rating range.
 
 
         // --- Inputs ---
         var minText by rememberSaveable(showWelcome) { mutableStateOf("$minStart") }
-        var maxText by rememberSaveable(showWelcome) { mutableStateOf("$freeCap") }
+        var maxText by rememberSaveable(showWelcome) { mutableStateOf("1499") }
         val minPreview = minText.toIntOrNull()?.coerceIn(minStart, absoluteMax) ?: minStart
         val maxPreview = maxText.toIntOrNull()?.coerceIn(minStart, freeCap) ?: freeCap
+
+        val currentTrainerElo = profile.eloRating
+        LaunchedEffect(showWelcome, currentTrainerElo) {
+            val unlockedByRating = tacticsDifficultyFloorForRating(currentTrainerElo)
+            if (unlockedByRating > profile.maxUnlockedTacticsFloor) {
+                profile.maxUnlockedTacticsFloor = unlockedByRating
+            }
+        }
+        val tacticsUnlockedFloor = max(
+            profile.maxUnlockedTacticsFloor,
+            tacticsDifficultyFloorForRating(currentTrainerElo)
+        )
+
+        fun isTacticsDifficultyLocked(minRating: Int): Boolean =
+            !proUnlocked && minRating > tacticsUnlockedFloor
+
+        fun showTacticsDifficultyGate(label: String, minRating: Int) {
+            val unlockedLabel = tacticsDifficultyLabelForFloor(tacticsUnlockedFloor)
+            requirePro(
+                "$label puzzles unlock at $minRating Elo. " +
+                        "Your current Elo is $currentTrainerElo and your highest unlocked difficulty is $unlockedLabel. " +
+                        "Raise your Elo to $minRating to unlock $label permanently. " +
+                        "You can unlock TrainerFish Pro to bypass this requirement."
+            )
+        }
 
         val cap = CYCLE_MAX
         var slider by remember(cap, pick) { mutableStateOf(25) }
@@ -4385,6 +5772,10 @@ fun ReplayScreen(
         var themeChoice by rememberSaveable(pick) { mutableStateOf("All") }
         var themeOptions by remember(pick) { mutableStateOf(listOf("All")) }
         var themeMenuOpen by remember { mutableStateOf(false) }
+
+        //  True only when the planner has reached the final actionable theme choice.
+        // This gives the Start button a visual "ready" state.
+        var themeReadyForStart by rememberSaveable(showWelcome) { mutableStateOf(false) }
 
         // --- Unified cycles (merge both series) ---
         data class CycleRef(val series: Series, val id: Int)
@@ -4394,15 +5785,17 @@ fun ReplayScreen(
                 val bank = CycleBank(context, series.id)
                 return bank.list().mapNotNull { cid ->
                     val pf = bank.prefs(cid)
-                    if (pf.poolAbsCsv.isNotBlank()) CycleRef(series, cid) else null
+                    val poolN = pf.poolAbsCsv.split(',').count { it.isNotBlank() }.takeIf { it > 0 } ?: pf.size
+                    val solvedN = pf.solvedCsv.split(',').count { it.isNotBlank() }
+                    if (pf.poolAbsCsv.isNotBlank() && solvedN < poolN) CycleRef(series, cid) else null
                 }
             }
-            return collect(Series.CHALLENGER) + collect(Series.MASTER)
+            return collect(Series.TACTICS)
         }
 
         var allCycles by remember(showWelcome, welcomeRefresh) { mutableStateOf(listAllCycles()) }
 
-        // -1 means “none selected yet”
+        // -1 means "none selected yet"
         var selectedIndex by rememberSaveable(showWelcome, welcomeRefresh) { mutableStateOf(-1) }
 
         LaunchedEffect(allCycles, series, activeCycleId) {
@@ -4439,108 +5832,13 @@ fun ReplayScreen(
             }
         }
 
-        // Populate themes (cached lists)
-        LaunchedEffect(pick) {
-            val quick = withContext(Dispatchers.IO) { listThemesInRawQuick(context, pick.rawRes) }
-            themeOptions = listOf("All") + quick.distinct()
-            val full = withContext(Dispatchers.IO) { listThemesCached(context, pick.rawRes) }
-            themeOptions = listOf("All") + full.distinct()
-        }
-
-        // Auto-derive series for NEW cycles only
+        // Single tactics cycle bank: difficulty is controlled only by rating range.
         LaunchedEffect(maxPreview) {
-            pick = if (maxPreview <= 2099) Series.CHALLENGER else Series.MASTER
+            pick = Series.TACTICS
         }
-
-        // ===== Manual, on-demand counter (no background loops) =====
-        val counterScope = rememberCoroutineScope()
-        var counterJob by remember { mutableStateOf<Job?>(null) }
-        var showCounter by rememberSaveable { mutableStateOf(false) }  // only after a param edit
-        var counting by remember { mutableStateOf(false) }
-        var matchCount by remember { mutableStateOf<Int?>(null) }
-
-        // a) Fixed to the big training PGN
-        val pgnPoolCount = remember(Unit) {
-            countGamesInResource(context, R.raw.train_all)
-        }
-
-
-
-        // tiny index caches (used only when you press "Check matches")
-        var buckets by remember { mutableStateOf<List<RatingBucket>>(emptyList()) }
-        var themesMap by remember { mutableStateOf<Map<String, IntArray>>(emptyMap()) }
-
-        suspend fun ensureIndexes() {
-            if (buckets.isEmpty()) {
-                buckets = withContext(Dispatchers.IO) {
-                    runCatching { loadRatingBuckets(context, R.raw.train_all_buckets) }.getOrElse { emptyList() }
-                }
-            }
-            if (themesMap.isEmpty()) {
-                themesMap = withContext(Dispatchers.IO) {
-                    runCatching { loadThemeIndex(context, R.raw.train_all_themes) }.getOrElse { emptyMap() }
-                }
-            }
-        }
-
-        fun countMatchesQuick(theme: String, lo: Int?, hi: Int?): Int {
-            if (buckets.isEmpty()) return 0
-            fun floor25(r: Int) = (r / 25) * 25
-            val bMin = lo?.let(::floor25)
-            val bMax = hi?.let(::floor25)
-
-            val ranges = buckets.filter { (bMin == null || it.floor >= bMin) && (bMax == null || it.floor <= bMax) }
-                .map { it.startIdx..it.endIdx }
-            if (ranges.isEmpty()) return 0
-            if (theme.equals("all", true)) return ranges.sumOf { it.last - it.first + 1 }.coerceAtLeast(0)
-
-            val ids = themesMap[theme.trim().lowercase()] ?: return 0
-            val arr = ids.sortedArray()
-            var i = 0; var j = 0; var c = 0
-            while (i < arr.size && j < ranges.size) {
-                val id = arr[i]; val r = ranges[j]
-                when {
-                    id < r.first -> i++
-                    id > r.last  -> j++
-                    else         -> { c++; i++ }
-                }
-            }
-            return c
-        }
-
-        fun triggerCount(theme: String, lo: Int?, hi: Int?) {
-            // cancel any in-flight job
-            counterJob?.cancel()
-            counting = true
-            matchCount = null
-
-            // launch a background job
-            counterJob = counterScope.launch(Dispatchers.Default) {
-                // hard cap total time so it never “hangs”
-                val ok = withTimeoutOrNull(400) {
-                    ensureIndexes()       // suspend; does IO with withContext(Dispatchers.IO)
-                    true
-                } ?: false
-
-                val result = if (ok) {
-                    // pure CPU in Default
-                    countMatchesQuick(theme, lo, hi)
-                } else 0
-
-                // hop back to Main only to update state
-                withContext(Dispatchers.Main) {
-                    counting = false
-                    matchCount = result
-                }
-            }
-        }
-
-        fun stopCounter() {
-            counterJob?.cancel()
-            counting = false
-            showCounter = false
-            matchCount = null
-        }
+        // Keep this tiny: the old outer hit-counter block bloated ReplayScreen bytecode.
+        // The planner UI below has its own lightweight local placeholders.
+        fun stopCounter() { }
 
         fun startSeriesNow(
             sel: Series,
@@ -4550,10 +5848,10 @@ fun ReplayScreen(
             maxRating: Int? = null,
             forceReset: Boolean = false
         ) {
-            // Close the dialog and show the tiny spinner while we prepare
-            showWelcome = false
+            // Keep Cycle Manager visible while preparing; enter tactics when ready.
             preparing = true
-            loading = true
+            loading = false
+            status = "Preparing new cycle..."
 
             GlobalScope.launch {
                 // Switch series if needed
@@ -4567,14 +5865,8 @@ fun ReplayScreen(
                 // Create a brand-new cycle and make it active
                 val bank = CycleBank(context, sel.id)
 
-                if (!proUnlocked && bank.size() >= 2) {
-                    withContext(Dispatchers.Main) {
-                        requirePro("You can save more than 2 training cycles in the full version of TrainerFish.")
-                    }
-                    loading = false
-                    preparing = false
-                    return@launch
-                }
+                // Tactics is completely free for now:
+                // allow unlimited saved tactics cycles without Pro gating.
 
                 val newId = bank.create()
                 val pf = bank.prefs(newId)
@@ -4586,88 +5878,67 @@ fun ReplayScreen(
                 pf.resetStatsOnly()
                 pf.poolCsv   = ""
 
-                // Human-friendly auto-name, e.g. "All • 1800–2600 • 100"
+                // Human-friendly auto-name, e.g. "All - 1800-2600 - 100"
                 val autoName = defaultCycleLabel(pf.lastTheme, minRating, maxRating, size)
                 bank.setLabel(newId, autoName)
 
-                // ---------- Build pool once from indexes (NO suspend inside timers) ----------
+                // ---------- Committed front-buffer cycle ----------
+                // Do not block first board display on a full 25/100/500 ID order.
+                // A slot exists only after its encoded ID is committed in poolAbsCsv.
+                val targetSize = size.coerceIn(1, CYCLE_MAX)
+                pf.size = targetSize
+                pf.poolCsv = ""
+                pf.poolAbsCsv = ""
+                pf.solvedCsv = ""
+
                 val tPickStart = SystemClock.elapsedRealtime()
-
-                // Index data (suspending) OUTSIDE the timed section
-                val buckets = withContext(Dispatchers.IO) {
-                    runCatching { loadRatingBuckets(context, R.raw.train_all_buckets) }
-                        .getOrElse { emptyList() }
-                }
-                val ids: List<Int> = if (theme.equals("all", true)) {
-                    // pure CPU
-                    sampleIdsFromBucketsQuick(
-                        buckets = buckets,
-                        limit   = size,
-                        minRating = minRating,
-                        maxRating = maxRating
-                    )
-                } else {
-                    val themeMap = withContext(Dispatchers.IO) {
-                        runCatching { loadThemeIndex(context, R.raw.train_all_themes) }
-                            .getOrElse { emptyMap() }
+                val ids = sampleMoreTacticsIdsForCycle(
+                    existing = emptyList(),
+                    theme = theme,
+                    minRating = minRating,
+                    maxRating = maxRating,
+                    targetSize = initialCycleBuffer.coerceAtMost(targetSize)
+                )
+                val firstGame: PgnGameInfo? = ids.firstOrNull()?.let { firstId ->
+                    withContext(Dispatchers.IO) {
+                        runCatching { loadGamesFast(context, listOf(firstId)).firstOrNull() }
+                            .getOrElse { e ->
+                                Log.e("ReplayScreen", "Lazy load of first puzzle failed", e)
+                                null
+                            }
                     }
-                    val token = theme.trim().lowercase()
-                    val themeIds = themeMap[token]
-                    if (themeIds != null) {
-                        sampleIdsFromThemeAndBucketsQuick(
-                            themeIds = themeIds,
-                            buckets  = buckets,
-                            limit    = size,
-                            minRating = minRating,
-                            maxRating = maxRating
-                        )
-                    } else emptyList()
                 }
 
-                val tPick = SystemClock.elapsedRealtime() - tPickStart
-                Log.d("CycleSpeed", "Pick pool: ${tPick}ms (theme=$theme, ids=${ids.size})")
+                val pickMs = SystemClock.elapsedRealtime() - tPickStart
+                Log.d("CycleSpeed", "FRONT BUFFER PICK: ${pickMs}ms (theme=$theme, genuineIds=${ids.size}, target=$targetSize)")
 
-                if (ids.isEmpty()) {
+                if (ids.isEmpty() || firstGame == null) {
                     withContext(Dispatchers.Main) {
                         loading = false
                         preparing = false
                         showWelcome = true
+                        status = "No puzzles found for this cycle."
                     }
                     return@launch
                 }
 
-                // Persist the exact pool
-                pf.poolAbsCsv = ids.joinToString(",")
-
-                // ---------- Load the selected games (suspending IO separated) ----------
-                val tLoadStart = SystemClock.elapsedRealtime()
-
-                val loaded: List<PgnGameInfo> = withContext(Dispatchers.IO) {
-                    loadGamesByIndexes(context = context, resId = sel.rawRes, indexes = ids)
-                }
-
-                val tLoad = SystemClock.elapsedRealtime() - tLoadStart
-                Log.d("CycleSpeed", "LOAD: ${tLoad}ms")
+                writeCommittedCycleIds(pf, ids, targetSize)
 
                 withContext(Dispatchers.Main) {
-                    if (loaded.isEmpty()) {
-                        loading = false
-                        preparing = false
-                        showWelcome = true
-                        return@withContext
-                    }
-
-                    // Make this new cycle the active one
                     activeCycleId = newId
                     prefs = pf
 
-                    // Swap in the pool and jump to first puzzle
-                    games = loaded
+                    games = emptyList()
+                    loadedTacticsAbsIds = ids
+                    lazyTacticsGameCache.clear()
+                    lazyTacticsGameCache[0] = firstGame!!
+
                     currentIndex = 0
                     loadGameAt(0)
-
+                    showWelcome = false
                     loading = false
                     preparing = false
+                    startBackgroundCycleFill(pf, theme, minRating, maxRating, targetSize)
                 }
             }
         }
@@ -4683,10 +5954,17 @@ fun ReplayScreen(
             title = {
                 Column(Modifier.fillMaxWidth()) {
                     Text(
-                        "Cycle Manager",
+                        "Training Planner",
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp,
+                        fontSize = 24.sp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        if (showCreateCycleDialog || allCycles.isEmpty()) "Build your next tactics cycle." else "Continue your unfinished training or start fresh.",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -4697,69 +5975,28 @@ fun ReplayScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .sizeIn(maxHeight = maxH)
-                        .verticalScroll(scroll)
+                        // In Training Planner mode, the hit counter must stay fixed.
+                        // The planner body below has its own scroll, so the outer dialog should not scroll.
+                        .then(if (showCreateCycleDialog || allCycles.isEmpty()) Modifier else Modifier.verticalScroll(scroll))
                 ) {
-                    // Header row
-                    val headerPad = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (nickname.isBlank()) {
-                            TextButton(onClick = { showProfile = true }, contentPadding = headerPad) { Text("Enter Profile") }
-                        } else {
-                            Text(
-                                text = "Hello, ${nickname.trim()}!",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { showProfile = true }
-                            )
+                    if (preparing) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer
+                        ) {
+                            Row(
+                                Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                Text("Preparing tactics cycle...", color = MaterialTheme.colorScheme.onTertiaryContainer)
+                            }
                         }
-
-                        // Continue the selected cycle
-                        val canContinue = selectedRef?.let {
-                            CycleBank(context, it.series.id).prefs(it.id).poolAbsCsv.isNotBlank()
-                        } ?: false
-
-                        Button(
-                            enabled = canContinue,
-                            onClick = {
-                                stopCounter()
-
-                                // Prefer the selected cycle; otherwise fall back to the currently active one
-                                val ref = selectedRef ?: (if (currentPoolNonEmpty && activeCycleId > 0)
-                                    CycleRef(series, activeCycleId) else null)
-
-                                ref?.let {
-                                    series = it.series
-                                    saveSeries(series)
-                                    activeCycleId = it.id
-                                    prefs = CycleBank(context, it.series.id).prefs(it.id)
-                                }
-                                // Show both the tiny "preparing" flag and the full loading gallery
-                                preparing = true
-                                loading   = true
-
-                                // Continue the existing cycle; when done, hide the gallery + preparing flag
-                                continueCycleNow {
-                                    preparing = false
-                                    loading   = false
-                                }
-                            },
-                            contentPadding = headerPad,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor   = MaterialTheme.colorScheme.onPrimary
-                            )
-                        ) { Text("Continue cycle") }
-
                     }
+
+                    // Header row removed: Profile now lives in Settings; Continue lives inside the cycle card.
 
                     // ===== Current cycle summary =====
                     Divider()
@@ -4773,15 +6010,17 @@ fun ReplayScreen(
                             val bank = CycleBank(context, s.id)
                             return bank.list().mapNotNull { cid ->
                                 val pf = bank.prefs(cid)
-                                if (pf.poolAbsCsv.isNotBlank()) CycleRef(s, cid) else null
+                                val poolN = pf.poolAbsCsv.split(',').count { it.isNotBlank() }.takeIf { it > 0 } ?: pf.size
+                                val solvedN = pf.solvedCsv.split(',').count { it.isNotBlank() }
+                                if (pf.poolAbsCsv.isNotBlank() && solvedN < poolN) CycleRef(s, cid) else null
                             }
                         }
-                        return collect(Series.CHALLENGER) + collect(Series.MASTER)
+                        return collect(Series.TACTICS)
                     }
 
                     var allCycles by remember(showWelcome, welcomeRefresh) { mutableStateOf(listAllCycles()) }
 
-                    // -1 means “none selected yet”
+                    // -1 means "none selected yet"
                     var selectedIndex by rememberSaveable(showWelcome, welcomeRefresh) { mutableStateOf(-1) }
 
                     // auto-select last active cycle (if exists), otherwise first; otherwise keep -1
@@ -4795,53 +6034,254 @@ fun ReplayScreen(
                     val selectedRef = allCycles.getOrNull(selectedIndex)
                     val vPrefs = selectedRef?.let { CycleBank(context, it.series.id).prefs(it.id) }
 
-                    // ---- summary of the selected (viewing) cycle ----
-                    if (vPrefs != null) {
-                        val vMin = vPrefs.lastMin.takeIf { it > 0 } ?: minStart
-                        val vMax = vPrefs.lastMax.takeIf { it > 0 } ?: freeCap
-                        val vTheme = vPrefs.lastTheme.ifBlank { "All" }
-                        val poolCount = remember(vPrefs.poolCsv, vPrefs.size, welcomeRefresh) {
-                            val n = vPrefs.poolCsv.split(',').count { it.isNotBlank() }
-                            if (n > 0) n else vPrefs.size
-                        }
-
-                        // Use the actual solved list for this cycle to avoid any desync with solvedCount
-                        val solvedNow = remember(vPrefs.solvedCsv, welcomeRefresh) {
-                            vPrefs.solvedCsv.split(',').count { it.isNotBlank() }
-                        }
-
-                        val accNow = if (vPrefs.ptsTotal > 0) (vPrefs.ptsEarned * 100f / vPrefs.ptsTotal) else 0f
-                        val avgMs = if (solvedNow > 0 && vPrefs.elapsedMs > 0L) (vPrefs.elapsedMs / solvedNow) else 0L
-
-
-                        Text("${vTheme} • ${vMin}–${vMax} • ${(vPrefs.size.takeIf { it > 0 } ?: poolCount)}", fontWeight = FontWeight.SemiBold)
-                        Text("Solved: $solvedNow/$poolCount,  Accuracy: ${"%.0f".format(accNow)}%")
-                        Text("Average time per puzzle: ${formatHms(avgMs)}")
-
-                    } else {
-                        Text("No cycles yet. Define one below.", fontWeight = FontWeight.SemiBold)
-                    }
-
-                    // ---- navigator row ----
-                    Spacer(Modifier.height(6.dp))
                     val totalCycles = allCycles.size
-                    if (totalCycles > 0) {
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                    val showingNewCycle = showCreateCycleDialog || totalCycles == 0
+                    val plannerCompact = LocalConfiguration.current.screenWidthDp <= 380 ||
+                            LocalConfiguration.current.screenHeightDp <= 760
+
+                    // ---- summary of the selected unfinished cycle ----
+                    // Hide this entire continue area once the user taps New cycle.
+                    if (!showingNewCycle) {
+                        if (vPrefs != null) {
+                            val vMin = vPrefs.lastMin.takeIf { it > 0 } ?: minStart
+                            val vMax = vPrefs.lastMax.takeIf { it > 0 } ?: freeCap
+                            val vTheme = vPrefs.lastTheme.ifBlank { "All" }
+                            val poolCount = remember(vPrefs.poolAbsCsv, vPrefs.size, welcomeRefresh) {
+                                val n = vPrefs.poolAbsCsv.split(',').count { it.isNotBlank() }
+                                if (n > 0) n else vPrefs.size
+                            }
+
+                            val solvedNow = remember(vPrefs.solvedCsv, welcomeRefresh) {
+                                vPrefs.solvedCsv.split(',').count { it.isNotBlank() }
+                            }.coerceAtMost(poolCount)
+
+                            val remainNow = (poolCount - solvedNow).coerceAtLeast(0)
+                            val accNow = if (vPrefs.ptsTotal > 0) (vPrefs.ptsEarned * 100f / vPrefs.ptsTotal) else 0f
+                            val avgMs = if (solvedNow > 0 && vPrefs.elapsedMs > 0L) (vPrefs.elapsedMs / solvedNow) else 0L
+                            val progressNow = if (poolCount > 0) solvedNow.toFloat() / poolCount.toFloat() else 0f
+
+                            val displayTheme = remember(vTheme) {
+                                val raw = vTheme.trim().ifBlank { "All" }
+                                val lower = raw.lowercase(Locale.ROOT)
+                                val mateNo = Regex("""matein(\d+)""").matchEntire(lower)?.groupValues?.getOrNull(1)
+                                when {
+                                    lower == "all" -> "All themes"
+                                    mateNo != null -> "Mate in $mateNo"
+                                    lower == "mate" -> "Mate puzzles"
+                                    lower == "smotheredmate" -> "Smothered Mate"
+                                    lower == "backrankmate" -> "Back Rank Mate"
+                                    lower == "bodenmate" || lower == "bodensmate" -> "Boden's Mate"
+                                    lower == "arabianmate" -> "Arabian Mate"
+                                    lower == "hookmate" -> "Hook Mate"
+                                    lower == "rookendgame" -> "Rook Endgame"
+                                    lower == "pawnendgame" -> "Pawn Endgame"
+                                    lower == "queenendgame" -> "Queen Endgame"
+                                    lower == "knightendgame" -> "Knight Endgame"
+                                    else -> raw
+                                        .replace(Regex("([a-z])([A-Z])"), "$1 $2")
+                                        .replace(Regex("""([a-zA-Z])(\d)"""), "$1 $2")
+                                        .replace(Regex("""(\d)([a-zA-Z])"""), "$1 $2")
+                                        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
+                                }
+                            }
+
+                            val difficultyLabel = when {
+                                vMin >= 2300 -> "Masterclass"
+                                vMin >= 2100 -> "Difficult"
+                                vMin >= 1800 -> "Medium"
+                                else -> "Easy"
+                            }
+
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(if (plannerCompact) 18.dp else 22.dp),
+                                color = Color(0xFF4B3292),
+                                tonalElevation = 4.dp,
+                                shadowElevation = 4.dp
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(if (plannerCompact) 12.dp else 16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(if (plannerCompact) 8.dp else 10.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Surface(
+                                            shape = RoundedCornerShape(16.dp),
+                                            color = Color(0xFF7C63D8),
+                                            modifier = Modifier.size(if (plannerCompact) 42.dp else 52.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text("♟", fontSize = if (plannerCompact) 22.sp else 28.sp, color = Color.White)
+                                            }
+                                        }
+
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "Unfinished training",
+                                                color = Color(0xFFEDE9FE),
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = if (plannerCompact) 16.sp else 18.sp,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Text(
+                                                text = displayTheme,
+                                                color = Color.White,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                fontSize = if (plannerCompact) 19.sp else 23.sp,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+
+                                        if (!plannerCompact) {
+                                            Surface(
+                                                shape = RoundedCornerShape(50),
+                                                color = Color(0xFF5B65B7)
+                                            ) {
+                                                Text(
+                                                    text = difficultyLabel,
+                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                                                    color = Color(0xFFE0F2FE),
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.sp,
+                                                    maxLines = 1
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    if (plannerCompact) {
+                                        Surface(
+                                            shape = RoundedCornerShape(50),
+                                            color = Color(0xFF5B65B7)
+                                        ) {
+                                            Text(
+                                                text = difficultyLabel,
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                                color = Color(0xFFE0F2FE),
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+
+                                    LinearProgressIndicator(
+                                        progress = { progressNow },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(if (plannerCompact) 6.dp else 8.dp)
+                                            .clip(RoundedCornerShape(50))
+                                    )
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Solved $solvedNow / $poolCount",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = if (plannerCompact) 15.sp else 17.sp,
+                                            maxLines = 1
+                                        )
+                                        Text(
+                                            text = "$remainNow left",
+                                            color = Color(0xFFEDE9FE),
+                                            fontSize = if (plannerCompact) 14.sp else 16.sp,
+                                            maxLines = 1
+                                        )
+                                    }
+
+                                    Text(
+                                        text = "Accuracy ${"%.0f".format(accNow)}% - Avg ${formatHms(avgMs)}",
+                                        color = Color(0xFFEDE9FE),
+                                        fontSize = if (plannerCompact) 14.sp else 16.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+
+                                    Button(
+                                        enabled = !preparing,
+                                        onClick = {
+                                            stopCounter()
+                                            selectedRef?.let { ref ->
+                                                series = ref.series
+                                                saveSeries(series)
+                                                activeCycleId = ref.id
+                                                prefs = CycleBank(context, ref.series.id).prefs(ref.id)
+                                            }
+                                            preparing = true
+                                            loading = false
+                                            continueCycleNow {
+                                                preparing = false
+                                                loading = false
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(18.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFF93C5FD),
+                                            contentColor = Color(0xFF172554)
+                                        )
+                                    ) {
+                                        Text(
+                                            text = if (preparing) "Preparing..." else "Continue Training",
+                                            fontWeight = FontWeight.ExtraBold,
+                                            fontSize = if (plannerCompact) 15.sp else 17.sp,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
+                            }
+
+                        } else {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(20.dp),
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                tonalElevation = 2.dp
+                            ) {
+                                Column(Modifier.padding(16.dp)) {
+                                    Text("No unfinished cycle", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                    Text("Create a fresh tactics cycle to start training.", color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                }
+                            }
+                        }
+
+                        // ---- navigator row ----
+                        Spacer(Modifier.height(if (plannerCompact) 6.dp else 8.dp))
+                        if (totalCycles > 0) {
+                            val humanIndex =
+                                (selectedIndex.takeIf { it >= 0 } ?: 0)
+                                    .coerceAtMost(totalCycles - 1) + 1
+
                             Text(
-                                "Saved cycles: ${ (selectedIndex + 1).coerceIn(0, totalCycles) } / $totalCycles",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f)
+                                text = "Saved cycles: $humanIndex / $totalCycles",
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                softWrap = false,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f),
+                                fontSize = if (plannerCompact) 14.sp else 16.sp
                             )
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                TextButton(onClick = {
+                            Spacer(Modifier.height(if (plannerCompact) 4.dp else 6.dp))
+
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(onClick = {
                                     if (totalCycles > 0) {
-                                        selectedIndex = (if (selectedIndex < 0) 0 else selectedIndex - 1 + totalCycles) % totalCycles
+                                        selectedIndex =
+                                            (if (selectedIndex < 0) 0 else selectedIndex - 1 + totalCycles) % totalCycles
                                         stopCounter()
                                         allCycles.getOrNull(selectedIndex)?.let { ref ->
                                             series = ref.series; saveSeries(series)
@@ -4850,27 +6290,37 @@ fun ReplayScreen(
                                         }
                                         welcomeRefresh++
                                     }
-                                }) { Text("Previous") }
+                                }) {
+                                    Icon(Icons.Filled.NavigateBefore, contentDescription = "Previous cycle")
+                                }
 
-                                TextButton(onClick = {
-                                    val ref = selectedRef ?: return@TextButton
+                                Spacer(Modifier.width(if (plannerCompact) 14.dp else 22.dp))
+
+                                IconButton(onClick = {
+                                    val ref = selectedRef ?: return@IconButton
                                     val bank = CycleBank(context, ref.series.id)
                                     bank.delete(ref.id)
                                     if (activeCycleId == ref.id && series == ref.series) activeCycleId = 0
                                     stopCounter()
                                     allCycles = listAllCycles()
-                                    selectedIndex = if (allCycles.isEmpty()) -1 else selectedIndex.coerceAtMost(allCycles.lastIndex)
+                                    selectedIndex =
+                                        if (allCycles.isEmpty()) -1 else selectedIndex.coerceAtMost(allCycles.lastIndex)
                                     allCycles.getOrNull(selectedIndex)?.let { r ->
                                         series = r.series; saveSeries(series)
                                         activeCycleId = r.id
                                         prefs = CycleBank(context, r.series.id).prefs(r.id)
                                     }
                                     welcomeRefresh++
-                                }) { Text("Delete") }
+                                }) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "Delete cycle", tint = Color(0xFFFF8A80))
+                                }
 
-                                TextButton(onClick = {
+                                Spacer(Modifier.width(if (plannerCompact) 14.dp else 22.dp))
+
+                                IconButton(onClick = {
                                     if (totalCycles > 0) {
-                                        selectedIndex = (if (selectedIndex < 0) 0 else selectedIndex + 1) % totalCycles
+                                        selectedIndex =
+                                            (if (selectedIndex < 0) 0 else selectedIndex + 1) % totalCycles
                                         stopCounter()
                                         allCycles.getOrNull(selectedIndex)?.let { ref ->
                                             series = ref.series; saveSeries(series)
@@ -4879,259 +6329,645 @@ fun ReplayScreen(
                                         }
                                         welcomeRefresh++
                                     }
-                                }) { Text("Next") }
+                                }) {
+                                    Icon(Icons.Filled.NavigateNext, contentDescription = "Next cycle")
+                                }
                             }
                         }
-
                     }
+
 
 
                     Spacer(Modifier.height(4.dp))
                     Divider()
                     Spacer(Modifier.height(if (dense) 6.dp else 12.dp))
 
-                    // ===== Redefine / Add another cycle =====
-                    Text("Define another cycle")
-                    Spacer(Modifier.height(if (dense) 6.dp else 12.dp))
+                    // ===== Training Planner: create a new tactics cycle =====
+                    if (showCreateCycleDialog || totalCycles == 0) {
+                        val plannerInk = Color.White
+                        val plannerMuted = Color(0xFFDDE7FF)
+                        val plannerPanel = Color(0xFFFF3D00)
+                        val plannerPanel2 = Color(0xFF0B4BD3)
+                        val plannerPanel3 = Color(0xFF5B21B6)
+                        val plannerAccent = Color(0xFF38BDF8)
+                        val plannerAccent2 = Color(0xFF67E8F9)
+                        val plannerGold = Color(0xFFFFB703)
+                        // Hide large decorative icons on phones so tile text stays readable.
+                        // Tablets, foldables, and large screens keep the richer icon layout.
+                        val plannerShowIcons = cfg.smallestScreenWidthDp >= 600
 
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = minText,
-                            onValueChange = { s ->
-                                minText = s.filter { it.isDigit() }.take(4)
-                                stopCounter() // cancel any pending count; keep last result
-                            },
-                            label = { Text("Min Rating ($minStart–$absoluteMax)") },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = maxText,
-                            onValueChange = { s ->
-                                val clean = s.filter { it.isDigit() }.take(4)
-                                val value = clean.toIntOrNull()
+                        fun prettyCount(n: Int?): String =
+                            n?.let { String.format("%,d", it) } ?: "..."
 
-                                if (!proUnlocked && value != null && value > freeCap) {
-                                    // Clamp to freeCap and show paywall
-                                    maxText = freeCap.toString()
-                                    stopCounter()
-                                    requirePro("Ratings above $freeCap are available in the full version of TrainerFish.")
-                                } else {
-                                    maxText = clean
-                                    stopCounter()
-                                }
-                            },
-                            label = {
-                                Text("Max Rating (1800–3210)")
-                            },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-
-                    }
-
-                    Spacer(Modifier.height(6.dp))
-                    Text("${minPreview} – ${maxPreview}")
-
-                    Spacer(Modifier.height(if (dense) 6.dp else 12.dp))
-
-                    // ---------- On-demand counter (declare BEFORE using in sizeCap) ----------
-                    val scope = rememberCoroutineScope()
-                    var counting    by remember { mutableStateOf(false) }
-                    var matchesNow  by rememberSaveable(showWelcome) { mutableStateOf<Int?>(null) } // last computed value
-                    var counterJob  by remember { mutableStateOf<Job?>(null) }
-
-                    // tiny index caches (loaded once)
-                    var buckets  by remember { mutableStateOf<List<RatingBucket>>(emptyList()) }
-                    var themeMap by remember { mutableStateOf<Map<String, IntArray>>(emptyMap()) }
-
-                    LaunchedEffect(Unit) {
-                        if (buckets.isEmpty()) {
-                            buckets = withContext(Dispatchers.IO) {
-                                runCatching { loadRatingBuckets(context, R.raw.train_all_buckets) }.getOrElse { emptyList() }
-                            }
-                        }
-                        if (themeMap.isEmpty()) {
-                            themeMap = withContext(Dispatchers.IO) {
-                                runCatching { loadThemeIndex(context, R.raw.train_all_themes) }.getOrElse { emptyMap() }
-                            }
-                        }
-                    }
-
-                    // purely in-memory count from indexes
-                    fun countMatchesQuick(theme: String, lo: Int?, hi: Int?): Int {
-                        if (buckets.isEmpty()) return 0
-
-                        fun floor25(r: Int) = (r / 25) * 25
-                        val bMin = lo?.let(::floor25)
-                        val bMax = hi?.let(::floor25)
-
-                        // allowed ranges from buckets
-                        val ranges = ArrayList<IntRange>()
-                        for (b in buckets) {
-                            if ((bMin == null || b.floor >= bMin) && (bMax == null || b.floor <= bMax)) {
-                                ranges += b.startIdx..b.endIdx
-                            }
-                        }
-                        if (ranges.isEmpty()) return 0
-
-                        // ALL themes: just sum the ranges
-                        if (theme.equals("all", true)) {
-                            var total = 0
-                            for (r in ranges) total += (r.last - r.first + 1).coerceAtLeast(0)
-                            return total
-                        }
-
-                        // specific theme: count ids that fall inside any allowed range
-                        val ids = themeMap[theme.trim().lowercase()] ?: return 0
-                        var i = 0; var j = 0; var cnt = 0
-                        val sortedIds = ids.sortedArray() // ensure monotonic
-                        while (i < sortedIds.size && j < ranges.size) {
-                            val id = sortedIds[i]
-                            val r  = ranges[j]
-                            when {
-                                id < r.first -> i++
-                                id > r.last  -> j++
-                                else         -> { cnt++; i++ }
-                            }
-                        }
-                        return cnt
-                    }
-
-                    fun triggerCount(theme: String, lo: Int, hi: Int) {
-                        counterJob?.cancel()
-                        counting = true
-                        matchesNow = null
-                        counterJob = scope.launch(Dispatchers.Default) {
-                            val res = withTimeoutOrNull(1500) { countMatchesQuick(theme, lo, hi) }
-                            withContext(Dispatchers.Main) {
-                                counting = false
-                                matchesNow = res ?: 0
-                            }
-                        }
-                    }
-
-                    fun stopCounter() {
-                        counterJob?.cancel()
-                        counting = false
-                        matchesNow = null // clear stale value whenever inputs change
-                    }
-
-                    // ---------- Cycle size (hard-capped by last computed matches) ----------
-                    Text("Add/Decrease games in new cycle")
-
-                    // How many games are actually available in this bucket
-                    val effectiveMatches = matchesNow ?: cap
-                    val fullSizeCap = max(25, min(cap, effectiveMatches))
-
-                    // Lite users can only go up to 50 games per cycle
-                    val freeSizeCap = min(fullSizeCap, 50)
-
-                    LaunchedEffect(fullSizeCap, proUnlocked) {
-                        val maxAllowed = if (proUnlocked) fullSizeCap else freeSizeCap
-                        slider = slider.coerceIn(25, maxAllowed)
-                    }
-
-                    Slider(
-                        value = slider.toFloat(),
-                        onValueChange = { v ->
-                            val snapped = ((v / 25f).roundToInt() * 25)
-                                .coerceIn(25, fullSizeCap)
-
-                            if (!proUnlocked && snapped > freeSizeCap) {
-                                // Lite: clamp to 50 and show paywall
-                                slider = freeSizeCap
-                                requirePro("Cycles longer than $freeSizeCap games are available in the full version of TrainerFish.")
-                            } else if (snapped != slider) {
-                                slider = snapped
-                            }
-                        },
-                        valueRange = 25f..fullSizeCap.toFloat(),
-                        steps = ((fullSizeCap - 25) / 25 - 1).coerceAtLeast(0)
-                    )
-
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("$slider of $fullSizeCap games")
-
-                        // Right-side label:
-                        // - default: show total puzzles in the full pool
-                        // - after counting: show only the matching count
-                        val matching = matchesNow
-                        val rightLabel = if (matching != null) {
-                            "Matching: " + String.format("%,d", matching)
-                        } else {
-                            "Total games: " + String.format("%,d", pgnPoolCount)
-                        }
-
-                        Text(
-                            rightLabel,
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-
-
-
-                    // One-shot (re)count button
-                    Spacer(Modifier.height(6.dp))
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        TextButton(
-                            onClick = {
-                                val lo = (minText.toIntOrNull() ?: minStart).coerceIn(minStart, absoluteMax)
-                                val hi = (maxText.toIntOrNull() ?: freeCap).coerceIn(minStart, freeCap).coerceAtLeast(lo)
-                                triggerCount(themeChoice, lo, hi)
-                            }
+                        @Composable
+                        fun PlannerSection(
+                            icon: String,
+                            title: String,
+                            subtitle: String,
+                            colors: List<Color>,
+                            content: @Composable ColumnScope.() -> Unit
                         ) {
-                            Text(
-                                when {
-                                    counting          -> "Counting…"
-                                    matchesNow != null -> "Recount matching games"
-                                    else               -> "Count matching games"
-                                }
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-                    Box {
-                        OutlinedButton(
-                            onClick = { themeMenuOpen = true; stopCounter() },
-                            modifier = Modifier.fillMaxWidth()
-                        ) { Text("Theme: $themeChoice", maxLines = 1, softWrap = false) }
-
-                        DropdownMenu(
-                            expanded = themeMenuOpen,
-                            onDismissRequest = { themeMenuOpen = false }
-                        ) {
-                            themeOptions.forEach { opt ->
-                                DropdownMenuItem(
-                                    text = { Text(opt) },
-                                    onClick = {
-                                        themeMenuOpen = false
-                                        stopCounter()
-
-                                        if (proUnlocked || opt.equals("All", ignoreCase = true)) {
-                                            // Full users (or "All" in any version) can actually select
-                                            themeChoice = opt
-                                        } else {
-                                            // Lite users clicking a specific theme: show paywall
-                                            requirePro("Choosing specific themes is available in the full version of TrainerFish.")
+                            val shape = RoundedCornerShape(24.dp)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(shape)
+                                    .background(Brush.horizontalGradient(colors), shape)
+                                    .border(1.dp, Color.White.copy(alpha = 0.18f), shape)
+                            ) {
+                                Column(Modifier.padding(14.dp)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(11.dp)
+                                    ) {
+                                        if (plannerShowIcons) {
+                                            Surface(
+                                                modifier = Modifier.size(44.dp),
+                                                shape = RoundedCornerShape(15.dp),
+                                                color = Color.White.copy(alpha = 0.16f)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Text(icon, fontSize = 24.sp, color = Color.White)
+                                                }
+                                            }
+                                        }
+                                        Column(Modifier.weight(1f)) {
+                                            Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.White)
+                                            Text(subtitle, fontSize = 12.sp, color = Color.White.copy(alpha = 0.84f))
                                         }
                                     }
-                                )
+                                    Spacer(Modifier.height(12.dp))
+                                    content()
+                                }
+                            }
+                        }
+
+                        var localStopCounter: () -> Unit = {}
+
+                        @Composable
+                        fun DifficultyCard(
+                            label: String,
+                            subtitle: String,
+                            iconRes: Int,
+                            colors: List<Color>,
+                            selected: Boolean,
+                            onClick: () -> Unit,
+                            modifier: Modifier = Modifier
+                        ) {
+                            val shape = RoundedCornerShape(18.dp)
+                            val tileColors = if (selected) colors else colors.map { it.copy(alpha = 0.82f) }
+                            Box(
+                                modifier = modifier
+                                    .heightIn(min = 82.dp)
+                                    .clip(shape)
+                                    .background(Brush.horizontalGradient(tileColors), shape)
+                                    .border(
+                                        1.dp,
+                                        if (selected) Color.White.copy(alpha = 0.72f) else Color.White.copy(alpha = 0.18f),
+                                        shape
+                                    )
+                                    .clickable(onClick = onClick)
+                                    .padding(10.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    if (plannerShowIcons) {
+                                        Icon(
+                                            painter = painterResource(id = iconRes),
+                                            contentDescription = label,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(34.dp)
+                                        )
+                                    }
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            label,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            subtitle,
+                                            color = Color.White.copy(alpha = 0.82f),
+                                            fontSize = 11.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Sticky planner hit counter. Uses precomputed train_counts.json through
+                        // TacticsBinaryBank.countMatches(), so this must not touch the large puzzle bins.
+                        val plannerCounterScope = rememberCoroutineScope()
+                        var counting by remember { mutableStateOf(false) }
+                        var matchesNow by rememberSaveable(showWelcome) { mutableStateOf<Int?>(null) }
+                        var counterJob by remember { mutableStateOf<Job?>(null) }
+
+                        localStopCounter = {
+                            counterJob?.cancel()
+                            counting = false
+                            matchesNow = null
+                        }
+
+                        fun countMatchesQuick(theme: String, lo: Int?, hi: Int?): Int =
+                            TacticsBinaryBank.countMatches(context, theme, lo, hi)
+
+                        val loNow = (minText.toIntOrNull() ?: minStart).coerceIn(minStart, absoluteMax)
+                        val hiNow = (maxText.toIntOrNull() ?: freeCap).coerceIn(minStart, freeCap).coerceAtLeast(loNow)
+
+                        fun triggerCount(theme: String, lo: Int, hi: Int) {
+                            counterJob?.cancel()
+                            counting = true
+                            matchesNow = null
+                            counterJob = plannerCounterScope.launch(Dispatchers.Default) {
+                                val res = withTimeoutOrNull(1500) {
+                                    withContext(Dispatchers.IO) { countMatchesQuick(theme, lo, hi) }
+                                }
+                                withContext(Dispatchers.Main) {
+                                    counting = false
+                                    matchesNow = res ?: 0
+                                }
+                            }
+                        }
+
+                        LaunchedEffect(themeChoice, minText, maxText) {
+                            triggerCount(themeChoice, loNow, hiNow)
+                        }
+
+                        val effectiveMatches = (matchesNow ?: cap).coerceAtLeast(0)
+                        val fullSizeCap = max(25, min(cap, if (effectiveMatches > 0) effectiveMatches else 25))
+
+                        LaunchedEffect(fullSizeCap) {
+                            slider = slider.coerceIn(25, fullSizeCap)
+                        }
+
+                        var plannerStep by rememberSaveable(showWelcome) { mutableStateOf("difficulty") }
+                        var selectedThemeFamily by rememberSaveable(showWelcome) { mutableStateOf("mix") }
+
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            data class ThemeOpt(
+                                val title: String,
+                                val key: String,
+                                val subtitle: String,
+                                val iconRes: Int
+                            )
+
+                            @Composable
+                            fun StickyHitCounterCard() {
+                                val difficultySummary = when {
+                                    loNow >= 2500 -> "Grandmaster"
+                                    loNow >= 2300 -> "Masterclass"
+                                    loNow >= 2100 -> "Difficult"
+                                    loNow >= 1800 -> "Medium"
+                                    loNow >= 1500 -> "Easy"
+                                    else -> "Beginner"
+                                }
+                                val themeSummary = when {
+                                    themeChoice.equals("All", true) -> "Mix it up"
+                                    else -> prettyTacticsTheme(themeChoice)
+                                }
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = Color(0xFF0F172A),
+                                    tonalElevation = 6.dp,
+                                    shadowElevation = 8.dp
+                                ) {
+                                    Column(Modifier.padding(horizontal = 14.dp, vertical = 11.dp)) {
+                                        Row(
+                                            Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(Modifier.weight(1f)) {
+                                                Text("Hits found", color = Color(0xFFBAE6FD), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                Text(
+                                                    "$difficultySummary • $themeSummary • $loNow-$hiNow",
+                                                    color = Color.White.copy(alpha = 0.78f),
+                                                    fontSize = 11.sp,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                            Text(
+                                                text = if (counting) "..." else prettyCount(matchesNow),
+                                                color = Color(0xFF67E8F9),
+                                                fontWeight = FontWeight.ExtraBold,
+                                                fontSize = 26.sp,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            @Composable
+                            fun PlannerBackRow(
+                                label: String,
+                                onBack: () -> Unit
+                            ) {
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(label, color = plannerAccent2, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    TextButton(onClick = onBack) { Text("Change", color = plannerAccent2) }
+                                }
+                            }
+
+                            @Composable
+                            fun ThemeDetailTile(
+                                opt: ThemeOpt,
+                                selected: Boolean,
+                                modifier: Modifier = Modifier,
+                                onSelect: (String) -> Unit
+                            ) {
+                                val keyNorm = opt.key.lowercase(Locale.ROOT)
+                                val tileColors = when {
+                                    keyNorm == "all" -> listOf(Color(0xFF7C3AED), Color(0xFFA855F7))
+                                    keyNorm.contains("mate") -> listOf(Color(0xFFDB2777), Color(0xFFF97316))
+                                    keyNorm.contains("endgame") -> listOf(Color(0xFF0F766E), Color(0xFF10B981))
+                                    keyNorm in listOf("fork", "pin", "skewer") -> listOf(Color(0xFF2563EB), Color(0xFF06B6D4))
+                                    else -> listOf(Color(0xFF4338CA), Color(0xFF7C3AED))
+                                }
+                                val shape = RoundedCornerShape(18.dp)
+                                Box(
+                                    modifier = modifier
+                                        .heightIn(min = 96.dp)
+                                        .clip(shape)
+                                        .background(Brush.horizontalGradient(tileColors), shape)
+                                        .border(if (selected) 2.dp else 1.dp, if (selected) plannerAccent2 else Color.White.copy(alpha = 0.18f), shape)
+                                        .clickable {
+                                            localStopCounter()
+                                            onSelect(opt.key)
+                                        }
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        if (plannerShowIcons) {
+                                            Icon(
+                                                painter = painterResource(id = opt.iconRes),
+                                                contentDescription = opt.title,
+                                                tint = Color.White.copy(alpha = 0.9f),
+                                                modifier = Modifier.size(32.dp)
+                                            )
+                                        }
+                                        Column(Modifier.weight(1f)) {
+                                            Text(opt.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(opt.subtitle, color = Color.White.copy(alpha = 0.78f), fontSize = 10.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                        }
+                                        if (selected) {
+                                            Text("✓", color = plannerAccent2, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                                        }
+                                    }
+                                }
+                            }
+
+                            val matePuzzleChoices = listOf(
+                                ThemeOpt("Mate", "mate", "Any forced checkmate puzzle.", R.drawable.ic_theme_mate),
+                                ThemeOpt("Mate in 1", "matein1", "Find the immediate checkmate.", R.drawable.ic_theme_mate_in_1),
+                                ThemeOpt("Mate in 2", "matein2", "Force mate in two moves.", R.drawable.ic_theme_mate_in_2),
+                                ThemeOpt("Mate in 3", "matein3", "Calculate a three-move mating sequence.", R.drawable.ic_theme_mate_in_3),
+                                ThemeOpt("Mate in 4", "matein4", "Longer forcing checkmate patterns.", R.drawable.ic_theme_mate_in_4),
+                                ThemeOpt("Mate in 5", "matein5", "Deep mating calculations.", R.drawable.ic_theme_mate_in_5)
+                            )
+
+                            val matingPatternChoices = listOf(
+                                ThemeOpt("Anastasia's mate", "anastasiamate", "A knight and rook or queen trap the king near the board edge.", R.drawable.ic_theme_anastasia_mate),
+                                ThemeOpt("Arabian mate", "arabianmate", "A knight and rook trap a cornered king.", R.drawable.ic_theme_arabian_mate),
+                                ThemeOpt("Back rank mate", "backrankmate", "The king is trapped on the home rank by its own pieces.", R.drawable.ic_theme_back_rank_mate),
+                                ThemeOpt("Balestra mate", "balestramate", "A bishop checks while the queen covers escape squares.", R.drawable.ic_theme_mating_patterns),
+                                ThemeOpt("Blind swine mate", "blindswinemate", "Two rooks invade and mate a boxed-in king.", R.drawable.ic_theme_mating_patterns),
+                                ThemeOpt("Boden's mate", "bodenmate", "Two bishops on criss-crossing diagonals deliver mate.", R.drawable.ic_theme_boden_mate),
+                                ThemeOpt("Corner mate", "cornermate", "Confine the king to the corner and finish the attack.", R.drawable.ic_theme_mating_patterns),
+                                ThemeOpt("Double bishop mate", "doublebishopmate", "Adjacent bishop diagonals cut off the king.", R.drawable.ic_theme_mating_patterns),
+                                ThemeOpt("Dovetail mate", "dovetailmate", "A queen mates an adjacent king whose escapes are blocked.", R.drawable.ic_theme_mating_patterns),
+                                ThemeOpt("Epaulette mate", "epaulettemate", "Both shoulder squares around the king are occupied.", R.drawable.ic_theme_mating_patterns),
+                                ThemeOpt("Hook mate", "hookmate", "Rook, knight, and pawn cooperate to close the net.", R.drawable.ic_theme_mating_patterns),
+                                ThemeOpt("Kill box mate", "killboxmate", "A rook and queen lock the king in a 3 by 3 box.", R.drawable.ic_theme_mating_patterns),
+                                ThemeOpt("Morphy's mate", "morphysmate", "A bishop checks while a rook confines the king.", R.drawable.ic_theme_mating_patterns),
+                                ThemeOpt("Opera mate", "operamate", "The famous rook-and-bishop attacking pattern.", R.drawable.ic_theme_mating_patterns),
+                                ThemeOpt("Pillsbury's mate", "pillsburysmate", "A rook delivers mate with bishop support.", R.drawable.ic_theme_mating_patterns),
+                                ThemeOpt("Smothered mate", "smotheredmate", "A knight mates a king trapped by its own pieces.", R.drawable.ic_theme_smothered_mate),
+                                ThemeOpt("Swallow's tail mate", "swallowstailmate", "A queen mates with V-shaped escape control.", R.drawable.ic_theme_mating_patterns),
+                                ThemeOpt("Triangle mate", "trianglemate", "Queen and rook form a mating triangle around the king.", R.drawable.ic_theme_mating_patterns),
+                                ThemeOpt("Vuković mate", "vukovicmate", "A rook and knight coordinate against the king.", R.drawable.ic_theme_mating_patterns)
+                            )
+
+                            val tacticalThemeChoices = listOf(
+                                ThemeOpt("Advanced pawn", "advancedpawn", "A far advanced pawn becomes the tactical key.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Attacking f2/f7", "attackingf2f7", "Pressure the weakest square near the king.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Attraction", "attraction", "Force a piece onto a vulnerable square.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Capturing defender", "capturingdefender", "Remove the piece that protects a target.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Castling", "castling", "Castling appears as the tactical move.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Clearance", "clearance", "Clear a square, line, or diagonal for a tactic.", R.drawable.ic_theme_clearance),
+                                ThemeOpt("Collinear move", "collinearmove", "Move along a shared line of attack.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Defensive move", "defensivemove", "Find the only move that saves the position.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Deflection", "deflection", "Distract a defender from its duty.", R.drawable.ic_theme_deflection),
+                                ThemeOpt("Discovered attack", "discoveredattack", "Move one piece to uncover another attack.", R.drawable.ic_theme_discovered_attack),
+                                ThemeOpt("Discovered check", "discoveredcheck", "Reveal a hidden check.", R.drawable.ic_theme_discovered_attack),
+                                ThemeOpt("Double check", "doublecheck", "Two pieces check the king at once.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("En passant", "enpassant", "The special pawn capture is tactically required.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Exposed king", "exposedking", "Exploit an unsafe king position.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Fork", "fork", "One piece attacks two or more targets.", R.drawable.ic_theme_fork),
+                                ThemeOpt("Hanging piece", "hangingpiece", "Win an undefended or overloaded piece.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Interference", "interference", "Block a line between defender and target.", R.drawable.ic_theme_interference),
+                                ThemeOpt("Intermezzo", "intermezzo", "Insert an in-between move before recapturing.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Kingside attack", "kingsideattack", "Tactics aimed at the enemy king side.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Pin", "pin", "Attack a piece that cannot safely move.", R.drawable.ic_theme_pin),
+                                ThemeOpt("Promotion", "promotion", "Promote or stop promotion tactically.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Queenside attack", "queensideattack", "Tactics focused on the queen side.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Quiet move", "quietmove", "A calm move creates an unavoidable threat.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Sacrifice", "sacrifice", "Give material to gain a tactical result.", R.drawable.ic_theme_sacrifice),
+                                ThemeOpt("Skewer", "skewer", "Attack a valuable piece and win what stands behind it.", R.drawable.ic_theme_skewer),
+                                ThemeOpt("Trapped piece", "trappedpiece", "Catch a piece with no safe escape.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Underpromotion", "underpromotion", "Promote to something other than a queen.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("X-Ray attack", "xrayattack", "Attack through another piece.", R.drawable.ic_theme_tactical_themes),
+                                ThemeOpt("Zugzwang", "zugzwang", "Every legal move worsens the position.", R.drawable.ic_theme_zugzwang)
+                            )
+
+                            val endgameChoices = listOf(
+                                ThemeOpt("All endgames", "endgame", "Mix pawn, rook, minor-piece, and queen endings.", R.drawable.ic_theme_pawn_endgame),
+                                ThemeOpt("Pawn endgame", "pawnendgame", "Pure pawn-race and king activity tactics.", R.drawable.ic_theme_pawn_endgame),
+                                ThemeOpt("Rook endgame", "rookendgame", "Rook activity, checks, and pawn conversion.", R.drawable.ic_theme_rook_endgame),
+                                ThemeOpt("Bishop endgame", "bishopendgame", "Diagonal control and bishop endings.", R.drawable.ic_theme_bishop_endgame),
+                                ThemeOpt("Knight endgame", "knightendgame", "Knight forks and endgame technique.", R.drawable.ic_theme_knight_endgame),
+                                ThemeOpt("Queen endgame", "queenendgame", "Checks, perpetuals, and queen tactics.", R.drawable.ic_theme_queen_endgame),
+                                ThemeOpt("Queen and rook endgame", "queenrookendgame", "Queen-and-rook material endings.", R.drawable.ic_theme_rook_endgame)
+                            )
+
+                            val activeThemeChoices = when (selectedThemeFamily) {
+                                "mate" -> matePuzzleChoices
+                                "patterns" -> matingPatternChoices
+                                "tactics" -> tacticalThemeChoices
+                                "endgames" -> endgameChoices
+                                else -> emptyList()
+                            }
+
+                            StickyHitCounterCard()
+
+                            val plannerInnerScroll = rememberScrollState()
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = when {
+                                        dense -> 430.dp
+                                        plannerCompact -> 360.dp
+                                        else -> 510.dp
+                                    })
+                                    .verticalScroll(plannerInnerScroll),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                PlannerSection(
+                                    icon = "🎯",
+                                    title = "Number of games",
+                                    subtitle = "Choose how many positions to train in this cycle",
+                                    colors = listOf(Color(0xFFFF3D00), Color(0xFFFF6D00), Color(0xFFDC2626))
+                                ) {
+                                    Row(
+                                        Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("Cycle size", color = plannerMuted, fontSize = 13.sp)
+                                        Text("$slider puzzles", color = plannerInk, fontWeight = FontWeight.Bold, fontSize = 25.sp)
+                                    }
+                                    Slider(
+                                        value = slider.toFloat(),
+                                        onValueChange = { v ->
+                                            val snapped = ((v / 25f).roundToInt() * 25).coerceIn(25, fullSizeCap)
+                                            if (snapped != slider) slider = snapped
+                                        },
+                                        valueRange = 25f..fullSizeCap.toFloat(),
+                                        steps = ((fullSizeCap - 25) / 25 - 1).coerceAtLeast(0)
+                                    )
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("25", color = plannerMuted, fontSize = 11.sp)
+                                        Text("125", color = plannerMuted, fontSize = 11.sp)
+                                        Text("250", color = plannerMuted, fontSize = 11.sp)
+                                        Text("500", color = plannerMuted, fontSize = 11.sp)
+                                    }
+                                }
+
+                                if (plannerStep == "difficulty") {
+                                    PlannerSection(
+                                        icon = "📊",
+                                        title = "Choose difficulty",
+                                        subtitle = "Pick the challenge level first",
+                                        colors = listOf(Color(0xFF0B3B91), Color(0xFF1D4ED8), Color(0xFF0EA5E9))
+                                    ) {
+                                        val difficultyNow = when {
+                                            loNow >= 2500 -> "Grandmaster"
+                                            loNow >= 2300 -> "Masterclass"
+                                            loNow >= 2100 -> "Difficult"
+                                            loNow >= 1800 -> "Medium"
+                                            loNow >= 1500 -> "Easy"
+                                            else -> "Beginner"
+                                        }
+                                        val easyLocked = isTacticsDifficultyLocked(1500)
+                                        val mediumLocked = isTacticsDifficultyLocked(1800)
+                                        val difficultLocked = isTacticsDifficultyLocked(2100)
+                                        val masterclassLocked = isTacticsDifficultyLocked(2300)
+                                        val grandmasterLocked = isTacticsDifficultyLocked(2500)
+
+                                        fun chooseDifficulty(lo: Int, hi: Int, label: String, locked: Boolean, unlockFloor: Int) {
+                                            if (locked) {
+                                                showTacticsDifficultyGate(label, unlockFloor)
+                                            } else {
+                                                minText = "$lo"
+                                                maxText = "$hi"
+                                                themeChoice = "All"
+                                                selectedThemeFamily = "mix"
+                                                themeReadyForStart = false
+                                                plannerStep = "family"
+                                                localStopCounter()
+                                            }
+                                        }
+
+                                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            DifficultyCard(
+                                                label = "Beginner",
+                                                subtitle = "Start the climb",
+                                                iconRes = R.drawable.ic_difficulty_easy,
+                                                colors = listOf(Color(0xFF22C55E), Color(0xFF16A34A)),
+                                                selected = difficultyNow == "Beginner",
+                                                onClick = { chooseDifficulty(1200, 1499, "Beginner", false, 1200) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            DifficultyCard(
+                                                label = "Easy",
+                                                subtitle = if (easyLocked) "Unlock at 1500 Elo 🔒" else "Build foundation",
+                                                iconRes = R.drawable.ic_difficulty_easy,
+                                                colors = listOf(Color(0xFF14B8A6), Color(0xFF059669)),
+                                                selected = difficultyNow == "Easy",
+                                                onClick = { chooseDifficulty(1500, 1799, "Easy", easyLocked, 1500) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                        Spacer(Modifier.height(8.dp))
+                                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            DifficultyCard(
+                                                label = "Medium",
+                                                subtitle = if (mediumLocked) "Unlock at 1800 Elo 🔒" else "Keep improving",
+                                                iconRes = R.drawable.ic_difficulty_medium,
+                                                colors = listOf(Color(0xFF0EA5E9), Color(0xFF2563EB)),
+                                                selected = difficultyNow == "Medium",
+                                                onClick = { chooseDifficulty(1800, 2099, "Medium", mediumLocked, 1800) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            DifficultyCard(
+                                                label = "Difficult",
+                                                subtitle = if (difficultLocked) "Unlock at 2100 Elo 🔒" else "Raise the bar",
+                                                iconRes = R.drawable.ic_difficulty_difficult,
+                                                colors = listOf(Color(0xFFF97316), Color(0xFF7C3AED)),
+                                                selected = difficultyNow == "Difficult",
+                                                onClick = { chooseDifficulty(2100, 2299, "Difficult", difficultLocked, 2100) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                        Spacer(Modifier.height(8.dp))
+                                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            DifficultyCard(
+                                                label = "Masterclass",
+                                                subtitle = if (masterclassLocked) "Unlock at 2300 Elo 🔒" else "Advanced players",
+                                                iconRes = R.drawable.ic_difficulty_masterclass,
+                                                colors = listOf(Color(0xFFEC4899), Color(0xFF7C3AED)),
+                                                selected = difficultyNow == "Masterclass",
+                                                onClick = { chooseDifficulty(2300, 2499, "Masterclass", masterclassLocked, 2300) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            DifficultyCard(
+                                                label = "Grandmaster",
+                                                subtitle = if (grandmasterLocked) "Unlock at 2500 Elo 🔒" else "Elite tactics",
+                                                iconRes = R.drawable.ic_difficulty_masterclass,
+                                                colors = listOf(Color(0xFF111827), Color(0xFFF59E0B)),
+                                                selected = difficultyNow == "Grandmaster",
+                                                onClick = { chooseDifficulty(2500, absoluteMax, "Grandmaster", grandmasterLocked, 2500) },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    PlannerSection(
+                                        icon = "📊",
+                                        title = "Difficulty selected",
+                                        subtitle = "${loNow}-${hiNow}",
+                                        colors = listOf(Color(0xFF0B3B91), Color(0xFF1D4ED8), Color(0xFF0EA5E9))
+                                    ) {
+                                        PlannerBackRow(label = "${loNow}-${hiNow}", onBack = { plannerStep = "difficulty" })
+                                    }
+                                }
+
+                                if (plannerStep == "family") {
+                                    PlannerSection(
+                                        icon = "🎯",
+                                        title = "Choose theme family",
+                                        subtitle = "Pick a training category",
+                                        colors = listOf(Color(0xFF4C1D95), Color(0xFF6D28D9), Color(0xFF9333EA))
+                                    ) {
+                                        val familyRows = listOf(
+                                            ThemeOpt("Mix it up", "All", "Random tactical themes from the selected difficulty.", R.drawable.ic_theme_all),
+                                            ThemeOpt("Mate puzzles", "mate", "Direct mate tasks, including mate in 1 to 5.", R.drawable.ic_theme_mate),
+                                            ThemeOpt("Mating patterns", "patterns", "Named checkmate motifs like Back Rank and Anastasia's mate.", R.drawable.ic_theme_mating_patterns),
+                                            ThemeOpt("Tactical themes", "tactics", "Forks, pins, skewers, sacrifices, and advanced motifs.", R.drawable.ic_theme_tactical_themes),
+                                            ThemeOpt("Endgames", "endgames", "Pawn, rook, bishop, knight, queen, and mixed endings.", R.drawable.ic_theme_pawn_endgame)
+                                        )
+                                        familyRows.chunked(2).forEach { row ->
+                                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                row.forEach { opt ->
+                                                    val selected = when (opt.key) {
+                                                        "All" -> selectedThemeFamily == "mix"
+                                                        else -> selectedThemeFamily == opt.key
+                                                    }
+                                                    ThemeDetailTile(opt, selected, Modifier.weight(1f)) { key ->
+                                                        when (key) {
+                                                            "All" -> {
+                                                                selectedThemeFamily = "mix"
+                                                                themeChoice = "All"
+                                                                themeReadyForStart = true
+                                                                plannerStep = "family"
+                                                            }
+                                                            "mate" -> {
+                                                                selectedThemeFamily = "mate"
+                                                                themeChoice = "mate"
+                                                                themeReadyForStart = false
+                                                                plannerStep = "theme"
+                                                            }
+                                                            "patterns" -> {
+                                                                selectedThemeFamily = "patterns"
+                                                                themeChoice = "backrankmate"
+                                                                themeReadyForStart = false
+                                                                plannerStep = "theme"
+                                                            }
+                                                            "tactics" -> {
+                                                                selectedThemeFamily = "tactics"
+                                                                themeChoice = "fork"
+                                                                themeReadyForStart = false
+                                                                plannerStep = "theme"
+                                                            }
+                                                            "endgames" -> {
+                                                                selectedThemeFamily = "endgames"
+                                                                themeChoice = "endgame"
+                                                                themeReadyForStart = false
+                                                                plannerStep = "theme"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                if (row.size == 1) Spacer(Modifier.weight(1f))
+                                            }
+                                            Spacer(Modifier.height(8.dp))
+                                        }
+                                    }
+                                }
+
+                                if (plannerStep == "theme") {
+                                    val familyTitle = when (selectedThemeFamily) {
+                                        "mate" -> "Mate puzzles"
+                                        "patterns" -> "Mating patterns"
+                                        "tactics" -> "Tactical themes"
+                                        "endgames" -> "Endgames"
+                                        else -> "Theme"
+                                    }
+                                    PlannerSection(
+                                        icon = "🎯",
+                                        title = familyTitle,
+                                        subtitle = "Choose the exact theme",
+                                        colors = listOf(Color(0xFF4C1D95), Color(0xFF6D28D9), Color(0xFF9333EA))
+                                    ) {
+                                        PlannerBackRow(label = familyTitle, onBack = { plannerStep = "family" })
+                                        activeThemeChoices.chunked(2).forEach { rowThemes ->
+                                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                rowThemes.forEach { opt ->
+                                                    ThemeDetailTile(
+                                                        opt = opt,
+                                                        selected = themeChoice.equals(opt.key, true),
+                                                        modifier = Modifier.weight(1f),
+                                                        onSelect = { key ->
+                                                            themeChoice = key
+                                                            themeReadyForStart = true
+                                                        }
+                                                    )
+                                                }
+                                                if (rowThemes.size == 1) Spacer(Modifier.weight(1f))
+                                            }
+                                            Spacer(Modifier.height(8.dp))
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -5151,18 +6987,32 @@ fun ReplayScreen(
                 else
                     ButtonDefaults.TextButtonContentPadding
 
-                Column(Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color(0xFF312E81), Color(0xFF1D4ED8), Color(0xFF0F172A))
+                            )
+                        )
+                        .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(22.dp))
+                ) {
                     Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Reset stats (start over)
+                        // RESET (start over)
                         TextButton(
                             onClick = { showStatsConfirm = true },
-                            contentPadding = btnPad2
-                        ) { Text("Reset stats") }
+                            contentPadding = btnPad2,
+                            colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFBAE6FD))
+                        ) { Text("Reset") }
 
-                        // Show confirm dialog for "Reset stats"
+                        // Show confirm dialog for "Reset"
                         if (showStatsConfirm) {
                             AlertDialog(
                                 onDismissRequest = { showStatsConfirm = false },
@@ -5170,7 +7020,7 @@ fun ReplayScreen(
                                 text = {
                                     Text(
                                         "This will ERASE all your training stats (accuracy, time, solved counters) " +
-                                                "and DELETE all saved cycles. You’ll start fresh with zero cycles."
+                                                "and DELETE all saved cycles. You'll start fresh with zero cycles."
                                     )
                                 },
                                 confirmButton = {
@@ -5178,18 +7028,13 @@ fun ReplayScreen(
                                         showStatsConfirm = false
 
                                         // 1) Per-puzzle stats (Woodpecker)
-                                        // (The store in your project exposes resetAll(); if you named it wipeAll(), use that.)
                                         runCatching { WoodpeckerStore(context).resetAll() }
 
-                                        // 2) Remove all cycles for both series
-                                        runCatching { CycleBank(context, Series.CHALLENGER.id).wipeAll() }
-                                        runCatching { CycleBank(context, Series.MASTER.id).wipeAll() }
+                                        // 2) Remove all tactics cycles
+                                        runCatching { CycleBank(context, Series.TACTICS.id).wipeAll() }
 
-                                        // 3) Nudge UI back to a clean Welcome
-                                        //    (clear in-memory state and force a refresh)
-                                        // If you track these vars, keep them; else safely ignore lines that don't exist in your file.
-                                        matchCount = null
-                                        selectedIndex = 0
+                                        // 3) Nudge UI back to a clean Training Planner
+                                        selectedIndex = -1
                                         allCycles = emptyList()
                                         welcomeRefresh++
                                     }) {
@@ -5204,22 +7049,42 @@ fun ReplayScreen(
                             )
                         }
 
+                        // START / NEW CYCLE
+                        val startHighlighted =
+                            (showCreateCycleDialog || allCycles.isEmpty()) &&
+                                    themeReadyForStart &&
+                                    !preparing
 
-                        // PLAY CYCLE — creates a new cycle and closes Welcome
-                        TextButton(
+                        Button(
                             onClick = {
+                                if (!showCreateCycleDialog && allCycles.isNotEmpty()) {
+                                    showCreateCycleDialog = true
+                                    themeReadyForStart = false
+                                    stopCounter()
+                                    return@Button
+                                }
+
                                 stopCounter()
 
-                                val minStart = 1800
-                                val absoluteMax = 3210
-                                val freeCap = 3210 // change to 2099 for free builds
+                                val minStart = 1200
+                                val absoluteMax = 4000
+                                val freeCap = 4000 // change lower for free builds if needed
 
                                 var lo = (minText.toIntOrNull() ?: minStart).coerceIn(minStart, absoluteMax)
                                 var hi = (maxText.toIntOrNull() ?: freeCap).coerceIn(minStart, freeCap)
                                 if (hi < lo) hi = lo
 
+                                val requestedDifficultyFloor = tacticsDifficultyFloorForRange(lo, hi)
+                                if (isTacticsDifficultyLocked(requestedDifficultyFloor)) {
+                                    showTacticsDifficultyGate(
+                                        tacticsDifficultyLabelForFloor(requestedDifficultyFloor),
+                                        requestedDifficultyFloor
+                                    )
+                                    return@Button
+                                }
+
                                 val reqSize = slider.coerceIn(25, CYCLE_MAX)
-                                val sel = if (hi <= 2099) Series.CHALLENGER else Series.MASTER
+                                val sel = Series.TACTICS
 
                                 startSeriesNow(
                                     sel = sel,
@@ -5230,35 +7095,39 @@ fun ReplayScreen(
                                     forceReset = false
                                 )
                             },
-                            contentPadding = btnPad2
-                        ) { Text("Play cycle") }
-                    }
+                            contentPadding = btnPad2,
+                            enabled = !preparing,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = if (startHighlighted) {
+                                Modifier.border(2.dp, Color.White.copy(alpha = 0.90f), RoundedCornerShape(16.dp))
+                            } else {
+                                Modifier
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (startHighlighted) Color(0xFFFFB703) else Color(0xFF1D4ED8),
+                                contentColor = if (startHighlighted) Color(0xFF111827) else Color.White
+                            )
+                        ) {
+                            Text(
+                                if (showCreateCycleDialog || allCycles.isEmpty()) {
+                                    if (startHighlighted) "Start ✓" else "Start"
+                                } else {
+                                    "New cycle"
+                                },
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
 
-                    Spacer(Modifier.height(if (dense2) 6.dp else 8.dp))
-
-                    // Exit centered (optional)
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
                         TextButton(
-                            onClick = { android.os.Process.killProcess(android.os.Process.myPid()) },
-                            contentPadding = btnPad2
+                            onClick = { showExitConfirm = true },
+                            contentPadding = btnPad2,
+                            colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFBAE6FD))
                         ) { Text("Exit") }
                     }
-
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "© 2025 by Cliburn Anthony A. Orbe",
-                        style = MaterialTheme.typography.bodySmall,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
-
             },
 
-            dismissButton = {}
+                        dismissButton = {}
         )
 
         // Ensure counter stops when dialog closes
@@ -5267,42 +7136,190 @@ fun ReplayScreen(
 
     }
 
-// --- Pro paywall dialog (Lite → Pro) ---
-    if (showProDialog && proDialogReason != null) {
+// --- Pro paywall dialog (Lite -> Pro) ---
+    if (!proUnlocked && showProDialog && proDialogReason != null) {
         val ctx = LocalContext.current
         val activity = ctx as? Activity
 
-        AlertDialog(
-            onDismissRequest = {
-                showProDialog = false
-            },
-            title = { Text("Unlock TrainerFish (full version)") },
-            text = {
-                Column {
-                    Text(proDialogReason!!)
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        "The full version unlocks unlimited Woodpecker cycles, higher rating ranges, " +
-                                "more saved training cycles, and all future TrainerFish features.",
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showProDialog = false }) {
-                    Text("Maybe later")
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showProDialog = false
-                        activity?.let { BillingManager.launchPurchase(it) }
-                    }
+        Dialog(
+            onDismissRequest = { showProDialog = false },
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true
+            )
+        ) {
+            Surface(
+                shape = RoundedCornerShape(32.dp),
+                color = Color.Transparent,
+                tonalElevation = 8.dp,
+                shadowElevation = 18.dp
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(32.dp))
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    Color(0xFF0F172A),
+                                    Color(0xFF2563EB),
+                                    Color(0xFF7C3AED)
+                                )
+                            )
+                        )
+                        .border(1.dp, Color.White.copy(alpha = 0.24f), RoundedCornerShape(32.dp))
+                        .padding(22.dp)
                 ) {
-                    Text("Unlock full version")
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(72.dp),
+                            shape = CircleShape,
+                            color = Color.White.copy(alpha = 0.17f)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("⭐", fontSize = 38.sp)
+                            }
+                        }
+
+                        Text(
+                            text = "TrainerFish Pro",
+                            color = Color.White,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Black,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Text(
+                            text = "Support TrainerFish and unlock the full tactics path.",
+                            color = Color.White.copy(alpha = 0.88f),
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(22.dp),
+                            color = Color.Black.copy(alpha = 0.24f)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "DIFFICULTY GATE",
+                                    color = Color.White.copy(alpha = 0.72f),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = proDialogReason!!,
+                                    color = Color.White,
+                                    fontSize = 15.sp
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(18.dp),
+                                color = Color.White.copy(alpha = 0.14f)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "Lifetime",
+                                        color = Color.White,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                    Text(
+                                        text = "unlock",
+                                        color = Color.White.copy(alpha = 0.76f),
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(18.dp),
+                                color = Color.White.copy(alpha = 0.14f)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "All",
+                                        color = Color.White,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                    Text(
+                                        text = "devices",
+                                        color = Color.White.copy(alpha = 0.76f),
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        Text(
+                            text = "Pro helps fund more puzzles, better lessons, and future TrainerFish upgrades.",
+                            color = Color.White.copy(alpha = 0.82f),
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(
+                                onClick = { showProDialog = false },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = Color.White.copy(alpha = 0.88f)
+                                )
+                            ) {
+                                Text("Maybe later", fontWeight = FontWeight.Bold)
+                            }
+
+                            Button(
+                                onClick = {
+                                    showProDialog = false
+                                    activity?.let { BillingManager.launchPurchase(it) }
+                                },
+                                modifier = Modifier
+                                    .weight(1.35f)
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(18.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.White.copy(alpha = 0.95f),
+                                    contentColor = Color(0xFF111827)
+                                )
+                            ) {
+                                Text("Unlock Pro", fontWeight = FontWeight.Black)
+                            }
+                        }
+                    }
                 }
             }
-        )
+        }
     }
 
     // --------------- Cycle complete ---------------
@@ -5310,20 +7327,55 @@ fun ReplayScreen(
         show = showCycleComplete,
         seriesTitle = series.title,
         cycleId = prefs.cycleId,
-        cap = capFor(series),
-        initialSize = prefs.size.coerceIn(25, capFor(series)),
+        solvedCount = prefs.solvedCount,
+        pointsEarned = prefs.ptsEarned,
+        pointsTotal = prefs.ptsTotal,
+        elapsedMs = prefs.elapsedMs,
+        nickname = nickname,
         onDismiss = { showCycleComplete = false },
-        onStartNewCycle = { newSize ->
-            prefs.cycleId = prefs.cycleId + 1
-            buildNewCyclePool(games.size, newSize)
-            nextIndexFromPool()?.let { loadGameAt(it) }
+        onStartNewCycle = {
+            // Close the "Cycle complete" dialog...
             showCycleComplete = false
+
+            // ...and open the Cycle Manager
+            mode = TrainerMode.WOODPECKER
+            showWelcome = true
+            status = "Trainer - cycle manager"
         },
         onRepeatCycle = {
+            // New pass over same pool, but as next cycle
+            prefs.cycleId = prefs.cycleId + 1
             prefs.resetStatsOnly()
             prefs.solvedCsv = ""
+            val ids = activePoolAbsIds()
+            if (ids.isNotEmpty()) {
+                writeCommittedCycleIds(prefs, ids, cycleTargetSizeForPrefs(prefs))
+                loadedTacticsAbsIds = ids
+            }
             nextIndexFromPool()?.let { loadGameAt(it) }
             showCycleComplete = false
+        }
+    )
+
+
+
+
+
+
+    ReplayBookmarksDialog(
+        show = showBookmarksDialog,
+        refreshKey = bookmarkRefresh,
+        store = tacticsBookmarkStore,
+        bookmarkReviewMode = bookmarkReviewMode,
+        light = themeColors.light,
+        dark = themeColors.dark,
+        pieceStyle = pieceStyle,
+        pieceSetKey = pieceSetPref,
+        onDismiss = { if (bookmarkReviewMode) returnFromBookmarkReview() else showBookmarksDialog = false },
+        onOpen = { bm -> openBookmarkedTacticsPuzzle(bm) },
+        onRemove = { bm ->
+            tacticsBookmarkStore.remove(bm.absIndex, bm.eventId)
+            bookmarkRefresh++
         }
     )
 
@@ -5331,7 +7383,12 @@ fun ReplayScreen(
     // --------------- Overlays:
     ReplayExitDialog(
         show = showExitConfirm,
+        proUnlocked = proUnlocked,
         onDismiss = { showExitConfirm = false },
+        onUnlockPro = {
+            showExitConfirm = false
+            (context as? Activity)?.let { BillingManager.launchPurchase(it) }
+        },
         onConfirmExit = {
             showExitConfirm = false
             // Clean shutdown of engine/eval
@@ -5340,7 +7397,13 @@ fun ReplayScreen(
             stopEngineNow(setState = true)
             engineEnabled = false
 
-            // Hard exit (same style you use in the Welcome dialog)
+            // Prefer a graceful finish first (some devices ignore killProcess() in certain states)
+            (context as? Activity)?.let { act ->
+                runCatching { act.finishAndRemoveTask() }
+                runCatching { act.finish() }
+            }
+
+            // Hard exit fallback
             android.os.Process.killProcess(android.os.Process.myPid())
         }
     )
@@ -5365,132 +7428,98 @@ fun ReplayScreen(
     }
 
     // --------------- Settings menu ---------------
-    if (showSettings) {
-        AlertDialog(
-            onDismissRequest = { showSettings = false },
-            title = { Text("Settings") },
-            text = {
-                Column {
-                    // NEW: Profile entry
-                    TextButton(
-                        onClick = {
-                            showSettings = false
-                            showProfile = true       // open the profile dialog
-                        }
-                    ) { Text("Profile") }
-
-                    Spacer(Modifier.height(4.dp))
-
-                    TextButton(
-                        onClick = {
-                            showSettings = false
-                            mode = TrainerMode.WOODPECKER
-                            showWelcome = true
-                            status = "Trainer — cycle manager"
-                        }
-                    ) { Text("Cycle manager") }
-
-                    Spacer(Modifier.height(4.dp))
-
-                    TextButton(
-                        onClick = {
-                            showSettings = false
-                            showCelebrationDialog = true
-                        }
-                    ) { Text("Celebration") }
-
-                    Spacer(Modifier.height(4.dp))
-
-                    TextButton(
-                        onClick = {
-                            showSettings = false
-                            showThemeDialog = true
-                        }
-                    ) { Text("Color theme") }
-
-                    Spacer(Modifier.height(4.dp))
-
-                    TextButton(
-                        onClick = {
-                            showSettings = false
-                            showSoundDialog = true
-                        }
-                    ) { Text("Sound pack") }
-
-                    // Chess clock
-                    Spacer(Modifier.height(4.dp))
-
-                    TextButton(
-                        onClick = {
-                            showSettings = false
-                            showAbout = true
-                        }
-                    ) { Text("About / Legal") }
-
-                    // Chess clock
-                    Spacer(Modifier.height(4.dp))
-
-                    TextButton(
-                        onClick = {
-                            showSettings = false
-                            onClock()      // switches root screen to Clock
-                        }
-                    ) { Text("Chess clock") }
-
-
-                    TextButton(
-                        onClick = {
-                            showSettings = false
-                            onClock()      // switches root screen to Clock
-                        }
-                    ) { Text("Chess clock") }
-
-                    // --- Developer / Testing -----------------------------------------
-                    Spacer(Modifier.height(16.dp))
-                    Divider()
-                    Spacer(Modifier.height(8.dp))
-
-                    Text(
-                        "Developer / Testing",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Force Pro (testing only)",
-                            modifier = Modifier.weight(1f)
-                        )
-                        Switch(
-                            checked = devProOverride,
-                            onCheckedChange = { checked ->
-                                devProOverride = checked
-                                premiumPrefs.isPro = checked
-                            }
-                        )
-                    }
-                }
-
-
-
-            },
-            confirmButton = {
-                TextButton(onClick = { showSettings = false }) {
-                    Text("Close")
+    ReplaySettingsDialog(
+        show = showSettings,
+        proUnlocked = proUnlocked,
+        soundOn = soundOn,
+        onDismiss = { showSettings = false },
+        onProfile = {
+            showSettings = false
+            showProfile = true
+        },
+        onCycleManager = {
+            showSettings = false
+            mode = TrainerMode.WOODPECKER
+            showWelcome = true
+            status = "Trainer - cycle manager"
+        },
+        onUpgradePro = {
+            showSettings = false
+            (context as? Activity)?.let { BillingManager.launchPurchase(it) }
+        },
+        onAppTheme = {
+            showSettings = false
+            showAppThemeDialog = true
+        },
+        onUiBoxTheme = {
+            showSettings = false
+            showUiBoxThemeDialog = true
+        },
+        onSoundEffectsChange = { on ->
+            soundOn = on
+            prefs.soundOn = on
+            feedback.soundsEnabled = on
+        },
+        onBoardColors = {
+            showSettings = false
+            showThemeDialog = true
+        },
+        onPieces = {
+            showSettings = false
+            showPieceSetDialog = true
+        },
+        onOrientation = {
+            showSettings = false
+            showOrientationDialog = true
+        },
+        onSoundPack = {
+            showSettings = false
+            showSoundDialog = true
+        },
+        onHelp = {
+            showSettings = false
+            showHelpDialog = true
+        },
+        onAbout = {
+            showSettings = false
+            showAbout = true
+        },
+        onClock = {
+            showSettings = false
+            onClock()
+        },
+        onRestorePurchases = {
+            BillingManager.init(context.applicationContext)
+            Toast.makeText(context, "Checking purchases…", Toast.LENGTH_SHORT).show()
+            BillingManager.restorePurchases(context.applicationContext) { unlocked ->
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    Toast.makeText(
+                        context,
+                        if (unlocked) "TrainerFish Pro restored. Thank you!" else "No TrainerFish Pro purchase found.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
-        )
-    }
+        }
+    )
+
+
+    ReplayOrientationDialog(
+        show = showOrientationDialog,
+        current = orientationSp.getString("orientation_lock", "auto") ?: "auto",
+        onDismiss = { showOrientationDialog = false },
+        onSelect = { value ->
+            applyOrientationLock(value)
+            showOrientationDialog = false
+        }
+    )
+
 
     ReplayProfileDialog(
         show = showProfile,
         nickname = nickname,
-        poolTotal = 261_071,
+        poolTotal = 666_715,
+        tacticsElo = userElo,
         onDismiss = { showProfile = false },
         onSaveNickname = { newNick ->
             val trimmed = newNick.trim()
@@ -5500,138 +7529,1407 @@ fun ReplayScreen(
         }
     )
 
+    ReplayHelpDialog(
+        show = showHelpDialog,
+        onDismiss = { showHelpDialog = false }
+    )
+
+    ReplayAboutDialog(
+        show = showAbout,
+        onDismiss = { showAbout = false }
+    )
+
 
 
 
 
     // --------------- Celebration submenu ---------------
-    if (showCelebrationDialog) {
-        AlertDialog(
-            onDismissRequest = { showCelebrationDialog = false },
-            title = { Text("Celebration") },
-            text = {
-                Column {
-                    @Composable
-                    fun option(id: String, label: String) {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    setCelebration(id)
-                                },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = (celebration == id),
-                                onClick = { setCelebration(id) }
-                            )
-                            Text(label, Modifier.padding(start = 8.dp))
-                        }
-                    }
-
-                    option("none", "None")
-                    option("confetti", "Confetti")
-                    option("gold", "Gold coins (Frank Marshall)")
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showCelebrationDialog = false }) {
-                    Text("Done")
-                }
-            }
-        )
-    }
-
-    // --------------- Color theme submenu ---------------
-    if (showThemeDialog) {
-        AlertDialog(
-            onDismissRequest = { showThemeDialog = false },
-            title = { Text("Board color theme") },
-            text = {
-                Column {
-                    @Composable
-                    fun themeRow(id: String, label: String) {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable { equipBoardTheme(id) },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = (boardTheme == id),
-                                onClick = { equipBoardTheme(id) }
-                            )
-                            Text(label, Modifier.padding(start = 8.dp))
-                        }
-                    }
-
-                    themeRow("classic", "Classic (green)")
-                    themeRow("wood", "Wood")
-                    themeRow("night", "Night")
-                    themeRow("blue",    "Blue")
-                    themeRow("sand",    "Sand")
-                    themeRow("forest",  "Forest")
-
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showThemeDialog = false }) {
-                    Text("Done")
-                }
-            }
-        )
-    }
-
-    // --------------- Sound pack submenu ---------------
-    if (showSoundDialog) {
-        AlertDialog(
-            onDismissRequest = { showSoundDialog = false },
-            title = { Text("Sound pack") },
-            text = {
-                Column {
-                    @Composable
-                    fun soundRow(id: String, label: String) {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable { equipSoundPack(id) },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = (soundPack == id),
-                                onClick = { equipSoundPack(id) }
-                            )
-                            Text(label, Modifier.padding(start = 8.dp))
-                        }
-                    }
-
-                    soundRow("wood", "Wood knock")
-                    soundRow("digital", "Digital")
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showSoundDialog = false }) {
-                    Text("Done")
-                }
-            }
-        )
-    }
-
-
-    ReplayPosterDialog(
-        show = showPoster,
-        headline = posterHeadline,
-        sub = posterSub,
-        foot = posterFoot,
-        onDismiss = { showPoster = false }
+    ReplayCelebrationDialog(
+        show = showCelebrationDialog,
+        celebration = celebration,
+        onDismiss = { showCelebrationDialog = false },
+        onSelect = { id -> setCelebration(id) }
     )
 
 
+    // --------------- App theme submenu (Light / Dark) ---------------
+    ReplayAppThemeDialog(
+        show = showAppThemeDialog,
+        appThemeKey = appThemeKey,
+        onDismiss = { showAppThemeDialog = false },
+        onSelect = { key -> onChangeAppThemeKey(key) }
+    )
+
+
+
+
+    // --------------- Window box color submenu ---------------
+    ReplayUiBoxThemeDialog(
+        show = showUiBoxThemeDialog,
+        uiBoxTheme = uiBoxTheme,
+        onDismiss = { showUiBoxThemeDialog = false },
+        onSelect = { key -> equipUiBoxTheme(key) }
+    )
+
+
+    // --------------- Color theme submenu ---------------
+    ReplayBoardColorThemeDialog(
+        show = showThemeDialog,
+        boardTheme = boardTheme,
+        onDismiss = { showThemeDialog = false },
+        onSelect = { id -> equipBoardTheme(id) }
+    )
+
+
+    // --------------- Piece set submenu ---------------
+    ReplayPieceSetDialog(
+        show = showPieceSetDialog,
+        pieceSetPref = pieceSetPref,
+        onDismiss = { showPieceSetDialog = false },
+        onSelect = { key -> equipPieceSet(key) }
+    )
+
+
+    // --------------- Sound pack submenu ---------------
+    ReplaySoundPackDialog(
+        show = showSoundDialog,
+        soundPack = soundPack,
+        onDismiss = { showSoundDialog = false },
+        onSelect = { id -> equipSoundPack(id) }
+    )
+
+
+
+
+    rewardQueue.getOrNull(rewardIndex)?.let { event ->
+        if (showRewardDialog) {
+            TrainerRewardDialog(
+                event = event,
+                onDismiss = { advanceTrainerRewardDialog() },
+                onShare = { shareTrainerAchievement(context, event) }
+            )
+        }
+    }
 }
 
 
+
+@Composable
+private fun ReplayTacticsReviewPromotionDialog(
+    show: Boolean,
+    promotionChoices: List<Pair<Char, String>>,
+    whiteTurn: Boolean,
+    onDismiss: () -> Unit,
+    onChoose: (Char) -> Unit
+) {
+    if (!show) return
+
+    fun glyph(suffix: Char): String = when (suffix) {
+        'q' -> if (whiteTurn) "♕" else "♛"
+        'r' -> if (whiteTurn) "♖" else "♜"
+        'b' -> if (whiteTurn) "♗" else "♝"
+        else -> if (whiteTurn) "♘" else "♞"
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(dismissOnClickOutside = true)
+    ) {
+        Surface(shape = RoundedCornerShape(16.dp), tonalElevation = 2.dp) {
+            Column(
+                Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("Promote pawn to", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(12.dp))
+
+                if (promotionChoices.isEmpty()) {
+                    Text("No legal promotion is available.", fontSize = 13.sp)
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        promotionChoices.forEach { (suffix, label) ->
+                            Surface(
+                                shape = CircleShape,
+                                tonalElevation = 3.dp,
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clickable { onChoose(suffix) }
+                            ) {
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(glyph(suffix), fontSize = 26.sp)
+                                        Text(label.take(1), fontSize = 10.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReplayBookmarksDialog(
+    show: Boolean,
+    refreshKey: Int,
+    store: TacticsBookmarkStore,
+    bookmarkReviewMode: Boolean,
+    light: Color,
+    dark: Color,
+    pieceStyle: PieceStyle,
+    pieceSetKey: String,
+    onDismiss: () -> Unit,
+    onOpen: (TacticsBookmark) -> Unit,
+    onRemove: (TacticsBookmark) -> Unit
+) {
+    if (!show) return
+
+    val savedBookmarks = run {
+        refreshKey
+        store.list()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column {
+                Text("Bookmarked puzzles", fontWeight = FontWeight.Bold)
+                Text(
+                    "${savedBookmarks.size} saved",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        text = {
+            if (savedBookmarks.isEmpty()) {
+                Text("No bookmarked tactics puzzles yet. Tap ☆ Bookmark below the board to save the current puzzle.")
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 620.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    items(savedBookmarks, key = { "${it.eventId}:${it.absIndex}" }) { bm ->
+                        val themeLabel = prettyTacticsTheme(bm.theme)
+                        val difficulty = difficultyLabelForTacticsRating(bm.rating)
+
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(18.dp),
+                            tonalElevation = 3.dp,
+                            shadowElevation = 2.dp,
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.90f)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                TacticsBookmarkMiniBoard(
+                                    bookmark = bm,
+                                    light = light,
+                                    dark = dark,
+                                    pieceStyle = pieceStyle,
+                                    pieceSetKey = pieceSetKey,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(1f)
+                                )
+
+                                Spacer(Modifier.height(10.dp))
+
+                                Text(
+                                    text = themeLabel,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 18.sp,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+
+                                Spacer(Modifier.height(6.dp))
+
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(999.dp),
+                                        color = when (difficulty) {
+                                            "Beginner" -> Color(0xFF166534)
+                                            "Easy" -> Color(0xFF14532D)
+                                            "Medium" -> Color(0xFF1E3A8A)
+                                            "Difficult" -> Color(0xFF7C2D12)
+                                            "Masterclass" -> Color(0xFF581C87)
+                                            "Grandmaster" -> Color(0xFF111827)
+                                            else -> MaterialTheme.colorScheme.secondaryContainer
+                                        }
+                                    ) {
+                                        Text(
+                                            difficulty,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
+
+                                    if (bm.rating > 0) {
+                                        Text(
+                                            "Rating ${bm.rating}",
+                                            fontSize = 13.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                Spacer(Modifier.height(8.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    TextButton(onClick = { onOpen(bm) }) { Text("Review") }
+                                    TextButton(onClick = { onRemove(bm) }) { Text("Remove") }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(if (bookmarkReviewMode) "Back to cycle" else "Close")
+            }
+        }
+    )
+}
+
+@Composable
+private fun ReplaySettingsDialog(
+    show: Boolean,
+    proUnlocked: Boolean,
+    soundOn: Boolean,
+    onDismiss: () -> Unit,
+    onProfile: () -> Unit,
+    onCycleManager: () -> Unit,
+    onUpgradePro: () -> Unit,
+    onAppTheme: () -> Unit,
+    onUiBoxTheme: () -> Unit,
+    onSoundEffectsChange: (Boolean) -> Unit,
+    onBoardColors: () -> Unit,
+    onPieces: () -> Unit,
+    onOrientation: () -> Unit,
+    onSoundPack: () -> Unit,
+    onHelp: () -> Unit,
+    onAbout: () -> Unit,
+    onClock: () -> Unit,
+    onRestorePurchases: () -> Unit
+) {
+    if (!show) return
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Settings") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 520.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                TextButton(onClick = onProfile) { Text("Profile") }
+                Spacer(Modifier.height(4.dp))
+                TextButton(onClick = onCycleManager) { Text("Cycle manager") }
+
+                if (!proUnlocked) {
+                    Spacer(Modifier.height(4.dp))
+                    TextButton(onClick = onUpgradePro) { Text("Upgrade to TrainerFish Pro \uD83D\uDD12") }
+                }
+
+                Spacer(Modifier.height(4.dp))
+                TextButton(onClick = onAppTheme) { Text("App theme") }
+                Spacer(Modifier.height(4.dp))
+                TextButton(onClick = onUiBoxTheme) { Text("Window box colors") }
+                Spacer(Modifier.height(4.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Sound effects",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Switch(checked = soundOn, onCheckedChange = onSoundEffectsChange)
+                }
+
+                TextButton(onClick = onBoardColors) { Text("Board colors") }
+                Spacer(Modifier.height(4.dp))
+                TextButton(onClick = onPieces) { Text("Pieces") }
+                Spacer(Modifier.height(4.dp))
+                TextButton(onClick = onOrientation) { Text("Screen orientation") }
+                Spacer(Modifier.height(4.dp))
+                TextButton(onClick = onSoundPack) { Text("Sound pack") }
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = onHelp) { Text("Help / FAQ") }
+                TextButton(onClick = onAbout) { Text("About / Legal") }
+                Spacer(Modifier.height(4.dp))
+                TextButton(onClick = onClock) { Text("Chess clock") }
+
+                Spacer(Modifier.height(16.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                ) {
+                    Divider()
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "TrainerFish Pro",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    Text(
+                        text = if (proUnlocked) "Status: Pro unlocked" else "Status: Lite mode",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+                    )
+
+                    if (!proUnlocked) {
+                        TextButton(onClick = onUpgradePro) { Text("Unlock TrainerFish Pro 🔒") }
+                    }
+
+                    TextButton(onClick = onRestorePurchases) { Text("Restore purchases") }
+
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        }
+    )
+}
+
+@Composable
+private fun ReplayOrientationDialog(
+    show: Boolean,
+    current: String,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    if (!show) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Screen orientation") },
+        text = {
+            Column {
+                OrientationOptionRow("Auto (follow system)", current == "auto") { onSelect("auto") }
+                OrientationOptionRow("Portrait", current == "portrait") { onSelect("portrait") }
+                OrientationOptionRow("Landscape", current == "landscape") { onSelect("landscape") }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+    )
+}
+
+@Composable
+private fun ReplayCelebrationDialog(
+    show: Boolean,
+    celebration: String,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    if (!show) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Celebration") },
+        text = {
+            Column {
+                listOf(
+                    "none" to "None",
+                    "confetti" to "Confetti",
+                    "gold" to "Gold coins (Frank Marshall)"
+                ).forEach { (id, label) ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(id) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = celebration == id, onClick = { onSelect(id) })
+                        Text(label, Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+    )
+}
+
+@Composable
+private fun ReplayAppThemeDialog(
+    show: Boolean,
+    appThemeKey: String,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    if (!show) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("App theme") },
+        text = {
+            Column {
+                listOf(
+                    AppThemeKeys.LIGHT to "Light",
+                    AppThemeKeys.DARK to "Dark (night)"
+                ).forEach { (key, label) ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(key) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = appThemeKey == key, onClick = { onSelect(key) })
+                        Text(label, Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+    )
+}
+
+@Composable
+private fun ReplayUiBoxThemeDialog(
+    show: Boolean,
+    uiBoxTheme: String,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    if (!show) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Window box colors") },
+        text = {
+            Column {
+                TrainerFishUiBoxPalettes.forEach { opt ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(opt.key) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = uiBoxTheme == opt.key, onClick = { onSelect(opt.key) })
+                        Text(opt.label, Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+    )
+}
+
+@Composable
+private fun ReplayBoardColorThemeDialog(
+    show: Boolean,
+    boardTheme: String,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    if (!show) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Board color theme") },
+        text = {
+            Column {
+                listOf(
+                    "classic" to "Classic (green)",
+                    "wood" to "Wood",
+                    "night" to "Night",
+                    "blue" to "Blue",
+                    "sand" to "Sand",
+                    "forest" to "Forest"
+                ).forEach { (id, label) ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(id) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = boardTheme == id, onClick = { onSelect(id) })
+                        Text(label, Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+    )
+}
+
+@Composable
+private fun ReplayPieceSetDialog(
+    show: Boolean,
+    pieceSetPref: String,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    if (!show) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Pieces") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                TrainerFishPieceSets.forEach { opt ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(opt.key) }
+                            .padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = pieceSetPref == opt.key, onClick = { onSelect(opt.key) })
+                        Text(opt.label, Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+    )
+}
+
+@Composable
+private fun ReplaySoundPackDialog(
+    show: Boolean,
+    soundPack: String,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    if (!show) return
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Sound pack") },
+        text = {
+            Column {
+                listOf(
+                    "wood" to "Wood knock",
+                    "digital" to "Digital"
+                ).forEach { (id, label) ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(id) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = soundPack == id, onClick = { onSelect(id) })
+                        Text(label, Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } }
+    )
+}
+
+@Composable
+private fun TacticsStatPill(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White.copy(alpha = 0.13f),
+        tonalElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = label,
+                color = Color.White.copy(alpha = 0.78f),
+                fontSize = 11.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = value,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun TacticsControlCard(
+    status: String,
+    awaitingMistakeChoice: Boolean,
+    elapsedLabel: String?,
+    puzzleOver: Boolean,
+    engineReviewActive: Boolean,
+    engineReviewLine: String,
+    tacticThemeLabel: String,
+    difficultyLabel: String,
+    currentPuzzleRating: Int?,
+    uiBoxColors: List<Color> = trainerFishUiBoxPalette("sunset").colors,
+    userElo: Int = TRAINER_ELO_INITIAL,
+    lastRatingBefore: Int? = null,
+    lastRatingAfter: Int? = null,
+    lastRatingDelta: Int? = null,
+    series: Series,
+    prefs: CyclePrefs,
+    poolSize: Int,
+    solved: Int,
+    avgMs: Long,
+    accPct: Float,
+    lastPuzzleEarned: Int?,
+    lastPuzzleTotal: Int?,
+    lastPuzzleElapsedMs: Long?,
+    solutionAvailable: Boolean,
+    nextAvailable: Boolean,
+    canReview: Boolean,
+    isAnimating: Boolean,
+    isCurrentBookmarked: Boolean,
+    onToggleBookmark: () -> Unit,
+    onShowBookmarks: () -> Unit,
+    onReview: () -> Unit,
+    onReviewBack: () -> Unit,
+    onReviewForward: () -> Unit,
+    onNext: () -> Unit,
+    onShare: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val timerText = when {
+        puzzleOver && lastPuzzleElapsedMs != null -> formatHms(lastPuzzleElapsedMs)
+        !elapsedLabel.isNullOrBlank() -> elapsedLabel.removePrefix("⏱").trim().ifBlank { "00:00" }
+        else -> "00:00"
+    }
+
+    val puzzleAccuracyText = if (puzzleOver && lastPuzzleEarned != null && (lastPuzzleTotal ?: 0) > 0) {
+        val pct = (lastPuzzleEarned * 100f / (lastPuzzleTotal ?: 1))
+        "${String.format("%.0f", pct)}%"
+    } else "—"
+
+    val puzzleScoreText = if (puzzleOver && lastPuzzleEarned != null && (lastPuzzleTotal ?: 0) > 0) {
+        "$lastPuzzleEarned/${lastPuzzleTotal ?: 0}"
+    } else "—"
+
+    val cycleAccuracyText = if (prefs.ptsTotal > 0) "${String.format("%.0f", accPct)}%" else "—"
+    val cycleAvgTimeText = if (solved > 0) formatHms(avgMs) else "—"
+    val ratingText = currentPuzzleRating?.takeIf { it > 0 }?.let { " • $it" }.orEmpty()
+    val eloMainText = if (puzzleOver && lastRatingBefore != null && lastRatingAfter != null) {
+        "$lastRatingBefore → $lastRatingAfter"
+    } else {
+        "Elo $userElo"
+    }
+    val eloDeltaText = lastRatingDelta?.let { "(${formatEloDelta(it)})" }.orEmpty()
+    val eloDeltaColor = when {
+        lastRatingDelta == null -> Color.White.copy(alpha = 0.86f)
+        lastRatingDelta >= 0 -> Color(0xFF22C55E)
+        else -> Color(0xFFEF4444)
+    }
+    val promptText = when {
+        awaitingMistakeChoice -> "Your move is not the strongest. Find the better continuation."
+        status.isNotBlank() -> status
+        else -> "Find the strongest move."
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                Brush.linearGradient(uiBoxColors)
+            )
+            .border(1.dp, Color.White.copy(alpha = 0.24f), RoundedCornerShape(24.dp))
+            .padding(12.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "TACTICS TRAINER",
+                        color = Color.White.copy(alpha = 0.82f),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.1.sp
+                    )
+                    Text(
+                        text = tacticThemeLabel.ifBlank { "Tactical Themes" },
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "$difficultyLabel$ratingText • Elo $userElo • ${series.title} Cycle #${prefs.cycleId}",
+                        color = Color.White.copy(alpha = 0.86f),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    PushButton(
+                        text = if (isCurrentBookmarked) "★" else "☆",
+                        onClick = onToggleBookmark,
+                        compact = true,
+                        backgroundColor = if (isCurrentBookmarked) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.90f),
+                        textColor = Color(0xFF111827),
+                    )
+                    PushButton(
+                        text = if (puzzleOver) "Next" else "Give Up",
+                        onClick = if (puzzleOver) onNext else onReview,
+                        enabled = if (puzzleOver) nextAvailable && !isAnimating else solutionAvailable && !isAnimating,
+                        compact = true,
+                        backgroundColor = Color.White.copy(alpha = 0.90f),
+                        textColor = Color(0xFF111827),
+                    )
+                }
+            }
+
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Color.Black.copy(alpha = 0.24f),
+                tonalElevation = 0.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    if (!puzzleOver) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Timer",
+                                color = Color.White.copy(alpha = 0.74f),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = timerText,
+                                color = Color.White,
+                                fontSize = 42.sp,
+                                fontWeight = FontWeight.Black,
+                                maxLines = 1
+                            )
+                        }
+
+                        Text(
+                            text = "♟",
+                            color = Color.White.copy(alpha = 0.92f),
+                            fontSize = 34.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "ELO RATING",
+                                color = Color.White.copy(alpha = 0.78f),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.0.sp
+                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = eloMainText,
+                                    color = Color.White,
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.Black,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                                if (eloDeltaText.isNotBlank()) {
+                                    Text(
+                                        text = eloDeltaText,
+                                        color = eloDeltaColor,
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.Black,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                        }
+
+                        Text(
+                            text = if ((lastRatingDelta ?: 0) >= 0) "▲" else "▼",
+                            color = eloDeltaColor,
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                }
+            }
+
+            if (!puzzleOver) {
+                Text(
+                    text = promptText,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            if (puzzleOver) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (engineReviewActive) "Engine Review" else "Woodpecker Stats",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (!engineReviewActive) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            PushButton(
+                                text = "Review",
+                                onClick = onReview,
+                                enabled = solutionAvailable && !isAnimating,
+                                compact = true,
+                                backgroundColor = Color.White.copy(alpha = 0.92f),
+                                textColor = Color(0xFF111827),
+                            )
+                            PushButton(
+                                text = "Share",
+                                onClick = onShare,
+                                enabled = puzzleOver && !isAnimating,
+                                compact = true,
+                                backgroundColor = Color.White.copy(alpha = 0.92f),
+                                textColor = Color(0xFF111827),
+                            )
+                        }
+                    }
+                }
+
+                if (!engineReviewActive) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TacticsStatPill("Puzzle", puzzleAccuracyText, Modifier.weight(1f))
+                        TacticsStatPill("Score", puzzleScoreText, Modifier.weight(1f))
+                        TacticsStatPill("Time", timerText, Modifier.weight(1f))
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TacticsStatPill("Cycle", "$solved/$poolSize", Modifier.weight(1f))
+                        TacticsStatPill("Accuracy", cycleAccuracyText, Modifier.weight(1f))
+                        TacticsStatPill("Avg Time", cycleAvgTimeText, Modifier.weight(1f))
+                    }
+                } else {
+                    val shownReviewLine = engineReviewLine.ifBlank { "mate" }
+                    val scroll = rememberScrollState()
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(scroll)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color.Black.copy(alpha = 0.18f))
+                            .padding(horizontal = 10.dp, vertical = 7.dp)
+                    ) {
+                        Text(
+                            text = shownReviewLine,
+                            color = Color.White,
+                            maxLines = 1,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                    ) {
+                        PushButton(
+                            text = "◀",
+                            onClick = onReviewBack,
+                            enabled = canReview && !isAnimating,
+                            compact = true,
+                            backgroundColor = Color.White.copy(alpha = 0.92f),
+                            textColor = Color(0xFF111827),
+                        )
+                        PushButton(
+                            text = "▶",
+                            onClick = onReviewForward,
+                            enabled = canReview && !isAnimating,
+                            compact = true,
+                            backgroundColor = Color.White.copy(alpha = 0.92f),
+                            textColor = Color(0xFF111827),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReplayLandscapePuzzleBody(
+    puzzleLabel: String,
+    puzzleOver: Boolean,
+    engineReviewLine: String,
+    awaitingMistakeChoice: Boolean,
+    onTryAgain: () -> Unit,
+    onShowSolutionChoice: () -> Unit,
+    currentPuzzleRating: Int?,
+    uiBoxColors: List<Color>,
+    userElo: Int,
+    lastRatingBefore: Int?,
+    lastRatingAfter: Int?,
+    lastRatingDelta: Int?,
+    tacticThemeLabel: String,
+    difficultyLabel: String,
+    lastPuzzleEarned: Int?,
+    lastPuzzleTotal: Int?,
+    lastPuzzleElapsedMs: Long?,
+    engineReviewActive: Boolean,
+    series: Series,
+    prefs: CyclePrefs,
+    poolSize: Int,
+    solved: Int,
+    avgMs: Long,
+    accPct: Float,
+    tierText: String,
+    bestMs: Long,
+    bestPts: Int,
+    bestTot: Int,
+    nickname: String,
+    elapsedLabel: String?,
+    whiteBottom: Boolean,
+    evalCp: Int?,
+    plyTick: Int,
+    isAnimating: Boolean,
+    boardSize: IntSize,
+    onBoardSizeChanged: (IntSize) -> Unit,
+    onInterruptAnimation: () -> Unit,
+    onTryUserMove: (Int, Int) -> Unit,
+    onSelectedSqChange: (Int?) -> Unit,
+    boardContent: @Composable BoxScope.() -> Unit,
+    onRevealSolution: () -> Unit,
+    onNext: () -> Unit,
+    onShare: () -> Unit,
+    labelSolution: String,
+    labelNext: String,
+    solutionAvailable: Boolean,
+    nextAvailable: Boolean,
+    canReview: Boolean,
+    onReviewBack: () -> Unit,
+    onReviewForward: () -> Unit,
+    isCurrentBookmarked: Boolean,
+    onToggleBookmark: () -> Unit,
+    onShowBookmarks: () -> Unit,
+    headerContent: @Composable () -> Unit
+) {
+    var splitFracState by rememberSaveable { mutableStateOf(-1f) }
+    var rootSize by remember { mutableStateOf(IntSize.Zero) }
+    val minFrac = 0.34f
+    val maxFrac = 0.82f
+    val splitterDensity = LocalDensity.current
+    val defaultSplitFrac = if (rootSize.width > 0 && rootSize.height > 0) {
+        val neededPx = rootSize.height.toFloat() + with(splitterDensity) { 6.dp.toPx() + 8.dp.toPx() }
+        (neededPx / rootSize.width.toFloat()).coerceIn(minFrac, maxFrac)
+    } else 0.58f
+    LaunchedEffect(rootSize.width, rootSize.height, defaultSplitFrac) {
+        if (splitFracState < 0f && rootSize.width > 0 && rootSize.height > 0) {
+            splitFracState = defaultSplitFrac
+        }
+    }
+    val splitFrac = (splitFracState.takeIf { it > 0f } ?: defaultSplitFrac).coerceIn(minFrac, maxFrac)
+
+    Row(
+        Modifier
+            .fillMaxSize()
+            .onSizeChanged { rootSize = it },
+        horizontalArrangement = Arrangement.spacedBy(0.dp)
+    ) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .weight(splitFrac)
+                .fillMaxHeight()
+                .padding(end = 0.dp),
+            contentAlignment = Alignment.TopStart
+        ) {
+            val evalW = 6.dp
+            val gap = 8.dp
+            val availW = maxWidth - evalW - gap
+            val side = minOf(maxHeight, if (availW < 0.dp) 0.dp else availW)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(gap),
+                verticalAlignment = Alignment.Top
+            ) {
+                Box(Modifier.size(side)) {
+                    ReplayBoardBox(
+                        modifier = Modifier.fillMaxSize(),
+                        plyTick = plyTick,
+                        whiteBottom = whiteBottom,
+                        isAnimating = isAnimating,
+                        boardSize = boardSize,
+                        onBoardSizeChanged = onBoardSizeChanged,
+                        onInterruptAnimation = onInterruptAnimation,
+                        onTryUserMove = onTryUserMove,
+                        onSelectedSqChange = onSelectedSqChange,
+                        content = boardContent
+                    )
+                }
+
+                EvalBar(
+                    scoreCp = evalCp,
+                    modifier = Modifier
+                        .height(side)
+                        .width(evalW),
+                    whiteOnTop = !whiteBottom
+                )
+            }
+        }
+
+        BoardResizeSplitter(
+            orientation = BoardResizeSplitterOrientation.VERTICAL,
+            totalPx = rootSize.width.toFloat()
+        ) { delta ->
+            val current = (splitFracState.takeIf { it > 0f } ?: splitFrac).coerceIn(minFrac, maxFrac)
+            splitFracState = (current + delta).coerceIn(minFrac, maxFrac)
+        }
+
+        Column(
+            Modifier
+                .weight(1f - splitFrac)
+                .fillMaxHeight()
+                .padding(start = 8.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            headerContent()
+            TacticsControlCard(
+                status = puzzleLabel,
+                awaitingMistakeChoice = awaitingMistakeChoice,
+                elapsedLabel = elapsedLabel,
+                puzzleOver = puzzleOver,
+                engineReviewActive = engineReviewActive,
+                engineReviewLine = engineReviewLine,
+                tacticThemeLabel = tacticThemeLabel,
+                difficultyLabel = difficultyLabel,
+                currentPuzzleRating = currentPuzzleRating,
+                uiBoxColors = uiBoxColors,
+                userElo = userElo,
+                lastRatingBefore = lastRatingBefore,
+                lastRatingAfter = lastRatingAfter,
+                lastRatingDelta = lastRatingDelta,
+                series = series,
+                prefs = prefs,
+                poolSize = poolSize,
+                solved = solved,
+                avgMs = avgMs,
+                accPct = accPct,
+                lastPuzzleEarned = lastPuzzleEarned,
+                lastPuzzleTotal = lastPuzzleTotal,
+                lastPuzzleElapsedMs = lastPuzzleElapsedMs,
+                solutionAvailable = solutionAvailable,
+                nextAvailable = nextAvailable,
+                canReview = canReview,
+                isAnimating = isAnimating,
+                isCurrentBookmarked = isCurrentBookmarked,
+                onToggleBookmark = onToggleBookmark,
+                onShowBookmarks = onShowBookmarks,
+                onReview = onRevealSolution,
+                onReviewBack = onReviewBack,
+                onReviewForward = onReviewForward,
+                onNext = onNext,
+                onShare = onShare
+            )
+        }
+    }
+}
+
+
+// --- Extracted layouts to reduce ReplayScreen() method size ---
+
+
+
+@Composable
+private fun ReplayPortraitPuzzleBody(
+    status: String,
+    puzzleOver: Boolean,
+    engineReviewLine: String,
+    awaitingMistakeChoice: Boolean,
+    onTryAgain: () -> Unit,
+    onShowSolutionChoice: () -> Unit,
+    currentPuzzleRating: Int?,
+    uiBoxColors: List<Color>,
+    userElo: Int,
+    lastRatingBefore: Int?,
+    lastRatingAfter: Int?,
+    lastRatingDelta: Int?,
+    tacticThemeLabel: String,
+    difficultyLabel: String,
+    lastPuzzleEarned: Int?,
+    lastPuzzleTotal: Int?,
+    lastPuzzleElapsedMs: Long?,
+    engineReviewActive: Boolean,
+    prefs: CyclePrefs,
+    series: Series,
+    poolSize: Int,
+    solved: Int,
+    avgMs: Long,
+    accPct: Float,
+    tierText: String,
+    bestMs: Long,
+    bestPts: Int,
+    bestTot: Int,
+    nickname: String,
+    elapsedLabel: String?,
+    whiteBottom: Boolean,
+    evalCp: Int?,
+    plyTick: Int,
+    isAnimating: Boolean,
+    boardSize: IntSize,
+    onBoardSizeChanged: (IntSize) -> Unit,
+    onInterruptAnimation: () -> Unit,
+    onTryUserMove: (Int, Int) -> Unit,
+    onSelectedSqChange: (Int?) -> Unit,
+    boardContent: @Composable BoxScope.() -> Unit,
+    labelSolution: String,
+    labelNext: String,
+    solutionAvailable: Boolean,
+    nextAvailable: Boolean,
+    canReview: Boolean,
+    onReviewBack: () -> Unit,
+    onReviewForward: () -> Unit,
+    onRevealSolution: () -> Unit,
+    onNext: () -> Unit,
+    onShare: () -> Unit,
+    isCurrentBookmarked: Boolean,
+    onToggleBookmark: () -> Unit,
+    onShowBookmarks: () -> Unit
+) {
+    var splitFracState by rememberSaveable { mutableStateOf(-1f) }
+    var rootSize by remember { mutableStateOf(IntSize.Zero) }
+    val minFrac = 0.34f
+    val maxFrac = 0.82f
+    val splitterDensity = LocalDensity.current
+    val defaultSplitFrac = if (rootSize.width > 0 && rootSize.height > 0) {
+        val neededPx = rootSize.width.toFloat() + with(splitterDensity) { 6.dp.toPx() + 4.dp.toPx() }
+        (neededPx / rootSize.height.toFloat()).coerceIn(minFrac, maxFrac)
+    } else 0.58f
+    LaunchedEffect(rootSize.width, rootSize.height, defaultSplitFrac) {
+        if (splitFracState < 0f && rootSize.width > 0 && rootSize.height > 0) {
+            splitFracState = defaultSplitFrac
+        }
+    }
+    val splitFrac = (splitFracState.takeIf { it > 0f } ?: defaultSplitFrac).coerceIn(minFrac, maxFrac)
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .onSizeChanged { rootSize = it }
+    ) {
+        BoxWithConstraints(
+            Modifier
+                .weight(splitFrac)
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            val evalH = 6.dp
+            val gap = 4.dp
+            val boardSide = minOf(
+                maxWidth,
+                (maxHeight - evalH - gap).coerceAtLeast(0.dp)
+            )
+
+            Column(
+                Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top
+            ) {
+                Box(Modifier.size(boardSide)) {
+                    ReplayBoardBox(
+                        modifier = Modifier.fillMaxSize(),
+                        plyTick = plyTick,
+                        whiteBottom = whiteBottom,
+                        isAnimating = isAnimating,
+                        boardSize = boardSize,
+                        onBoardSizeChanged = onBoardSizeChanged,
+                        onInterruptAnimation = onInterruptAnimation,
+                        onTryUserMove = onTryUserMove,
+                        onSelectedSqChange = onSelectedSqChange,
+                        content = boardContent
+                    )
+                }
+
+                EvalBar(
+                    scoreCp = evalCp,
+                    modifier = Modifier
+                        .width(boardSide)
+                        .height(evalH),
+                    whiteOnTop = !whiteBottom
+                )
+            }
+        }
+
+        BoardResizeSplitter(
+            orientation = BoardResizeSplitterOrientation.HORIZONTAL,
+            totalPx = rootSize.height.toFloat()
+        ) { delta ->
+            val current = (splitFracState.takeIf { it > 0f } ?: splitFrac).coerceIn(minFrac, maxFrac)
+            splitFracState = (current + delta).coerceIn(minFrac, maxFrac)
+        }
+
+        Column(
+            Modifier
+                .weight(1f - splitFrac)
+                .fillMaxWidth()
+                .padding(top = 6.dp, start = 6.dp, end = 6.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            TacticsControlCard(
+                status = status,
+                awaitingMistakeChoice = awaitingMistakeChoice,
+                elapsedLabel = elapsedLabel,
+                puzzleOver = puzzleOver,
+                engineReviewActive = engineReviewActive,
+                engineReviewLine = engineReviewLine,
+                tacticThemeLabel = tacticThemeLabel,
+                difficultyLabel = difficultyLabel,
+                currentPuzzleRating = currentPuzzleRating,
+                uiBoxColors = uiBoxColors,
+                userElo = userElo,
+                lastRatingBefore = lastRatingBefore,
+                lastRatingAfter = lastRatingAfter,
+                lastRatingDelta = lastRatingDelta,
+                series = series,
+                prefs = prefs,
+                poolSize = poolSize,
+                solved = solved,
+                avgMs = avgMs,
+                accPct = accPct,
+                lastPuzzleEarned = lastPuzzleEarned,
+                lastPuzzleTotal = lastPuzzleTotal,
+                lastPuzzleElapsedMs = lastPuzzleElapsedMs,
+                solutionAvailable = solutionAvailable,
+                nextAvailable = nextAvailable,
+                canReview = canReview,
+                isAnimating = isAnimating,
+                isCurrentBookmarked = isCurrentBookmarked,
+                onToggleBookmark = onToggleBookmark,
+                onShowBookmarks = onShowBookmarks,
+                onReview = onRevealSolution,
+                onReviewBack = onReviewBack,
+                onReviewForward = onReviewForward,
+                onNext = onNext,
+                onShare = onShare
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReplayBoardBox(
+    modifier: Modifier = Modifier,
+    plyTick: Int,
+    whiteBottom: Boolean,
+    isAnimating: Boolean,
+    boardSize: IntSize,
+    onBoardSizeChanged: (IntSize) -> Unit,
+    onInterruptAnimation: () -> Unit,
+    onTryUserMove: (Int, Int) -> Unit,
+    onSelectedSqChange: (Int?) -> Unit,
+    content: @Composable BoxScope.() -> Unit
+
+) {
+    var dragFrom by remember { mutableStateOf<Int?>(null) }
+    var lastDragPos by remember { mutableStateOf<Offset?>(null) }
+
+    Box(
+        modifier
+            .aspectRatio(1f)
+            .onSizeChanged(onBoardSizeChanged)
+            .pointerInput(plyTick, whiteBottom, isAnimating) {
+                detectDragGestures(
+                    onDragStart = { pos ->
+                        if (isAnimating) onInterruptAnimation()
+                        if (isAnimating) return@detectDragGestures
+                        dragFrom = posToIndex(pos, boardSize)
+                        lastDragPos = pos
+                        onSelectedSqChange(dragFrom)
+                    },
+                    onDrag = { change, _ ->
+                        if (isAnimating) {
+                            dragFrom = null
+                            lastDragPos = null
+                            return@detectDragGestures
+                        }
+                        lastDragPos = change.position
+                    },
+                    onDragEnd = {
+                        if (!isAnimating) {
+                            val from = dragFrom
+                            val to = lastDragPos?.let { posToIndex(it, boardSize) }
+                            if (from != null && to != null && from != to) {
+                                onTryUserMove(from, to)
+                            }
+                        }
+                        dragFrom = null; lastDragPos = null
+                    },
+                    onDragCancel = { dragFrom = null; lastDragPos = null }
+                )
+            }
+    ) { content() }
+}
+
+
+
+
 // ---------- Overlays & helpers ----------
-private fun posToIndex(pos: Offset, size: IntSize): Int? {
+fun posToIndex(pos: Offset, size: IntSize): Int? {
     if (size.width <= 0 || size.height <= 0) return null
     val sqW = size.width / 8f
     val sqH = size.height / 8f
@@ -5650,10 +8948,8 @@ private fun posToIndex(pos: Offset, size: IntSize): Int? {
 }
 
 
-
-
 @Composable
-private fun BoxScope.drawPieceOverlay(piece: Piece?, center: Offset, boardSize: IntSize) {
+fun BoxScope.drawPieceOverlay(piece: Piece?, center: Offset, boardSize: IntSize) {
     if (piece == null || boardSize.width == 0) return
     val sq = min(boardSize.width, boardSize.height) / 8f
     val half = (sq / 2f)
@@ -5665,17 +8961,15 @@ private fun BoxScope.drawPieceOverlay(piece: Piece?, center: Offset, boardSize: 
             .size(with(LocalDensity.current) { sq.toDp() }),
         contentAlignment = Alignment.Center
     ) {
-        val resId = when (piece.type) {
-            PieceType.KING   -> if (piece.isWhite) R.drawable.cburnett_wk else R.drawable.cburnett_bk
-            PieceType.QUEEN  -> if (piece.isWhite) R.drawable.cburnett_wq else R.drawable.cburnett_bq
-            PieceType.ROOK   -> if (piece.isWhite) R.drawable.cburnett_wr else R.drawable.cburnett_br
-            PieceType.BISHOP -> if (piece.isWhite) R.drawable.cburnett_wb else R.drawable.cburnett_bb
-            PieceType.KNIGHT -> if (piece.isWhite) R.drawable.cburnett_wn else R.drawable.cburnett_bn
-            PieceType.PAWN   -> if (piece.isWhite) R.drawable.cburnett_wp else R.drawable.cburnett_bp
+        val ctx = LocalContext.current
+        val pieceSetKey = ctx.getSharedPreferences("gm_cosmetics", Context.MODE_PRIVATE)
+            .getString("piece_set", "original") ?: "original"
+        val assetBitmap = remember(pieceSetKey, piece.type, piece.isWhite) {
+            loadPieceAssetBitmap(ctx, pieceSetKey, piece)
         }
-        if (resId != 0) {
+        if (assetBitmap != null) {
             Image(
-                painter = painterResource(resId),
+                bitmap = assetBitmap.asImageBitmap(),
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
@@ -5683,30 +8977,52 @@ private fun BoxScope.drawPieceOverlay(piece: Piece?, center: Offset, boardSize: 
                 contentScale = ContentScale.Fit
             )
         } else {
-            Text(piece.glyph, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+            // Asset-only fallback for dragged pieces: do not use the old cburnett resources.
+            Text(
+                piece.glyph,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                softWrap = false
+            )
         }
     }
 }
 
-// Build a compact "Engine: …" label from a Stockfish info line
+// Build a compact "Engine: ..." label from a Stockfish info line
+// Build a compact "Engine: ..." label from a Stockfish info line
+// cp is converted to White's point of view so it matches the eval bar.
 private fun buildEngineStatusFromInfo(
     line: String,
     showPv: Boolean = false,
-    maxPvPlies: Int = 5
+    maxPvPlies: Int = 5,
+    whiteToMove: Boolean,
+    fen: String? = null,
+    useFan: Boolean = false
 ): String {
     val mate = Regex("""\bscore\s+mate\s+(-?\d+)""")
         .find(line)?.groupValues?.getOrNull(1)?.toIntOrNull()
-    val cp   = Regex("""\bscore\s+cp\s+(-?\d+)""")
+    val cpRaw = Regex("""\bscore\s+cp\s+(-?\d+)""")
         .find(line)?.groupValues?.getOrNull(1)?.toIntOrNull()
 
-    val base = when {
-        mate != null && mate != 0 ->
-            "TrainerFish: mate in ${kotlin.math.abs(mate)}"
-        cp != null ->
-            "TrainerFish: " + String.format("%+.2f", (cp / 100f))
-        else ->
-            "TrainerFish: …"
+    val depth = Regex("""\bdepth\s+(\d+)""")
+        .find(line)?.groupValues?.getOrNull(1)?.toIntOrNull()
+
+    // Convert raw side-to-move cp -> White POV cp
+    val cpWhite: Int? = cpRaw?.let { raw ->
+        if (whiteToMove) raw else -raw
     }
+
+    val base = when {
+        mate != null && mate == 0 -> "mate"
+        mate != null -> "mate in ${kotlin.math.abs(mate)}"
+        cpWhite != null -> String.format("%+.2f", (cpWhite / 100f))
+        else -> if (useFan) "mate" else "..."
+    }
+
+    // Depth is useful in Opening/Analysis, but it clutters tactics review.
+    val prefix = if (useFan) "" else depth?.let { "d$it " } ?: ""
+    val baseWithDepth = prefix + base
 
     if (!showPv) return base
 
@@ -5718,13 +9034,29 @@ private fun buildEngineStatusFromInfo(
     val pvTokens = pvPart.split(Regex("\\s+")).filter { it.isNotBlank() }
     if (pvTokens.isEmpty()) return base
 
-    // Show only the first [maxPvPlies] UCI moves to keep things compact
-    val shortPv = pvTokens.take(maxPvPlies).joinToString(" ")
+    // Show only the first [maxPvPlies] moves to keep things compact.
+    // Prefer SAN (human-readable) when we have a FEN; otherwise fall back to raw UCI.
+    val shortPv: String = runCatching {
+        val f = fen?.trim().orEmpty()
+        if (f.isBlank()) throw IllegalStateException("no fen")
+        val b = com.github.bhlangonijr.chesslib.Board()
+        b.loadFromFen(f)
+
+        pvTokens.take(maxPvPlies).mapNotNull { uci ->
+            val san = uciToSanOnBoard(b, uci)
+            val shown = if (useFan) sanToFan(san) else san
+            val mv = uciToMoveOnBoard(b, uci)
+            if (mv != null) runCatching { b.doMove(mv) }.getOrNull()
+            shown
+        }.joinToString(" ")
+    }.getOrElse {
+        pvTokens.take(maxPvPlies).joinToString(" ")
+    }
 
     return if (shortPv.isNotBlank()) {
-        "$base  •  $shortPv"
+        "$baseWithDepth  -  $shortPv"
     } else {
-        base
+        baseWithDepth
     }
 }
 
@@ -5732,16 +9064,35 @@ private fun uciToMoveOnBoard(
     board: com.github.bhlangonijr.chesslib.Board,
     uci: String
 ): com.github.bhlangonijr.chesslib.move.Move? {
+    // UCI: e2e4 or e7e8q. Some engines may emit "(none)" / "0000" - ignore those safely.
     if (uci.length < 4) return null
-    val from = com.github.bhlangonijr.chesslib.Square.fromValue(uci.substring(0, 2).uppercase())
-    val to   = com.github.bhlangonijr.chesslib.Square.fromValue(uci.substring(2, 4).uppercase())
+    val fromAlg = uci.substring(0, 2).lowercase()
+    val toAlg = uci.substring(2, 4).lowercase()
+
+    fun isAlg(s: String): Boolean =
+        s.length == 2 && s[0] in 'a'..'h' && s[1] in '1'..'8'
+
+    if (!isAlg(fromAlg) || !isAlg(toAlg)) return null
+
+    val from = runCatching {
+        com.github.bhlangonijr.chesslib.Square.valueOf(fromAlg.uppercase())
+    }.getOrNull() ?: return null
+
+    val to = runCatching {
+        com.github.bhlangonijr.chesslib.Square.valueOf(toAlg.uppercase())
+    }.getOrNull() ?: return null
+
     return if (uci.length >= 5) {
         val side = board.sideToMove
-        val promo = when (uci[4].uppercaseChar()) {
-            'Q' -> if (side == com.github.bhlangonijr.chesslib.Side.WHITE) com.github.bhlangonijr.chesslib.Piece.WHITE_QUEEN else com.github.bhlangonijr.chesslib.Piece.BLACK_QUEEN
-            'R' -> if (side == com.github.bhlangonijr.chesslib.Side.WHITE) com.github.bhlangonijr.chesslib.Piece.WHITE_ROOK  else com.github.bhlangonijr.chesslib.Piece.BLACK_ROOK
-            'B' -> if (side == com.github.bhlangonijr.chesslib.Side.WHITE) com.github.bhlangonijr.chesslib.Piece.WHITE_BISHOP else com.github.bhlangonijr.chesslib.Piece.BLACK_BISHOP
-            'N' -> if (side == com.github.bhlangonijr.chesslib.Side.WHITE) com.github.bhlangonijr.chesslib.Piece.WHITE_KNIGHT else com.github.bhlangonijr.chesslib.Piece.BLACK_KNIGHT
+        val promo = when (uci[4].lowercaseChar()) {
+            'q' -> if (side == com.github.bhlangonijr.chesslib.Side.WHITE)
+                com.github.bhlangonijr.chesslib.Piece.WHITE_QUEEN else com.github.bhlangonijr.chesslib.Piece.BLACK_QUEEN
+            'r' -> if (side == com.github.bhlangonijr.chesslib.Side.WHITE)
+                com.github.bhlangonijr.chesslib.Piece.WHITE_ROOK else com.github.bhlangonijr.chesslib.Piece.BLACK_ROOK
+            'b' -> if (side == com.github.bhlangonijr.chesslib.Side.WHITE)
+                com.github.bhlangonijr.chesslib.Piece.WHITE_BISHOP else com.github.bhlangonijr.chesslib.Piece.BLACK_BISHOP
+            'n' -> if (side == com.github.bhlangonijr.chesslib.Side.WHITE)
+                com.github.bhlangonijr.chesslib.Piece.WHITE_KNIGHT else com.github.bhlangonijr.chesslib.Piece.BLACK_KNIGHT
             else -> null
         } ?: return null
         com.github.bhlangonijr.chesslib.move.Move(from, to, promo)
@@ -5749,9 +9100,6 @@ private fun uciToMoveOnBoard(
         com.github.bhlangonijr.chesslib.move.Move(from, to)
     }
 }
-
-
-
 private suspend fun bestMoveForFen(
     ctx: Context,
     fen: String,
@@ -5770,7 +9118,7 @@ private suspend fun bestMoveForFen(
     val initialLast = ProcEngine.lines.value.lastOrNull()
 
     // Ask the shared engine to think on this FEN once.
-    ProcEngine.evaluateFen(fen = fen, movetimeMs = movetimeMs)
+    evaluateFenSafely(fen, movetimeMs)
 
     var bestFromBestmove: String? = null
     var fallbackFromPv: String? = null
@@ -5862,43 +9210,127 @@ private fun prettyFromUci(board: com.github.bhlangonijr.chesslib.Board, uci: Str
     }
 }
 
-private fun promoMatches(mv: com.github.bhlangonijr.chesslib.move.Move, p: Int): Boolean {
-    val promoPiece = mv.promotion ?: return p == 0
-    return when (promoPiece) {
-        com.github.bhlangonijr.chesslib.Piece.WHITE_QUEEN,
-        com.github.bhlangonijr.chesslib.Piece.BLACK_QUEEN -> p == 4
-        com.github.bhlangonijr.chesslib.Piece.WHITE_ROOK,
-        com.github.bhlangonijr.chesslib.Piece.BLACK_ROOK -> p == 3
-        com.github.bhlangonijr.chesslib.Piece.WHITE_BISHOP,
-        com.github.bhlangonijr.chesslib.Piece.BLACK_BISHOP -> p == 2
-        com.github.bhlangonijr.chesslib.Piece.WHITE_KNIGHT,
-        com.github.bhlangonijr.chesslib.Piece.BLACK_KNIGHT -> p == 1
-        else -> p == 0
+private fun uciToSanOnBoard(
+    board: com.github.bhlangonijr.chesslib.Board,
+    uci: String
+): String {
+    val mv = uciToMoveOnBoard(board, uci) ?: return uci
+
+    val fromSq = mv.from
+    val toSq = mv.to
+
+    val movingPiece = board.getPiece(fromSq)
+    if (movingPiece == com.github.bhlangonijr.chesslib.Piece.NONE) return uci
+    val movingType = movingPiece.pieceType ?: return uci
+
+    // Castling
+    if (movingType == com.github.bhlangonijr.chesslib.PieceType.KING) {
+        val fromAlg = fromSq.toString().lowercase()
+        val toAlg = toSq.toString().lowercase()
+        if (fromAlg == "e1" && toAlg == "g1") return appendCheckSuffixAfter(board, mv, "O-O")
+        if (fromAlg == "e1" && toAlg == "c1") return appendCheckSuffixAfter(board, mv, "O-O-O")
+        if (fromAlg == "e8" && toAlg == "g8") return appendCheckSuffixAfter(board, mv, "O-O")
+        if (fromAlg == "e8" && toAlg == "c8") return appendCheckSuffixAfter(board, mv, "O-O-O")
     }
+
+    val toAlg = toSq.toString().lowercase()
+
+    // Detect capture (including en passant)
+    val isPawn = movingType == com.github.bhlangonijr.chesslib.PieceType.PAWN
+    val targetPiece = board.getPiece(toSq)
+    val fromAlg = fromSq.toString().lowercase()
+    val fromFile = fromAlg[0]
+    val toFile = toAlg[0]
+    val pawnDiagonal = isPawn && (fromFile != toFile)
+    val isEnPassant = isPawn && pawnDiagonal && targetPiece == com.github.bhlangonijr.chesslib.Piece.NONE
+    val isCapture = (targetPiece != com.github.bhlangonijr.chesslib.Piece.NONE) || isEnPassant
+
+    val promoSuffix = mv.promotion?.let { p ->
+        val pt = p.pieceType
+        val L = when (pt) {
+            com.github.bhlangonijr.chesslib.PieceType.QUEEN  -> "Q"
+            com.github.bhlangonijr.chesslib.PieceType.ROOK   -> "R"
+            com.github.bhlangonijr.chesslib.PieceType.BISHOP -> "B"
+            com.github.bhlangonijr.chesslib.PieceType.KNIGHT -> "N"
+            else -> null
+        }
+        L?.let { "=$it" }.orEmpty()
+    }.orEmpty()
+
+    // Piece letter (pawns have none)
+    val pieceLetter = when (movingType) {
+        com.github.bhlangonijr.chesslib.PieceType.KING   -> "K"
+        com.github.bhlangonijr.chesslib.PieceType.QUEEN  -> "Q"
+        com.github.bhlangonijr.chesslib.PieceType.ROOK   -> "R"
+        com.github.bhlangonijr.chesslib.PieceType.BISHOP -> "B"
+        com.github.bhlangonijr.chesslib.PieceType.KNIGHT -> "N"
+        else -> ""
+    }
+
+    // Disambiguation for pieces (not pawns, not king)
+    val disambig = if (pieceLetter.isNotEmpty() && movingType != com.github.bhlangonijr.chesslib.PieceType.KING) {
+        val legal = com.github.bhlangonijr.chesslib.move.MoveGenerator.generateLegalMoves(board)
+        val sameDests = legal.filter { m ->
+            m.to == toSq &&
+                    run {
+                        val p = board.getPiece(m.from)
+                        p != com.github.bhlangonijr.chesslib.Piece.NONE && p.pieceType == movingType
+                    } &&
+                    (m.promotion?.pieceType == mv.promotion?.pieceType)
+        }
+
+        if (sameDests.size <= 1) {
+            ""
+        } else {
+            val sameFile = sameDests.count { it.from.file == fromSq.file }
+            val sameRank = sameDests.count { it.from.rank == fromSq.rank }
+            when {
+                sameFile == 1 -> fromSq.toString().lowercase()[0].toString()   // file only
+                sameRank == 1 -> fromSq.toString().lowercase()[1].toString()   // rank only
+                else -> fromSq.toString().lowercase().substring(0, 2)          // both
+            }
+        }
+    } else {
+        ""
+    }
+
+    val sanCore = if (isPawn) {
+        // Pawn SAN: e4, exd5, exd8=Q, etc.
+        buildString {
+            if (isCapture) append(fromFile).append('x')
+            append(toAlg)
+            append(promoSuffix)
+        }
+    } else {
+        // Piece SAN: Nf3, Nxf3, R1e2, etc.
+        buildString {
+            append(pieceLetter)
+            append(disambig)
+            if (isCapture) append('x')
+            append(toAlg)
+            append(promoSuffix)
+        }
+    }
+
+    return appendCheckSuffixAfter(board, mv, sanCore)
 }
 
-@Composable
-private fun ReplayLoadingOverlay(loading: Boolean) {
-    if (!loading) return
+private fun appendCheckSuffixAfter(
+    board: com.github.bhlangonijr.chesslib.Board,
+    mv: com.github.bhlangonijr.chesslib.move.Move,
+    base: String
+): String {
+    val tmp = com.github.bhlangonijr.chesslib.Board()
+    tmp.loadFromFen(board.fen)
+    runCatching { tmp.doMove(mv) }.onFailure { return base }
 
-    LoadingGalleryDialog(
-        show = true,
-        images = listOf(
-            R.drawable.loading_pos01, R.drawable.loading_pos02, R.drawable.loading_pos03,
-            R.drawable.loading_pos04, R.drawable.loading_pos05, R.drawable.loading_pos06,
-            R.drawable.loading_pos07, R.drawable.loading_pos08, R.drawable.loading_pos09,
-            R.drawable.loading_pos10, R.drawable.loading_pos11, R.drawable.loading_pos12,
-            R.drawable.loading_pos13, R.drawable.loading_pos14, R.drawable.loading_pos15,
-            R.drawable.loading_pos16, R.drawable.loading_pos17, R.drawable.loading_pos18
-        ),
-        captions = emptyList(),
-        message = "Preparing PGN cycle. This only takes a few seconds.",
-        sampleCount = 18,
-        switchMs = 10_000L,
-        onDismiss = null
-    )
-
-    Spacer(Modifier.height(8.dp))
+    // After doMove, sideToMove has flipped. If the king of the side to move is attacked, it's check.
+    val suf = when {
+        tmp.isMated -> "#"
+        tmp.isKingAttacked -> "+"
+        else -> ""
+    }
+    return base + suf
 }
 
 @Composable
@@ -5907,6 +9339,14 @@ private fun ReplayTopBar(
     iconOnlyTopBar: Boolean,
     soundOn: Boolean,
     engineEnabled: Boolean,
+    openingLoading: Boolean,
+    onSelectTactics: () -> Unit,
+    onSelectEndgame: () -> Unit,
+    onSelectOpening: () -> Unit,
+    onSelectBeatFish: () -> Unit,
+    onSelectGameRecorder: () -> Unit,
+    onSelectPgn: () -> Unit,
+    onHome: () -> Unit,
     endgameResult: EndgameResult?,
     engineStatus: String,
     goodJobNow: Boolean,
@@ -5914,208 +9354,346 @@ private fun ReplayTopBar(
     onToggleSound: () -> Unit,
     onToggleEngine: () -> Unit,
     onOpenSettings: () -> Unit,
-    onExitRequested: () -> Unit
+    onExitRequested: () -> Unit,
+    currentPuzzleBookmarked: Boolean = false,
+    onToggleBookmarkCurrent: () -> Unit = {},
+    onOpenBookmarks: () -> Unit = {}
 ) {
-    val isEndgame = (mode == TrainerMode.ENDGAME)
+    var modeMenuExpanded by remember { mutableStateOf(false) }
+
+    val isTactics = mode == TrainerMode.WOODPECKER
+    val isEndgame = mode == TrainerMode.ENDGAME
+    val isBeatFish = mode == TrainerMode.BEAT_FISH || mode == TrainerMode.GAME_RECORDER
+    val engineButtonDisabled = isEndgame || isBeatFish
+
+    val titleColor = if (isEndgame) {
+        when (endgameResult) {
+            EndgameResult.WIN  -> MaterialTheme.colorScheme.error
+            EndgameResult.LOSS -> MaterialTheme.colorScheme.error
+            EndgameResult.DRAW -> MaterialTheme.colorScheme.primary
+            null               -> MaterialTheme.colorScheme.primary
+        }
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+
+    @Composable
+    fun ColorMenuItem(
+        icon: String,
+        title: String,
+        description: String,
+        color: Color,
+        enabled: Boolean = true,
+        onClick: () -> Unit
+    ) {
+        DropdownMenuItem(
+            enabled = enabled,
+            onClick = {
+                modeMenuExpanded = false
+                onClick()
+            },
+            text = {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .alpha(if (enabled) 1f else 0.45f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(color),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = icon,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Spacer(Modifier.width(10.dp))
+
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = title,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = description,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = 12.sp
+                        )
+                    }
+                }
+            }
+        )
+    }
 
     Row(
-        Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .zIndex(10f),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Sound toggle
-        PushButton(
-            text = if (iconOnlyTopBar) "" else if (soundOn) "Mute" else "Unmute",
-            leading = { Text(if (soundOn) "🔊" else "🔇") },
-            onClick = onToggleSound,
-            compact = true
-        )
-
-        if (isEndgame) {
-            // In Endgame the engine is controlled automatically; the button is just a disabled icon.
-            PushButton(
-                text = if (iconOnlyTopBar) "" else "Engine",
-                leading = { Text("🐟") },
-                onClick = { /* disabled in Endgame */ },
-                enabled = false,
-                modifier = Modifier.alpha(0.5f),
-                compact = true
-            )
-        } else {
-            // Tactics / Opening: normal engine toggle
-            PushButton(
-                text = if (iconOnlyTopBar) "" else if (engineEnabled) "Engine: ON" else "Engine: OFF",
-                leading = { Text("🐟") },
-                onClick = onToggleEngine,
-                compact = true
-            )
-        }
-
-        // Center label
-        val titleText = if (isEndgame) {
-            when (endgameResult) {
-                EndgameResult.WIN  -> "You Win!"
-                EndgameResult.LOSS -> "Fish Wins"
-                EndgameResult.DRAW -> "Draw"
-                null               -> engineStatus
+        Box {
+            IconButton(onClick = { modeMenuExpanded = true }) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menu"
+                )
             }
-        } else {
-            if (goodJobNow) {
-                val nick = nickname.trim()
-                if (nick.isNotEmpty()) "Good Job, $nick!" else "Good Job!"
-            } else ""
-        }
 
-        val titleColor = if (isEndgame) {
-            when (endgameResult) {
-                EndgameResult.WIN  -> MaterialTheme.colorScheme.error
-                EndgameResult.LOSS -> MaterialTheme.colorScheme.error
-                EndgameResult.DRAW -> MaterialTheme.colorScheme.primary
-                null               -> MaterialTheme.colorScheme.primary
+            DropdownMenu(
+                expanded = modeMenuExpanded,
+                onDismissRequest = { modeMenuExpanded = false }
+            ) {
+                ColorMenuItem(
+                    icon = "H",
+                    title = "Landing page",
+                    description = "Return to the TrainerFish home screen.",
+                    color = Color(0xFF64748B),
+                    onClick = onHome
+                )
+
+                Divider()
+
+                ColorMenuItem(
+                    icon = "T",
+                    title = if (mode == TrainerMode.WOODPECKER) "Tactics Planner" else "Tactics",
+                    description = if (mode == TrainerMode.WOODPECKER) {
+                        "Open the cycle manager without leaving your current puzzle."
+                    } else {
+                        "Woodpecker cycles, ratings, streaks, and XP."
+                    },
+                    color = Color(0xFFEF4444),
+                    enabled = true,
+                    onClick = onSelectTactics
+                )
+                ColorMenuItem(
+                    icon = "E",
+                    title = "Endgame",
+                    description = "Technique drills: Lucena, Philidor, and more.",
+                    color = Color(0xFF10B981),
+                    enabled = mode != TrainerMode.ENDGAME,
+                    onClick = onSelectEndgame
+                )
+                ColorMenuItem(
+                    icon = "O",
+                    title = "Opening Explorer",
+                    description = "Explore the opening book with engine help.",
+                    color = Color(0xFF3B82F6),
+                    enabled = mode != TrainerMode.OPENING,
+                    onClick = onSelectOpening
+                )
+                ColorMenuItem(
+                    icon = "B",
+                    title = "Beat the Fish",
+                    description = "Play against TrainerFish from any position.",
+                    color = Color(0xFF06B6D4),
+                    enabled = mode != TrainerMode.BEAT_FISH,
+                    onClick = onSelectBeatFish
+                )
+                ColorMenuItem(
+                    icon = "R",
+                    title = "Game Recorder",
+                    description = "Record OTB games, annotate, then export PGN.",
+                    color = Color(0xFFF59E0B),
+                    enabled = mode != TrainerMode.GAME_RECORDER,
+                    onClick = onSelectGameRecorder
+                )
+                ColorMenuItem(
+                    icon = "P",
+                    title = "PGN Reader",
+                    description = if (mode == TrainerMode.PGN) "Open bundled PGN books." else "Read games, comments, variations, and books.",
+                    color = Color(0xFF8B5CF6),
+                    enabled = true,
+                    onClick = onSelectPgn
+                )
+
+                Divider()
+
+                ColorMenuItem(
+                    icon = if (currentPuzzleBookmarked) "*" else "+",
+                    title = if (currentPuzzleBookmarked) "Remove bookmark" else "Bookmark current puzzle",
+                    description = "Save this tactics position for later review and replay.",
+                    color = if (currentPuzzleBookmarked) Color(0xFFF59E0B) else Color(0xFFEC4899),
+                    enabled = mode == TrainerMode.WOODPECKER,
+                    onClick = onToggleBookmarkCurrent
+                )
+                ColorMenuItem(
+                    icon = "BM",
+                    title = "Bookmarked puzzles",
+                    description = "Open your saved tactics positions.",
+                    color = Color(0xFF7C3AED),
+                    onClick = onOpenBookmarks
+                )
+
+                Divider()
+
+                ColorMenuItem(
+                    icon = "F",
+                    title = if (engineEnabled) "Fish analysis: ON" else "Fish analysis: OFF",
+                    description = if (engineButtonDisabled) {
+                        "Not used in this mode."
+                    } else {
+                        "Toggle TrainerFish engine suggestions for this board."
+                    },
+                    color = if (engineEnabled) Color(0xFF0EA5E9) else Color(0xFF475569),
+                    enabled = !engineButtonDisabled,
+                    onClick = onToggleEngine
+                )
+                ColorMenuItem(
+                    icon = "S",
+                    title = "Settings",
+                    description = "Sound, visual style, engine options, and trainer setup.",
+                    color = Color(0xFF334155),
+                    onClick = onOpenSettings
+                )
             }
-        } else {
-            MaterialTheme.colorScheme.error
         }
 
-        Text(
-            text = titleText,
-            color = titleColor,
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 4.dp),
-            textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            softWrap = false
-        )
-
-        // Right: Settings + Exit
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-
-            // Settings menu (with Cycle Manager + cosmetics)
-            PushButton(
-                text = if (iconOnlyTopBar) "" else "Settings",
-                leading = { Text("⚙") },
-                onClick = onOpenSettings,
-                compact = true
+        if (isTactics) {
+            Text(
+                text = engineStatus,
+                color = titleColor,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 6.dp),
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                softWrap = true,
+                lineHeight = 14.sp
             )
 
-            // Exit app (with confirmation)
             PushButton(
                 text = if (iconOnlyTopBar) "" else "Exit",
-                leading = { Text("🚪") },
+                leading = { Text("\uD83D\uDEAA") },
                 onClick = onExitRequested,
                 compact = true
             )
-        }
-    }
-}
+        } else {
+            // Hide Fish/Engine shortcut for Endgame and Beat-the-Fish.
+            // Those modules manage their own engine/play state inside their screen body.
+            if (!engineButtonDisabled) {
+                PushButton(
+                    text = if (iconOnlyTopBar) "" else if (engineEnabled) "Engine: ON" else "Engine: OFF",
+                    leading = { Text("\uD83D\uDC1F") },
+                    onClick = onToggleEngine,
+                    compact = true
+                )
+            }
 
-@Composable
-private fun ReplayModeChips(
-    mode: TrainerMode,
-    openingLoading: Boolean,
-    onSelectTactics: () -> Unit,
-    onSelectEndgame: () -> Unit,
-    onSelectOpening: () -> Unit
-) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        FilterChip(
-            selected = (mode == TrainerMode.WOODPECKER),
-            onClick = onSelectTactics,
-            label = { Text("Tactics") }
-        )
-
-        FilterChip(
-            selected = (mode == TrainerMode.ENDGAME),
-            onClick = onSelectEndgame,
-            label = { Text("Endgame") }
-        )
-
-        FilterChip(
-            selected = (mode == TrainerMode.OPENING),
-            onClick = onSelectOpening,
-            label = { Text("Opening") }
-        )
-    }
-
-    if (mode == TrainerMode.OPENING && openingLoading) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            CircularProgressIndicator(
-                strokeWidth = 2.dp,
-                modifier = Modifier.size(18.dp)
+            Text(
+                text = engineStatus,
+                color = titleColor,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 2.dp),
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                softWrap = true,
+                lineHeight = 14.sp
             )
-            Spacer(Modifier.width(8.dp))
-            Text("Loading opening tree…")
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (mode == TrainerMode.OPENING && openingLoading) {
+                    CircularProgressIndicator(
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                // Hide Settings shortcut in Endgame and Beat-the-Fish for a cleaner, tactics-consistent top bar.
+                if (!engineButtonDisabled) {
+                    PushButton(
+                        text = if (iconOnlyTopBar) "" else "Settings",
+                        leading = { Text("S") },
+                        onClick = onOpenSettings,
+                        compact = true
+                    )
+                }
+
+                if (isEndgame) {
+                    PushButton(
+                        text = if (iconOnlyTopBar) "" else "Exit",
+                        leading = { Text("\uD83D\uDEAA") },
+                        onClick = { /* disabled in Endgame */ },
+                        enabled = false,
+                        modifier = Modifier.alpha(0.5f),
+                        compact = true
+                    )
+                } else {
+                    PushButton(
+                        text = if (iconOnlyTopBar) "" else "Exit",
+                        leading = { Text("\uD83D\uDEAA") },
+                        onClick = onExitRequested,
+                        compact = true
+                    )
+                }
+            }
         }
     }
-
 }
 
-@Composable
-private fun ReplayOpeningBottomBar(
-    showOpeningArrows: Boolean,
-    onBack: () -> Unit,
-    onReset: () -> Unit,
-    onFlip: () -> Unit,
-    onToggleArrows: () -> Unit
-) {
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        PushButton(
-            text = "Back",
-            onClick = onBack,
-            compact = true
-        )
-
-        PushButton(
-            text = "Reset",
-            onClick = onReset,
-            compact = true
-        )
-
-        PushButton(
-            text = "Flip",
-            onClick = onFlip,
-            compact = true
-        )
-
-        Spacer(Modifier.weight(1f))
-
-        FilterChip(
-            selected = showOpeningArrows,
-            onClick = onToggleArrows,
-            label = { Text("Arrows") }
-        )
-    }
+private fun formatHms(ms: Long): String {
+    val sec = (ms / 1000).toInt()
+    val h = sec / 3600
+    val m = (sec % 3600) / 60
+    val s = sec % 60
+    return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%02d:%02d".format(m, s)
 }
 
 @Composable
 private fun ReplayExitDialog(
     show: Boolean,
+    proUnlocked: Boolean,
     onDismiss: () -> Unit,
+    onUnlockPro: () -> Unit,
     onConfirmExit: () -> Unit
 ) {
     if (!show) return
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Exit TrainerFish?") },
-        text = { Text("Are you sure you want to close the app?") },
+        title = { Text(if (proUnlocked) "Exit TrainerFish?" else "Support TrainerFish before you go?") },
+        text = {
+            Text(
+                if (proUnlocked) {
+                    "Are you sure you want to close the app?"
+                } else {
+                    "TrainerFish now gives you about 2 million rated puzzles, improved Endgame training, and Beat the Fish for almost free. Pro is a voluntary lifetime unlock that helps keep the app alive and improving."
+                }
+            )
+        },
         confirmButton = {
-            TextButton(onClick = onConfirmExit) {
-                Text("Exit")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (!proUnlocked) {
+                    TextButton(onClick = onUnlockPro) {
+                        Text("Unlock Pro", fontWeight = FontWeight.Bold)
+                    }
+                }
+                TextButton(onClick = onConfirmExit) {
+                    Text(if (proUnlocked) "Exit" else "Exit anyway")
+                }
             }
         },
         dismissButton = {
@@ -6127,95 +9705,64 @@ private fun ReplayExitDialog(
 }
 
 @Composable
-private fun ReplayPosterDialog(
-    show: Boolean,
-    headline: String,
-    sub: String,
-    foot: String,
-    onDismiss: () -> Unit
-) {
-    if (!show) return
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Milestone unlocked!") },
-        text = {
-            Column {
-                if (headline.isNotBlank()) {
-                    Text(
-                        headline,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(Modifier.height(4.dp))
-                }
-                if (sub.isNotBlank()) {
-                    Text(sub)
-                    Spacer(Modifier.height(4.dp))
-                }
-                if (foot.isNotBlank()) {
-                    Text(
-                        foot,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("OK")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
-            }
-        }
-    )
-}
-
-@Composable
 private fun ReplayProfileDialog(
     show: Boolean,
     nickname: String,
     poolTotal: Int,
+    tacticsElo: Int,
     onDismiss: () -> Unit,
     onSaveNickname: (String) -> Unit
 ) {
     if (!show) return
 
     val ctx = LocalContext.current
+    val wp = remember { WoodpeckerStore(ctx) }
 
-    // ------- Aggregate stats across *all* cycles in both series -------
+    // ------- Aggregate BEST-EVER stats from WoodpeckerStore -------
     var solvedTotal = 0
     var ptsEarnedTotal = 0
     var ptsPossibleTotal = 0
     var elapsedTotalMs = 0L
-    var xpTotal = 0
 
-    for (series in listOf(Series.CHALLENGER, Series.MASTER)) {
-        val bank = CycleBank(ctx, series.id)
-        for (cid in bank.list()) {
-            val pf = bank.prefs(cid)
+// We interpret "puzzles solved" and accuracy as:
+//   - one entry per puzzle ID,
+//   - using that puzzle's BEST time / BEST score across all attempts & cycles.
+    val idsWithRecords = wp.allPuzzleIdsWithRecords()
+    for (id in idsWithRecords) {
+        val bestMs = wp.puzzleBestMs(id)
+        val (bestPts, bestTot) = wp.puzzleBestPoints(id)
 
-            if (pf.poolAbsCsv.isNotBlank()) {
-                solvedTotal      += pf.solvedCount
-                ptsEarnedTotal   += pf.ptsEarned
-                ptsPossibleTotal += pf.ptsTotal
-                elapsedTotalMs   += pf.elapsedMs
-                xpTotal          += pf.xp
+        // Consider a puzzle "seen/solved" if we have any best record for it.
+        if (bestMs > 0L || bestTot > 0) {
+            solvedTotal += 1
+            ptsEarnedTotal += bestPts
+            ptsPossibleTotal += bestTot
+            if (bestMs > 0L) {
+                elapsedTotalMs += bestMs
             }
         }
     }
 
-    // ------- Accuracy -------
+
+    // ------- XP is still aggregated from all cycles in both series -------
+    var xpTotal = 0
+    for (series in listOf(Series.TACTICS)) {
+        val bank = CycleBank(ctx, series.id)
+        for (cid in bank.list()) {
+            val pf = bank.prefs(cid)
+            if (pf.poolAbsCsv.isNotBlank()) {
+                xpTotal += pf.xp
+            }
+        }
+    }
+
+    // ------- Accuracy (based on best-ever score per puzzle) -------
     val accuracyPct =
         if (ptsPossibleTotal > 0)
             100f * ptsEarnedTotal.toFloat() / ptsPossibleTotal.toFloat()
         else 0f
 
-    // ------- Average time -------
+    // ------- Average time (best time per puzzle, averaged over puzzles) -------
     val avgMs =
         if (solvedTotal > 0) elapsedTotalMs / solvedTotal
         else 0L
@@ -6227,10 +9774,7 @@ private fun ReplayProfileDialog(
     // Nickname edit state
     var editNick by remember(show) { mutableStateOf(nickname.take(6)) }
 
-    fun formatMs(ms: Long): String {
-        val sec = (ms / 1000).coerceAtLeast(0)
-        return "%02d:%02d".format(sec / 60, sec % 60)
-    }
+
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -6241,17 +9785,20 @@ private fun ReplayProfileDialog(
                 // Nickname
                 OutlinedTextField(
                     value = editNick,
-                    onValueChange = { s -> editNick = s.take(6) },
-                    label = { Text("Nickname (max 6 chars)") },
+                    onValueChange = { s -> editNick = s.take(8) },
+                    label = { Text("Nickname (max 8 chars)") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    "This name appears on your milestone posters and in the header.",
+                    "This name appears in the header.",
                     style = MaterialTheme.typography.bodySmall
                 )
+
+                Spacer(Modifier.height(16.dp))
+                Text("Tactics Elo: $tacticsElo", fontWeight = FontWeight.Bold)
 
                 Spacer(Modifier.height(16.dp))
                 Text("Overall stats", style = MaterialTheme.typography.titleMedium)
@@ -6264,12 +9811,6 @@ private fun ReplayProfileDialog(
                 Text("Accuracy: ${"%.1f".format(accuracyPct)}%")
                 Text("Average time: ${formatMs(avgMs)} per puzzle")
 
-                Spacer(Modifier.height(12.dp))
-                Text("XP: ${"%,d".format(xpTotal)}")
-                Text(
-                    "XP to next milestone: " +
-                            "${"%,d".format(xpToNext)} (at ${"%,d".format(nextTarget)} XP)"
-                )
             }
         },
         confirmButton = {
@@ -6286,61 +9827,295 @@ private fun ReplayProfileDialog(
 }
 
 @Composable
-private fun ReplayCycleCompleteDialog(
+private fun ReplayHelpDialog(
+    show: Boolean,
+    onDismiss: () -> Unit
+) {
+    if (!show) return
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Help / FAQ", fontWeight = FontWeight.Bold) },
+        text = {
+            val scroll = rememberScrollState()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 0.dp, max = 420.dp)
+                    .verticalScroll(scroll)
+            ) {
+                Text(
+                    "Welcome to TrainerFish! This quick guide explains the main training modes.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Spacer(Modifier.height(12.dp))
+                Text("Woodpecker Cycle Manager", fontWeight = FontWeight.Bold)
+                Text(
+                    """
+                    - TrainerFish groups puzzles into "cycles" of games.
+                    - Solve each puzzle once; when a cycle is done, you repeat it from the start.
+                    - Each repetition should be faster and more accurate - this is the Woodpecker Method.
+                    - Use "Define cycle" in the Welcome screen to choose rating range, themes, and size.
+                    """.trimIndent(),
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                Spacer(Modifier.height(12.dp))
+                Text("Beat the Fish", fontWeight = FontWeight.Bold)
+                Text(
+                    """
+                    - A free-play mode vs Stockfish with your chosen time control.
+                    - Use the buttons under the board to change side, take back moves, or start a new game.
+                    - Your last game is automatically saved so you can resume later.
+                    """.trimIndent(),
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                Spacer(Modifier.height(12.dp))
+                Text("Opening Explorer", fontWeight = FontWeight.Bold)
+                Text(
+                    """
+                    - Start from the initial position and play moves on the board.
+                    - The move list and bar chart show how often strong players choose each reply.
+                    - Tap a move in the list to follow that line; use < and > to step through the moveline.
+                    - From the ECO list you can load a full variation; the moves will auto-play once,
+                      then you can navigate them with the arrows.
+                    """.trimIndent(),
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                Spacer(Modifier.height(12.dp))
+                Text("Endgame Trainer", fontWeight = FontWeight.Bold)
+                Text(
+                    """
+                    - Each position comes with a short note explaining the key idea and evaluation.
+                    - Play the winning or drawing technique against Stockfish.
+                    - Use Back / Next above the list to browse positions, and the Play button to let the engine
+                      defend while you try to convert or hold the draw.
+                    """.trimIndent(),
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    "Tip: You can change themes, sounds, and other options anytime from Settings.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Done")
+            }
+        }
+    )
+}
+
+@Composable
+fun ReplayCycleCompleteDialog(
     show: Boolean,
     seriesTitle: String,
     cycleId: Int,
-    cap: Int,
-    initialSize: Int,
+    solvedCount: Int,
+    pointsEarned: Int,
+    pointsTotal: Int,
+    elapsedMs: Long,
+    nickname: String,
     onDismiss: () -> Unit,
-    onStartNewCycle: (Int) -> Unit,
+    onStartNewCycle: () -> Unit,
     onRepeatCycle: () -> Unit
 ) {
     if (!show) return
 
-    val cappedCap = cap.coerceAtLeast(25)
-    var newSize by remember(cappedCap, initialSize) {
-        mutableStateOf(initialSize.coerceIn(25, cappedCap))
-    }
+    val accuracyPct: Int = if (pointsTotal > 0) {
+        ((pointsEarned.toDouble() / pointsTotal.toDouble()) * 100).toInt()
+    } else 0
 
-    // same step logic as before, but guard against weird caps
-    val steps = if (cappedCap > 25) {
-        (cappedCap - 25) / 25 - 1
+    val avgMsPerPuzzle: Long = if (solvedCount > 0) elapsedMs / solvedCount else 0L
+    val avgSeconds = (avgMsPerPuzzle / 1000).toInt()
+    val recommendRepeat = accuracyPct < 90 || avgSeconds > 60
+
+    val headline = if (recommendRepeat) {
+        "Good work, $nickname!"
     } else {
-        0
+        "Great work, $nickname!"
     }
 
-    AlertDialog(
+    val recommendationText = if (recommendRepeat) {
+        "TrainerFish recommends repeating this cycle to improve your accuracy and speed."
+    } else {
+        "TrainerFish recommends moving on to a new cycle."
+    }
+
+    Dialog(
         onDismissRequest = onDismiss,
-        title = { Text("Cycle complete!") },
-        text = {
-            Column {
-                Text("You finished $seriesTitle • Cycle #$cycleId.")
-                Spacer(Modifier.height(12.dp))
-                Text("Add/Decrease games in next cycle")
-                Slider(
-                    value = newSize.toFloat(),
-                    onValueChange = { v ->
-                        newSize = ((v / 25f).roundToInt() * 25)
-                            .coerceIn(25, cappedCap)
-                    },
-                    valueRange = 25f..cappedCap.toFloat(),
-                    steps = steps
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .clip(RoundedCornerShape(28.dp))
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            Color(0xFF1F2937),
+                            Color(0xFF111827)
+                        )
+                    )
                 )
-                Text("$newSize of $cappedCap games")
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onStartNewCycle(newSize) }) {
-                Text("Start new cycle")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onRepeatCycle) {
-                Text("Repeat cycle")
+                .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(28.dp))
+                .padding(20.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 520.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text(
+                    text = "CYCLE COMPLETE",
+                    color = Color(0xFF93C5FD),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.4.sp
+                )
+                Text(
+                    text = headline,
+                    color = Color.White,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    lineHeight = 32.sp
+                )
+                Text(
+                    text = "Cycle #$cycleId is complete.",
+                    color = Color.White.copy(alpha = 0.88f),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color.White.copy(alpha = 0.06f)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Woodpecker Stats",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            CycleStatChip(
+                                modifier = Modifier.weight(1f),
+                                label = "Solved",
+                                value = solvedCount.toString()
+                            )
+                            CycleStatChip(
+                                modifier = Modifier.weight(1f),
+                                label = "Accuracy",
+                                value = if (pointsTotal > 0) "$accuracyPct% ($pointsEarned/$pointsTotal)" else "-"
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            CycleStatChip(
+                                modifier = Modifier.weight(1f),
+                                label = "Total Time",
+                                value = if (elapsedMs > 0) formatMs(elapsedMs) else "-"
+                            )
+                            CycleStatChip(
+                                modifier = Modifier.weight(1f),
+                                label = "Avg Time",
+                                value = if (avgMsPerPuzzle > 0) formatMs(avgMsPerPuzzle) else "-"
+                            )
+                        }
+                    }
+                }
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (recommendRepeat) Color(0xFFF97316).copy(alpha = 0.18f) else Color(0xFF10B981).copy(alpha = 0.16f)
+                ) {
+                    Text(
+                        text = recommendationText,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        lineHeight = 22.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
+                    )
+                }
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    PushButton(
+                        text = if (!recommendRepeat) "Start New Cycle (Recommended)" else "Start New Cycle",
+                        onClick = onStartNewCycle,
+                        modifier = Modifier.fillMaxWidth(),
+                        backgroundColor = Color.White.copy(alpha = 0.95f),
+                        textColor = Color(0xFF111827)
+                    )
+                    PushButton(
+                        text = if (recommendRepeat) "Repeat This Cycle (Recommended)" else "Repeat This Cycle",
+                        onClick = onRepeatCycle,
+                        modifier = Modifier.fillMaxWidth(),
+                        backgroundColor = Color(0xFFE5E7EB),
+                        textColor = Color(0xFF111827)
+                    )
+                }
             }
         }
-    )
+    }
+}
+
+@Composable
+private fun CycleStatChip(
+    modifier: Modifier = Modifier,
+    label: String,
+    value: String
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        color = Color.Black.copy(alpha = 0.18f)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = label,
+                color = Color.White.copy(alpha = 0.72f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = value,
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 22.sp
+            )
+        }
+    }
 }
 
 @Composable
@@ -6357,6 +10132,9 @@ private fun ReplayAboutDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    // limit height so buttons are always visible,
+                    // and make the content scrollable if it overflows
+                    .heightIn(max = 420.dp)
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
@@ -6370,6 +10148,13 @@ private fun ReplayAboutDialog(
                     style = MaterialTheme.typography.bodySmall
                 )
 
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "copyright 2025 by Cliburn Anthony A. Orbe",
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+
                 Spacer(Modifier.height(12.dp))
                 Text(
                     "Engine",
@@ -6379,7 +10164,7 @@ private fun ReplayAboutDialog(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     "This app uses the Stockfish chess engine.\n\n" +
-                            "Stockfish © 2004–2025 The Stockfish developers.\n" +
+                            "Stockfish © 2004-2025 The Stockfish developers.\n" +
                             "Distributed under the GNU General Public License v3.0 (GPLv3).",
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -6397,7 +10182,7 @@ private fun ReplayAboutDialog(
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "https://github.com/tonorbe/trainerfish-stockfish-src",
+                    "https://github.com/capablanks/trainerfish",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -6414,6 +10199,34 @@ private fun ReplayAboutDialog(
                             "License text: https://www.gnu.org/licenses/gpl-3.0.html",
                     style = MaterialTheme.typography.bodySmall
                 )
+
+                // --- Fonts / Cburnett section ---
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "Fonts",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "This app includes the Cburnett chess piece font.\n" +
+                            "© 2020 Cburnett - Licensed under the SIL Open Font License 1.1.\n" +
+                            "License text: https://scripts.sil.org/OFL",
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "Puzzle data",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "This app uses puzzle data from Lichess.org, released under the Creative Commons CC0 1.0 Universal Public Domain Dedication.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+
             }
         },
         confirmButton = {
@@ -6424,17 +10237,46 @@ private fun ReplayAboutDialog(
     )
 }
 
+fun formatMs(ms: Long): String {
+    val sec = (ms / 1000).coerceAtLeast(0)
+    return "%02d:%02d".format(sec / 60, sec % 60)
+}
+
+private fun encodeSanPathToJson(path: List<String>): String {
+    val arr = org.json.JSONArray()
+    path.forEach { arr.put(it) }
+    return arr.toString()
+}
+
+@Composable
+private fun OrientationOptionRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Spacer(Modifier.width(8.dp))
+        Text(label)
+    }
+}
 
 
+fun posToIdx(pos: Offset, sidePx: Float): Int {
+    val cell = sidePx / 8f
+    val x = pos.x.coerceIn(0f, sidePx - 0.001f)
+    val y = pos.y.coerceIn(0f, sidePx - 0.001f)
 
+    val file = (x / cell).toInt().coerceIn(0, 7)
+    val rankFromTop = (y / cell).toInt().coerceIn(0, 7)
+    val rank = 7 - rankFromTop
 
-
-
-
-
-
-
-
-
-
+    return rank * 8 + file
+}
 

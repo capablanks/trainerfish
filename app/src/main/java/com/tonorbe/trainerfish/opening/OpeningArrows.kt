@@ -11,7 +11,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.min
@@ -45,7 +44,7 @@ private fun buildArrowsFromBook(pos: BookPosition): List<ArrowSpec> {
 
     // Nice high-contrast colors for the top few moves
     val palette = listOf(
-        Color(0xFFE91E63), // pink
+        Color(0xFFFF00FF), // pink
         Color(0xFFFFC107), // amber
         Color(0xFF3F51B5), // indigo
         Color(0xFF4CAF50)  // green
