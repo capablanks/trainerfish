@@ -50,6 +50,17 @@ class LastSessionPrefs(ctx: Context) {
         get() = sp.getString("beatFishFen", "") ?: ""
         set(v) = sp.edit().putString("beatFishFen", v).apply()
 
+    // Last live board shown outside Beat the Fish. This is intentionally separate
+    // from beatFishFen so visiting Beat the Fish never overwrites the position that
+    // "Load from other modes" is expected to retrieve.
+    var otherModeFen: String
+        get() = sp.getString("otherModeFen", "") ?: ""
+        set(v) = sp.edit().putString("otherModeFen", v).apply()
+
+    var otherModeName: String
+        get() = sp.getString("otherModeName", "") ?: ""
+        set(v) = sp.edit().putString("otherModeName", v).apply()
+
     var openingStartFen: String
         get() = sp.getString("openingStartFen", "") ?: ""
         set(v) = sp.edit().putString("openingStartFen", v).apply()

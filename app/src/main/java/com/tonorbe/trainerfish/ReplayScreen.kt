@@ -37,12 +37,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -307,6 +305,98 @@ private fun fenWhiteToMove(fen: String?): Boolean {
 
 private fun squareFromAlgebra(algebra: String): com.github.bhlangonijr.chesslib.Square =
     com.github.bhlangonijr.chesslib.Square.valueOf(algebra.uppercase())
+
+private fun normalizedPlayableFenOrNull(rawFen: String?): String? {
+    val fen = rawFen?.trim().orEmpty()
+    if (fen.isBlank()) return null
+    return runCatching {
+        com.github.bhlangonijr.chesslib.Board().apply { loadFromFen(fen) }.fen
+    }.getOrNull()
+}
+
+private fun legacyOpeningFenOrNull(lastSession: LastSessionPrefs): String? {
+    val rawMoves = lastSession.openingMovesUci.trim()
+    val hasSavedOpening = lastSession.openingStartFen.isNotBlank() ||
+            rawMoves.isNotBlank() ||
+            lastSession.openingCursorPly > 0 ||
+            lastSession.openingPly > 0
+    if (!hasSavedOpening) return null
+
+    val startFen = lastSession.openingStartFen
+        .takeIf { it.isNotBlank() }
+        ?: START_FEN
+
+    return runCatching {
+        val board = com.github.bhlangonijr.chesslib.Board().apply { loadFromFen(startFen) }
+        val moves = rawMoves
+            .split(Regex("[\\s,;]+"))
+            .map { it.trim().lowercase() }
+            .filter { it.isNotBlank() }
+        val savedPly = lastSession.openingCursorPly
+            .takeIf { it > 0 }
+            ?: lastSession.openingPly.takeIf { it > 0 }
+            ?: moves.size
+
+        for (uci in moves.take(savedPly.coerceIn(0, moves.size))) {
+            val move = uciToMoveOnBoard(board, uci)
+                ?: error("Invalid saved opening move: $uci")
+            board.doMove(move)
+        }
+        board.fen
+    }.getOrNull()
+}
+
+private fun lastOtherModeFenOrNull(lastSession: LastSessionPrefs): String? {
+    normalizedPlayableFenOrNull(lastSession.otherModeFen)?.let { return it }
+
+    val preferredLegacy = when (lastSession.modeName) {
+        TrainerMode.OPENING.name -> legacyOpeningFenOrNull(lastSession)
+        TrainerMode.ENDGAME.name -> normalizedPlayableFenOrNull(lastSession.endgameFen)
+        else -> null
+    }
+    if (preferredLegacy != null) return preferredLegacy
+
+    return normalizedPlayableFenOrNull(lastSession.endgameFen)
+        ?: legacyOpeningFenOrNull(lastSession)
+}
+
+private fun persistOtherModePosition(
+    lastSession: LastSessionPrefs,
+    mode: TrainerMode,
+    rawFen: String?
+): String? {
+    if (mode !in setOf(TrainerMode.WOODPECKER, TrainerMode.ENDGAME, TrainerMode.OPENING)) {
+        return null
+    }
+    val fen = normalizedPlayableFenOrNull(rawFen) ?: return null
+    lastSession.otherModeFen = fen
+    lastSession.otherModeName = mode.name
+    if (mode == TrainerMode.ENDGAME) lastSession.endgameFen = fen
+    return fen
+}
+
+private fun captureOtherModePosition(
+    lastSession: LastSessionPrefs,
+    mode: TrainerMode,
+    session: PgnSession?,
+    current: PgnGameInfo?
+): String? {
+    val liveFen = when (mode) {
+        TrainerMode.WOODPECKER -> session?.board?.fen ?: current?.startFen
+        // EndgameScreen owns a separate session. Its live-position callback has
+        // already persisted that FEN, so never replace it with ReplayScreen's
+        // stale Tactics session while switching modes.
+        TrainerMode.ENDGAME -> lastSession.otherModeFen
+            .takeIf { lastSession.otherModeName == TrainerMode.ENDGAME.name }
+            ?: lastSession.endgameFen
+        TrainerMode.OPENING -> legacyOpeningFenOrNull(lastSession)
+        else -> null
+    }
+    normalizedPlayableFenOrNull(liveFen)?.let { live ->
+        return persistOtherModePosition(lastSession, mode, live) ?: live
+    }
+    return lastOtherModeFenOrNull(lastSession)
+}
 
 
 // The user always plays the *second* mover from the FEN.
@@ -2314,7 +2404,9 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
 
     // ===== Beat the Fish state =====
     var beatFishFen by rememberSaveable { mutableStateOf(START_FEN) }
-    var beatFishLastFen by rememberSaveable { mutableStateOf<String?>(null) }
+    var beatFishLastFen by rememberSaveable {
+        mutableStateOf(lastOtherModeFenOrNull(lastSession))
+    }
     var showBeatFishIntro by remember { mutableStateOf(false) }
     var beatFishStartRecorder by rememberSaveable { mutableStateOf(false) }
     // Pending PGN import into BeatFish analysis board (set by PGN mode export)
@@ -2465,6 +2557,17 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
             beatFishFen
         else ->
             session?.board?.fen ?: current?.startFen.orEmpty()
+    }
+
+    // Keep the exact live Tactics position available even when ReplayScreen is
+    // later destroyed by returning Home. Endgame reports its own internal board
+    // through EndgameScreen's callback below.
+    LaunchedEffect(mode, currentFen, plyTick) {
+        if (mode == TrainerMode.WOODPECKER) {
+            persistOtherModePosition(lastSession, mode, currentFen)?.let {
+                beatFishLastFen = it
+            }
+        }
     }
 
     // Warm-up nudge so the *first* Engine ON actually produces an eval
@@ -4537,10 +4640,7 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
     // ----------------- UI SECTION -----------------
     Column(
         Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(16.dp),
+            .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Show loading dialog (overlay) when preparing cycle
@@ -4730,12 +4830,12 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                 }
 
                 // 1) Capture the *last position* from the mode we are LEAVING
-                val lastFen = when (mode) {
-                    TrainerMode.OPENING -> START_FEN
-                    else ->
-                        session?.board?.fen ?: current?.startFen.orEmpty()
-                }.ifBlank { START_FEN }
-                beatFishLastFen = lastFen
+                beatFishLastFen = captureOtherModePosition(
+                    lastSession = lastSession,
+                    mode = mode,
+                    session = session,
+                    current = current
+                )
 
                 // 2) Leaving Tactics? Save its state first.
                 if (mode == TrainerMode.WOODPECKER) {
@@ -4792,11 +4892,12 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                     endgameNewRecordTime = false
                 }
 
-                val lastFen = when (mode) {
-                    TrainerMode.OPENING -> START_FEN
-                    else -> session?.board?.fen ?: current?.startFen.orEmpty()
-                }.ifBlank { START_FEN }
-                beatFishLastFen = lastFen
+                beatFishLastFen = captureOtherModePosition(
+                    lastSession = lastSession,
+                    mode = mode,
+                    session = session,
+                    current = current
+                )
 
                 if (mode == TrainerMode.WOODPECKER) {
                     saveTacticsSnapshot(
@@ -4927,6 +5028,11 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                 pieceStyle = pieceStyle,
                 pieceSetKey = pieceSetPref,
                 onBackToTactics = { selectTactics() },
+                onPositionChanged = { fen ->
+                    persistOtherModePosition(lastSession, TrainerMode.ENDGAME, fen)?.let {
+                        beatFishLastFen = it
+                    }
+                },
                 headerContent = headerContent
             )
             return@Column
@@ -8571,7 +8677,7 @@ private fun ReplayLandscapePuzzleBody(
     var splitFracState by rememberSaveable { mutableStateOf(-1f) }
     var rootSize by remember { mutableStateOf(IntSize.Zero) }
     val minFrac = 0.34f
-    val maxFrac = 0.82f
+    val maxFrac = 0.97f
     val splitterDensity = LocalDensity.current
     val defaultSplitFrac = if (rootSize.width > 0 && rootSize.height > 0) {
         val neededPx = rootSize.height.toFloat() + with(splitterDensity) { 6.dp.toPx() + 8.dp.toPx() }
@@ -8754,7 +8860,7 @@ private fun ReplayPortraitPuzzleBody(
     var splitFracState by rememberSaveable { mutableStateOf(-1f) }
     var rootSize by remember { mutableStateOf(IntSize.Zero) }
     val minFrac = 0.34f
-    val maxFrac = 0.82f
+    val maxFrac = 0.97f
     val splitterDensity = LocalDensity.current
     val defaultSplitFrac = if (rootSize.width > 0 && rootSize.height > 0) {
         val neededPx = rootSize.width.toFloat() + with(splitterDensity) { 6.dp.toPx() + 4.dp.toPx() }
@@ -10279,4 +10385,3 @@ fun posToIdx(pos: Offset, sidePx: Float): Int {
 
     return rank * 8 + file
 }
-

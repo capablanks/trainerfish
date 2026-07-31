@@ -14,9 +14,9 @@ android {
     defaultConfig {
         applicationId = "com.tonorbe.trainerfish"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 500
-        versionName = "5.0"
+        targetSdk = 36
+        versionCode = 501
+        versionName = "5.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Build the JNI .so for these ABIs (add "armeabi-v7a" if you want 32-bit too)
@@ -120,7 +120,7 @@ dependencies {
     implementation("io.coil-kt:coil-svg:2.6.0")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.browser:browser:1.8.0")
-    implementation("com.android.billingclient:billing-ktx:7.0.0")
+    implementation("com.android.billingclient:billing-ktx:9.1.0")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("io.coil-kt:coil-svg:2.7.0")
