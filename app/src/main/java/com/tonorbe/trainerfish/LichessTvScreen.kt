@@ -1,9 +1,11 @@
 package com.tonorbe.trainerfish
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -17,10 +19,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -43,6 +44,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -396,7 +400,13 @@ private fun LichessTvHeader(
             Text("← Home", color = Color.White, fontWeight = FontWeight.Bold)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Lichess TV", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black)
+            Text(
+                "Grandmaster Chess TV",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1
+            )
             state.errorMessage?.let {
                 Text(it, color = Color(0xFFFCA5A5), fontSize = 10.sp, maxLines = 1)
             }
@@ -439,13 +449,13 @@ private fun LichessTvPlayerCard(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(side.uppercase(Locale.US), color = foreground.copy(alpha = 0.58f), fontSize = 9.sp)
+                Text(side.uppercase(Locale.US), color = foreground.copy(alpha = 0.76f), fontSize = 9.sp)
                 Text(player.displayName, color = foreground, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(player.rating?.toString() ?: "—", color = foreground, fontWeight = FontWeight.Black)
                 player.seconds?.let {
-                    Text(lichessTvClock(it), color = foreground.copy(alpha = 0.76f), fontSize = 11.sp)
+                    Text(lichessTvClock(it), color = foreground.copy(alpha = 0.90f), fontSize = 11.sp)
                 }
             }
         }
@@ -512,11 +522,16 @@ private fun LichessTvEvalBar(cpWhite: Int?, text: String, enabled: Boolean, modi
         }
         Text(
             text = text,
-            color = if (whiteShare > 0.60f) Color.Black else Color.White,
-            fontSize = 9.sp,
+            color = Color.White,
+            fontSize = 8.sp,
             fontWeight = FontWeight.Black,
             textAlign = TextAlign.Center,
-            modifier = Modifier.align(Alignment.Center)
+            maxLines = 1,
+            softWrap = false,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .background(Color(0xE6111827), RoundedCornerShape(4.dp))
+                .padding(horizontal = 2.dp, vertical = 2.dp)
         )
     }
 }
@@ -552,18 +567,32 @@ private fun LichessTvStudyPanel(
                 if (detached) {
                     Button(
                         onClick = onReconnect,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF629924))
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF2F6B1F),
+                            contentColor = Color.White
+                        )
                     ) { Text("Reconnect live") }
                 } else {
                     Button(
                         onClick = onAnalyze,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706))
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFF59E0B),
+                            contentColor = Color(0xFF211407)
+                        )
                     ) { Text("Analyze game") }
                 }
-                OutlinedButton(onClick = onEngineToggle) {
+                OutlinedButton(
+                    onClick = onEngineToggle,
+                    border = BorderStroke(1.5.dp, Color(0xFF4E3B2A)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2C2118))
+                ) {
                     Text(if (engineEnabled) "Engine: On" else "Engine: Off")
                 }
-                OutlinedButton(onClick = onFlip) { Text("Flip") }
+                OutlinedButton(
+                    onClick = onFlip,
+                    border = BorderStroke(1.5.dp, Color(0xFF4E3B2A)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2C2118))
+                ) { Text("Flip") }
             }
 
             Spacer(Modifier.height(7.dp))
@@ -629,66 +658,79 @@ private fun LichessTvMoveList(
     onNavigate: (Int) -> Unit,
     modifier: Modifier
 ) {
-    val rows = remember(sanMoves) { sanMoves.chunked(2) }
-    if (rows.isEmpty()) {
+    if (sanMoves.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
-            Text("Waiting for moves…", color = Color(0xFF7C5A3A), fontSize = 12.sp)
+            Text("Waiting for moves…", color = Color(0xFF5D4632), fontSize = 12.sp)
         }
         return
     }
 
-    LazyColumn(modifier = modifier) {
-        itemsIndexed(rows) { rowIndex, moves ->
-            val whitePly = rowIndex * 2 + 1
-            val blackPly = whitePly + 1
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("${rowIndex + 1}.", color = Color(0xFF9A7651), fontSize = 11.sp, modifier = Modifier.width(28.dp))
-                LichessTvMoveCell(
-                    text = moves.getOrNull(0).orEmpty(),
-                    active = currentPly == whitePly,
-                    enabled = moves.isNotEmpty(),
-                    onClick = { onNavigate(whitePly) },
-                    modifier = Modifier.weight(1f)
+    val paragraph = remember(sanMoves, currentPly) {
+        buildAnnotatedString {
+            sanMoves.forEachIndexed { index, san ->
+                val ply = index + 1
+                if (index > 0) append(" ")
+                if (index % 2 == 0) append("${index / 2 + 1}. ")
+                pushStringAnnotation(tag = "ply", annotation = ply.toString())
+                pushStyle(
+                    SpanStyle(
+                        color = if (currentPly == ply) Color.White else Color(0xFF2C2118),
+                        background = if (currentPly == ply) Color(0xFF1D4ED8) else Color.Transparent,
+                        fontWeight = if (currentPly == ply) FontWeight.Black else FontWeight.Medium
+                    )
                 )
-                LichessTvMoveCell(
-                    text = moves.getOrNull(1).orEmpty(),
-                    active = currentPly == blackPly,
-                    enabled = moves.size > 1,
-                    onClick = { onNavigate(blackPly) },
-                    modifier = Modifier.weight(1f)
-                )
+                append(san)
+                pop()
+                pop()
             }
         }
+    }
+    val moveScrollState = rememberScrollState()
+    LaunchedEffect(sanMoves.size, currentPly) {
+        if (currentPly == sanMoves.size) {
+            delay(32L)
+            moveScrollState.scrollTo(moveScrollState.maxValue)
+        }
+    }
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = Color(0xFFFFFBEB),
+        border = BorderStroke(1.dp, Color(0xFFC8B99F))
+    ) {
+        ClickableText(
+            text = paragraph,
+            style = TextStyle(
+                color = Color(0xFF2C2118),
+                fontSize = 13.sp,
+                lineHeight = 21.sp
+            ),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(moveScrollState)
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            onClick = { offset ->
+                paragraph.getStringAnnotations(tag = "ply", start = offset, end = offset)
+                    .firstOrNull()
+                    ?.item
+                    ?.toIntOrNull()
+                    ?.let(onNavigate)
+            }
+        )
     }
 }
 
 @Composable
-private fun LichessTvMoveCell(
-    text: String,
-    active: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier
-) {
-    Text(
-        text = text,
-        color = if (active) Color.White else Color(0xFF4E3B2A),
-        fontSize = 12.sp,
-        fontWeight = if (active) FontWeight.Black else FontWeight.Medium,
-        modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(if (active) Color(0xFF2563EB) else Color.Transparent)
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 6.dp, vertical = 4.dp)
-    )
-}
-
-@Composable
 private fun LichessTvNavButton(text: String, enabled: Boolean, onClick: () -> Unit) {
-    TextButton(onClick = onClick, enabled = enabled) {
+    TextButton(
+        onClick = onClick,
+        enabled = enabled,
+        colors = ButtonDefaults.textButtonColors(
+            contentColor = Color(0xFF084E9E),
+            disabledContentColor = Color(0xFF776C60)
+        )
+    ) {
         Text(text, fontSize = 16.sp, fontWeight = FontWeight.Black)
     }
 }

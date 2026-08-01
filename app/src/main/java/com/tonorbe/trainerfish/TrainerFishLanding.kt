@@ -192,7 +192,7 @@ fun TrainerFishLandingScreen(
                 colors = listOf(Color(0xFF06B6D4), Color(0xFF0F766E))
             ),
             LandingTile(
-                title = "Watch Lichess TV",
+                title = "Grandmaster Chess TV",
                 subtitle = "Live elite games with engine analysis",
                 emoji = "📺",
                 mode = null,
@@ -316,7 +316,7 @@ fun TrainerFishLandingScreen(
                                         when (tile.title) {
                                             "Chess Clock" -> onClock()
                                             "Visual Studio" -> showVisualStudio = true
-                                            "Watch Lichess TV" -> onWatchLichessTv()
+                                            "Grandmaster Chess TV" -> onWatchLichessTv()
                                             else -> tile.mode?.let(onSelectMode)
                                         }
                                     }
@@ -336,7 +336,7 @@ fun TrainerFishLandingScreen(
                                 when (tile.title) {
                                     "Chess Clock" -> onClock()
                                     "Visual Studio" -> showVisualStudio = true
-                                    "Watch Lichess TV" -> onWatchLichessTv()
+                                    "Grandmaster Chess TV" -> onWatchLichessTv()
                                     else -> tile.mode?.let(onSelectMode)
                                 }
                             }
