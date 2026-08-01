@@ -13,11 +13,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 
 internal const val LICHESS_TV_START_FEN =
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -26,8 +28,14 @@ internal enum class LichessTvConnectionStatus {
     CONNECTING,
     LIVE,
     RECONNECTING,
+    FINISHED,
     DETACHED,
     OFFLINE
+}
+
+internal enum class LichessTvSource {
+    TOP_GAME,
+    WATCHED_PLAYER
 }
 
 internal data class LichessTvPlayer(
@@ -44,6 +52,9 @@ internal data class LichessTvPlayer(
 
 internal data class LichessTvState(
     val status: LichessTvConnectionStatus = LichessTvConnectionStatus.OFFLINE,
+    val source: LichessTvSource = LichessTvSource.TOP_GAME,
+    val watchedUsername: String? = null,
+    val watchedGameOngoing: Boolean = false,
     val gameId: String? = null,
     val fen: String = LICHESS_TV_START_FEN,
     val startFen: String = LICHESS_TV_START_FEN,
@@ -54,14 +65,14 @@ internal data class LichessTvState(
     val uciMoves: List<String> = emptyList(),
     val sanMoves: List<String> = emptyList(),
     val pgnLoaded: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val noticeMessage: String? = null
 )
 
 /**
- * One unauthenticated connection to Lichess's official TV NDJSON feed.
- *
- * The feed supplies the featured position and each new move. A separate one-shot
- * PGN export fills the moves played before TrainerFish joined the live stream.
+ * One unauthenticated spectator connection to either Lichess's TV feed or the
+ * public, delayed stream of a user-selected game. PGN exports fill moves played
+ * before TrainerFish joined either stream.
  */
 internal class LichessTvClient {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -71,18 +82,68 @@ internal class LichessTvClient {
     @Volatile
     private var wantsLiveConnection = false
     @Volatile
+    private var connectionSerial = 0L
+    @Volatile
     private var activeConnection: HttpURLConnection? = null
     private var streamJob: Job? = null
     private var pgnJob: Job? = null
 
     fun connect() {
+        if (
+            streamJob?.isActive == true &&
+            _state.value.source == LichessTvSource.TOP_GAME
+        ) return
+        connectTopGame()
+    }
+
+    fun connectTopGame(noticeMessage: String? = null) {
+        startConnection(LichessTvSource.TOP_GAME, null, noticeMessage)
+    }
+
+    fun watchPlayer(username: String) {
+        val normalized = username.trim().removePrefix("@").trim()
+        if (normalized.isBlank()) return
+        startConnection(LichessTvSource.WATCHED_PLAYER, normalized, null)
+    }
+
+    fun reconnect() {
+        val current = _state.value
+        if (current.source == LichessTvSource.WATCHED_PLAYER && !current.watchedUsername.isNullOrBlank()) {
+            watchPlayer(current.watchedUsername)
+        } else {
+            connectTopGame()
+        }
+    }
+
+    private fun startConnection(
+        source: LichessTvSource,
+        username: String?,
+        noticeMessage: String?
+    ) {
         wantsLiveConnection = true
-        if (streamJob?.isActive == true) return
-        streamJob = scope.launch { streamLoop() }
+        val serial = ++connectionSerial
+        pgnJob?.cancel()
+        streamJob?.cancel()
+        closeActiveConnection()
+        _state.value = LichessTvState(
+            status = LichessTvConnectionStatus.CONNECTING,
+            source = source,
+            watchedUsername = username,
+            watchedGameOngoing = source == LichessTvSource.WATCHED_PLAYER,
+            noticeMessage = noticeMessage
+        )
+        streamJob = scope.launch {
+            if (source == LichessTvSource.WATCHED_PLAYER && username != null) {
+                watchedPlayerLoop(serial, username)
+            } else {
+                topGameLoop(serial, noticeMessage)
+            }
+        }
     }
 
     fun detachForAnalysis() {
         wantsLiveConnection = false
+        connectionSerial++
         // Let the small one-shot PGN request finish if it is already in flight so
         // analysis mode can still receive the moves played before TrainerFish joined.
         streamJob?.cancel()
@@ -98,25 +159,30 @@ internal class LichessTvClient {
 
     fun close() {
         wantsLiveConnection = false
+        connectionSerial++
         pgnJob?.cancel()
         streamJob?.cancel()
         closeActiveConnection()
         scope.cancel()
     }
 
-    private suspend fun streamLoop() {
+    private suspend fun topGameLoop(serial: Long, initialNotice: String? = null) {
         var firstAttempt = true
         var retryDelayMs = 2_000L
 
-        while (scope.isActive && wantsLiveConnection) {
+        while (scope.isActive && isCurrent(serial)) {
             _state.update {
                 it.copy(
+                    source = LichessTvSource.TOP_GAME,
+                    watchedUsername = null,
+                    watchedGameOngoing = false,
                     status = if (firstAttempt) {
                         LichessTvConnectionStatus.CONNECTING
                     } else {
                         LichessTvConnectionStatus.RECONNECTING
                     },
-                    errorMessage = null
+                    errorMessage = null,
+                    noticeMessage = it.noticeMessage ?: initialNotice
                 )
             }
 
@@ -139,21 +205,25 @@ internal class LichessTvClient {
 
                 retryDelayMs = 2_000L
                 _state.update {
-                    it.copy(status = LichessTvConnectionStatus.LIVE, errorMessage = null)
+                    it.copy(
+                        status = LichessTvConnectionStatus.LIVE,
+                        errorMessage = null,
+                        noticeMessage = it.noticeMessage ?: initialNotice
+                    )
                 }
 
                 BufferedReader(InputStreamReader(connection.inputStream, Charsets.UTF_8)).use { reader ->
-                    while (scope.isActive && wantsLiveConnection) {
+                    while (scope.isActive && isCurrent(serial)) {
                         val line = reader.readLine() ?: break
-                        if (line.isNotBlank()) handleFeedLine(line)
+                        if (line.isNotBlank()) handleFeedLine(serial, line)
                     }
                 }
 
-                if (wantsLiveConnection) {
+                if (isCurrent(serial)) {
                     throw IllegalStateException("The Grandmaster Chess TV stream ended")
                 }
             } catch (error: Throwable) {
-                if (!wantsLiveConnection || !scope.isActive) break
+                if (!isCurrent(serial) || !scope.isActive) break
                 _state.update {
                     it.copy(
                         status = LichessTvConnectionStatus.RECONNECTING,
@@ -170,16 +240,276 @@ internal class LichessTvClient {
         }
     }
 
-    private fun handleFeedLine(line: String) {
-        val event = runCatching { JSONObject(line) }.getOrNull() ?: return
-        val data = event.optJSONObject("d") ?: return
-        when (event.optString("t")) {
-            "featured" -> handleFeatured(data)
-            "fen" -> handleFen(data)
+    private suspend fun watchedPlayerLoop(serial: Long, username: String) {
+        val gameId = try {
+            fetchPlayingGameId(username)
+        } catch (_: Throwable) {
+            if (!isCurrent(serial)) return
+            fallbackToTopGame(
+                serial,
+                "Could not check player — showing top game."
+            )
+            return
+        }
+
+        if (!isCurrent(serial)) return
+        val activeGameId = gameId?.takeIf { it.isNotBlank() }
+        if (activeGameId == null) {
+            fallbackToTopGame(serial, "Player not playing — showing top game.")
+            return
+        }
+
+        _state.update { it.copy(gameId = activeGameId) }
+        fetchPlayerCurrentPgn(username)?.let { loaded ->
+            if (isCurrent(serial)) applyFetchedPgn(activeGameId, loaded)
+        }
+        if (!isCurrent(serial)) return
+
+        var firstAttempt = true
+        var retryDelayMs = 2_000L
+        while (scope.isActive && isCurrent(serial)) {
+            _state.update {
+                it.copy(
+                    status = if (firstAttempt) {
+                        LichessTvConnectionStatus.CONNECTING
+                    } else {
+                        LichessTvConnectionStatus.RECONNECTING
+                    },
+                    source = LichessTvSource.WATCHED_PLAYER,
+                    watchedUsername = username,
+                    watchedGameOngoing = true,
+                    gameId = activeGameId,
+                    errorMessage = null,
+                    noticeMessage = "Watching @$username • 3-move delay • engine off"
+                )
+            }
+
+            var connection: HttpURLConnection? = null
+            try {
+                val encodedGameId = URLEncoder.encode(activeGameId, Charsets.UTF_8.name())
+                connection = (URL("$GAME_STREAM_BASE/$encodedGameId").openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 15_000
+                    readTimeout = 0
+                    setRequestProperty("Accept", "application/x-ndjson")
+                    setRequestProperty("User-Agent", USER_AGENT)
+                    useCaches = false
+                    doInput = true
+                }
+                activeConnection = connection
+                val code = connection.responseCode
+                if (code != HttpURLConnection.HTTP_OK) {
+                    throw IllegalStateException("Player game stream returned HTTP $code")
+                }
+
+                retryDelayMs = 2_000L
+                BufferedReader(InputStreamReader(connection.inputStream, Charsets.UTF_8)).use { reader ->
+                    while (scope.isActive && isCurrent(serial)) {
+                        val line = reader.readLine() ?: break
+                        if (line.isNotBlank()) {
+                            handleWatchedGameLine(serial, username, activeGameId, line)
+                        }
+                    }
+                }
+
+                if (!isCurrent(serial)) break
+                if (!_state.value.watchedGameOngoing) break
+                throw IllegalStateException("Player game stream ended")
+            } catch (error: Throwable) {
+                if (!isCurrent(serial) || !scope.isActive) break
+                _state.update {
+                    it.copy(
+                        status = LichessTvConnectionStatus.RECONNECTING,
+                        errorMessage = error.message ?: "Player game connection lost"
+                    )
+                }
+                delay(retryDelayMs)
+                retryDelayMs = (retryDelayMs * 2).coerceAtMost(15_000L)
+            } finally {
+                if (activeConnection === connection) activeConnection = null
+                runCatching { connection?.disconnect() }
+            }
+            firstAttempt = false
         }
     }
 
-    private fun handleFeatured(data: JSONObject) {
+    private suspend fun fallbackToTopGame(serial: Long, message: String) {
+        if (!isCurrent(serial)) return
+        _state.value = LichessTvState(
+            status = LichessTvConnectionStatus.CONNECTING,
+            source = LichessTvSource.TOP_GAME,
+            noticeMessage = message
+        )
+        topGameLoop(serial, message)
+    }
+
+    private fun fetchPlayingGameId(username: String): String? {
+        var connection: HttpURLConnection? = null
+        return try {
+            val encodedUsername = URLEncoder.encode(username, Charsets.UTF_8.name())
+            val url = "$USER_STATUS_URL?ids=$encodedUsername&withGameIds=true"
+            connection = (URL(url).openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 15_000
+                readTimeout = 15_000
+                setRequestProperty("Accept", "application/json")
+                setRequestProperty("User-Agent", USER_AGENT)
+                useCaches = false
+            }
+            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                throw IllegalStateException("Player status returned HTTP ${connection.responseCode}")
+            }
+            val body = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            val player = JSONArray(body).optJSONObject(0) ?: return null
+            player.optString("playingId").trim().takeIf { it.isNotBlank() }
+        } finally {
+            runCatching { connection?.disconnect() }
+        }
+    }
+
+    private fun handleWatchedGameLine(
+        serial: Long,
+        username: String,
+        expectedGameId: String,
+        line: String
+    ) {
+        if (!isCurrent(serial)) return
+        val data = runCatching { JSONObject(line) }.getOrNull() ?: return
+        if (data.has("id") || data.has("players")) {
+            handleWatchedGameDescription(serial, username, expectedGameId, data)
+        } else {
+            handleWatchedFen(serial, data)
+        }
+    }
+
+    private fun handleWatchedGameDescription(
+        serial: Long,
+        username: String,
+        expectedGameId: String,
+        data: JSONObject
+    ) {
+        if (!isCurrent(serial)) return
+        val id = data.optString("id").trim().ifBlank { expectedGameId }
+        if (id != expectedGameId) return
+
+        val players = data.optJSONObject("players")
+        val white = parseStreamPlayer(players?.optJSONObject("white"), "White")
+        val black = parseStreamPlayer(players?.optJSONObject("black"), "Black")
+        val statusName = data.optJSONObject("status")?.optString("name").orEmpty()
+            .ifBlank { data.optString("status") }
+            .lowercase()
+        val ongoing = statusName.isBlank() || statusName == "created" || statusName == "started"
+        val startFen = data.optString("initialFen").trim().ifBlank { LICHESS_TV_START_FEN }
+        val fen = normalizeStreamFen(data.optString("fen"), startFen)
+        val lastMove = data.optString("lastMove").trim().takeIf { it.isNotBlank() }
+        val existing = _state.value.takeIf { it.gameId == id }
+
+        _state.value = LichessTvState(
+            status = if (ongoing) LichessTvConnectionStatus.LIVE else LichessTvConnectionStatus.FINISHED,
+            source = LichessTvSource.WATCHED_PLAYER,
+            watchedUsername = username,
+            watchedGameOngoing = ongoing,
+            gameId = id,
+            fen = fen,
+            startFen = existing?.startFen ?: startFen,
+            white = white,
+            black = black,
+            orientationWhite = white.name.equals(username, ignoreCase = true),
+            lastMoveUci = lastMove ?: existing?.lastMoveUci,
+            uciMoves = existing?.uciMoves.orEmpty(),
+            sanMoves = existing?.sanMoves.orEmpty(),
+            pgnLoaded = existing?.pgnLoaded ?: false,
+            noticeMessage = if (ongoing) {
+                "Watching @$username • 3-move delay • engine off"
+            } else {
+                "@$username finished • engine analysis available"
+            }
+        )
+
+        pgnJob?.cancel()
+        pgnJob = scope.launch {
+            fetchPlayerCurrentPgn(username)?.let { loaded -> applyFetchedPgn(id, loaded) }
+        }
+    }
+
+    private fun handleWatchedFen(serial: Long, data: JSONObject) {
+        if (!isCurrent(serial)) return
+        val moveUci = data.optString("lm").trim().takeIf { it.isNotBlank() }
+        _state.update { current ->
+            if (current.source != LichessTvSource.WATCHED_PLAYER) return@update current
+
+            val before = runCatching {
+                com.github.bhlangonijr.chesslib.Board().apply { loadFromFen(current.fen) }
+            }.getOrNull()
+            val move = if (before != null && moveUci != null) bfUciToMoveOnBoard(before, moveUci) else null
+            val san = if (before != null && move != null) {
+                runCatching {
+                    bfPrettySan(
+                        board = before,
+                        mv = move,
+                        isWhiteMove = before.sideToMove == com.github.bhlangonijr.chesslib.Side.WHITE
+                    )
+                }.getOrNull()
+            } else null
+            val computedFen = if (before != null && move != null && before.doMove(move)) {
+                before.fen
+            } else {
+                normalizeStreamFen(data.optString("fen"), current.fen)
+            }
+            val appendMove = moveUci != null &&
+                current.lastMoveUci != moveUci &&
+                current.uciMoves.lastOrNull() != moveUci
+
+            current.copy(
+                status = LichessTvConnectionStatus.LIVE,
+                watchedGameOngoing = true,
+                fen = computedFen,
+                white = current.white.copy(seconds = data.optIntOrNull("wc") ?: current.white.seconds),
+                black = current.black.copy(seconds = data.optIntOrNull("bc") ?: current.black.seconds),
+                lastMoveUci = moveUci ?: current.lastMoveUci,
+                uciMoves = if (appendMove) current.uciMoves + moveUci else current.uciMoves,
+                sanMoves = if (appendMove) current.sanMoves + (san ?: moveUci) else current.sanMoves,
+                errorMessage = null
+            )
+        }
+    }
+
+    private fun parseStreamPlayer(item: JSONObject?, fallbackName: String): LichessTvPlayer {
+        val user = item?.optJSONObject("user")
+        return LichessTvPlayer(
+            name = user?.optString("name").orEmpty().ifBlank { fallbackName },
+            title = user?.optString("title")?.trim()?.takeIf { it.isNotBlank() },
+            rating = item?.optIntOrNull("rating"),
+            seconds = item?.optIntOrNull("seconds")
+        )
+    }
+
+    private fun normalizeStreamFen(rawFen: String, fallback: String): String {
+        val trimmed = rawFen.trim()
+        if (trimmed.isBlank()) return fallback
+        val fields = trimmed.split(Regex("\\s+")).filter { it.isNotBlank() }
+        return when {
+            fields.size >= 6 -> fields.take(6).joinToString(" ")
+            fields.size >= 2 -> "${fields[0]} ${fields[1]} - - 0 1"
+            else -> fallback
+        }
+    }
+
+    private fun isCurrent(serial: Long): Boolean =
+        wantsLiveConnection && connectionSerial == serial
+
+    private fun handleFeedLine(serial: Long, line: String) {
+        if (!isCurrent(serial)) return
+        val event = runCatching { JSONObject(line) }.getOrNull() ?: return
+        val data = event.optJSONObject("d") ?: return
+        when (event.optString("t")) {
+            "featured" -> handleFeatured(serial, data)
+            "fen" -> handleFen(serial, data)
+        }
+    }
+
+    private fun handleFeatured(serial: Long, data: JSONObject) {
+        if (!isCurrent(serial)) return
         val id = data.optString("id").trim()
         if (id.isBlank()) return
 
@@ -200,8 +530,10 @@ internal class LichessTvClient {
 
         val fen = data.optString("fen").trim().ifBlank { LICHESS_TV_START_FEN }
         val lastMove = data.optString("lastMove").trim().takeIf { it.isNotBlank() }
+        val notice = _state.value.noticeMessage
         _state.value = LichessTvState(
             status = LichessTvConnectionStatus.LIVE,
+            source = LichessTvSource.TOP_GAME,
             gameId = id,
             fen = fen,
             startFen = fen,
@@ -209,7 +541,8 @@ internal class LichessTvClient {
             black = black,
             orientationWhite = !data.optString("orientation").equals("black", ignoreCase = true),
             lastMoveUci = lastMove,
-            errorMessage = null
+            errorMessage = null,
+            noticeMessage = notice
         )
 
         pgnJob?.cancel()
@@ -218,7 +551,8 @@ internal class LichessTvClient {
         }
     }
 
-    private fun handleFen(data: JSONObject) {
+    private fun handleFen(serial: Long, data: JSONObject) {
+        if (!isCurrent(serial)) return
         val newFen = data.optString("fen").trim()
         if (newFen.isBlank()) return
 
@@ -273,9 +607,21 @@ internal class LichessTvClient {
     }
 
     private suspend fun fetchCurrentPgn(gameId: String): LoadedTvPgn? {
+        val encodedGameId = URLEncoder.encode(gameId, Charsets.UTF_8.name())
+        val url = "$GAME_EXPORT_BASE/$encodedGameId?clocks=false&evals=false&literate=false&opening=true"
+        return fetchPgn(url)
+    }
+
+    private suspend fun fetchPlayerCurrentPgn(username: String): LoadedTvPgn? {
+        val encodedUsername = URLEncoder.encode(username, Charsets.UTF_8.name())
+        val url = "$USER_CURRENT_GAME_BASE/$encodedUsername/current-game" +
+            "?moves=true&clocks=false&evals=false&literate=false&opening=true"
+        return fetchPgn(url)
+    }
+
+    private suspend fun fetchPgn(url: String): LoadedTvPgn? {
         var connection: HttpURLConnection? = null
         return try {
-            val url = "$GAME_EXPORT_BASE/$gameId?clocks=false&evals=false&literate=false&opening=true"
             connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = 15_000
@@ -369,6 +715,9 @@ internal class LichessTvClient {
     companion object {
         private const val TV_FEED_URL = "https://lichess.org/api/tv/feed"
         private const val GAME_EXPORT_BASE = "https://lichess.org/game/export"
+        private const val USER_CURRENT_GAME_BASE = "https://lichess.org/api/user"
+        private const val USER_STATUS_URL = "https://lichess.org/api/users/status"
+        private const val GAME_STREAM_BASE = "https://lichess.org/api/stream/game"
         private const val USER_AGENT = "TrainerFish/5.0 (com.tonorbe.trainerfish)"
         private const val MAX_PGN_CHARS = 512_000
     }

@@ -26,6 +26,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -71,6 +72,8 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     var detached by rememberSaveable { mutableStateOf(false) }
     var engineEnabled by rememberSaveable { mutableStateOf(true) }
     var whiteBottom by rememberSaveable { mutableStateOf(true) }
+    var showWatchPlayerDialog by rememberSaveable { mutableStateOf(false) }
+    var playerUsername by rememberSaveable { mutableStateOf("") }
     var analysisStartFen by remember { mutableStateOf(LICHESS_TV_START_FEN) }
     var analysisFen by remember { mutableStateOf(LICHESS_TV_START_FEN) }
     var analysisUciMoves by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -127,7 +130,24 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         detached = false
         selectedSquare = null
         promotionChoices = emptyList()
-        client.connect()
+        client.reconnect()
+    }
+
+    fun watchPlayer() {
+        val username = playerUsername.trim().removePrefix("@").trim()
+        if (username.isBlank()) return
+        detached = false
+        selectedSquare = null
+        promotionChoices = emptyList()
+        showWatchPlayerDialog = false
+        client.watchPlayer(username)
+    }
+
+    fun showTopGame() {
+        detached = false
+        selectedSquare = null
+        promotionChoices = emptyList()
+        client.connectTopGame()
     }
 
     fun applyAnalysisMove(move: LibMove) {
@@ -206,9 +226,12 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         }
     }
 
+    val watchedPlayerEngineLocked =
+        tv.source == LichessTvSource.WATCHED_PLAYER && tv.watchedGameOngoing
+    val effectiveEngineEnabled = engineEnabled && !watchedPlayerEngineLocked
     val displayedFen = if (detached) analysisFen else tv.fen
-    LaunchedEffect(engineEnabled, displayedFen) {
-        if (!engineEnabled) {
+    LaunchedEffect(effectiveEngineEnabled, displayedFen) {
+        if (!effectiveEngineEnabled) {
             ProcEngine.send("stop")
             ProcEngine.clearOutput()
             return@LaunchedEffect
@@ -225,8 +248,16 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         line.startsWith("info ") && line.contains(" score ") &&
             (!line.contains(" multipv ") || line.contains(" multipv 1 "))
     }
-    val engineEvaluation = if (engineEnabled) lichessTvEvaluationText(latestInfo, whiteToMove) else "Off"
-    val enginePv = if (engineEnabled) lichessTvPvText(displayedFen, latestInfo) else "Engine analysis is off."
+    val engineEvaluation = when {
+        watchedPlayerEngineLocked -> "Locked"
+        effectiveEngineEnabled -> lichessTvEvaluationText(latestInfo, whiteToMove)
+        else -> "Off"
+    }
+    val enginePv = when {
+        watchedPlayerEngineLocked -> "Engine disabled while watching a specific live player."
+        effectiveEngineEnabled -> lichessTvPvText(displayedFen, latestInfo)
+        else -> "Engine analysis is off."
+    }
 
     val basePieces = remember(displayedFen) {
         runCatching {
@@ -287,13 +318,15 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                             darkSquare = darkSquare,
                             evaluationCpWhite = engineCpWhite,
                             evaluationText = engineEvaluation,
-                            engineEnabled = engineEnabled,
+                            engineEnabled = effectiveEngineEnabled,
                             onSquareClick = ::onBoardSquare,
                             modifier = Modifier.weight(1.08f).fillMaxHeight()
                         )
                         LichessTvStudyPanel(
                             detached = detached,
-                            engineEnabled = engineEnabled,
+                            engineEnabled = effectiveEngineEnabled,
+                            engineLocked = watchedPlayerEngineLocked,
+                            watchingPlayer = tv.source == LichessTvSource.WATCHED_PLAYER,
                             evaluationText = engineEvaluation,
                             enginePv = enginePv,
                             uciMoves = shownUciMoves,
@@ -303,6 +336,11 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                             onEngineToggle = { engineEnabled = !engineEnabled },
                             onAnalyze = { enterAnalysis(tv.uciMoves.size) },
                             onReconnect = ::reconnect,
+                            onWatchPlayer = {
+                                playerUsername = tv.watchedUsername ?: playerUsername
+                                showWatchPlayerDialog = true
+                            },
+                            onTopGame = ::showTopGame,
                             onFlip = { whiteBottom = !whiteBottom },
                             onNavigate = ::navigateToPly,
                             modifier = Modifier.weight(0.92f).fillMaxHeight()
@@ -321,14 +359,16 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                             darkSquare = darkSquare,
                             evaluationCpWhite = engineCpWhite,
                             evaluationText = engineEvaluation,
-                            engineEnabled = engineEnabled,
+                            engineEnabled = effectiveEngineEnabled,
                             onSquareClick = ::onBoardSquare,
                             modifier = Modifier.fillMaxWidth().weight(1.30f)
                         )
                         Spacer(Modifier.height(7.dp))
                         LichessTvStudyPanel(
                             detached = detached,
-                            engineEnabled = engineEnabled,
+                            engineEnabled = effectiveEngineEnabled,
+                            engineLocked = watchedPlayerEngineLocked,
+                            watchingPlayer = tv.source == LichessTvSource.WATCHED_PLAYER,
                             evaluationText = engineEvaluation,
                             enginePv = enginePv,
                             uciMoves = shownUciMoves,
@@ -338,6 +378,11 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                             onEngineToggle = { engineEnabled = !engineEnabled },
                             onAnalyze = { enterAnalysis(tv.uciMoves.size) },
                             onReconnect = ::reconnect,
+                            onWatchPlayer = {
+                                playerUsername = tv.watchedUsername ?: playerUsername
+                                showWatchPlayerDialog = true
+                            },
+                            onTopGame = ::showTopGame,
                             onFlip = { whiteBottom = !whiteBottom },
                             onNavigate = ::navigateToPly,
                             modifier = Modifier.fillMaxWidth().weight(0.70f)
@@ -346,6 +391,37 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                 }
             }
         }
+    }
+
+    if (showWatchPlayerDialog) {
+        AlertDialog(
+            onDismissRequest = { showWatchPlayerDialog = false },
+            title = { Text("Watch a player") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Enter a Lichess username. The engine stays off while that player's game is live.",
+                        fontSize = 13.sp
+                    )
+                    OutlinedTextField(
+                        value = playerUsername,
+                        onValueChange = { playerUsername = it },
+                        label = { Text("Lichess username") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = playerUsername.trim().removePrefix("@").isNotBlank(),
+                    onClick = ::watchPlayer
+                ) { Text("Watch") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWatchPlayerDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 
     if (promotionChoices.isNotEmpty()) {
@@ -385,6 +461,9 @@ private fun LichessTvHeader(
 ) {
     val (statusText, statusColor) = when {
         detached -> "ANALYSIS • STREAM PAUSED" to Color(0xFFF59E0B)
+        state.status == LichessTvConnectionStatus.FINISHED -> "GAME FINISHED" to Color(0xFF93C5FD)
+        state.source == LichessTvSource.WATCHED_PLAYER &&
+            state.status == LichessTvConnectionStatus.LIVE -> "PLAYER LIVE" to Color(0xFFFACC15)
         state.status == LichessTvConnectionStatus.LIVE -> "LIVE" to Color(0xFF4ADE80)
         state.status == LichessTvConnectionStatus.RECONNECTING -> "RECONNECTING" to Color(0xFFFACC15)
         state.status == LichessTvConnectionStatus.CONNECTING -> "CONNECTING" to Color(0xFF93C5FD)
@@ -407,8 +486,16 @@ private fun LichessTvHeader(
                 fontWeight = FontWeight.Black,
                 maxLines = 1
             )
-            state.errorMessage?.let {
-                Text(it, color = Color(0xFFFCA5A5), fontSize = 10.sp, maxLines = 1)
+            val detail = state.errorMessage ?: state.noticeMessage ?: state.watchedUsername?.let {
+                "Watching @$it"
+            }
+            detail?.let {
+                Text(
+                    it,
+                    color = if (state.errorMessage != null) Color(0xFFFCA5A5) else Color(0xFFFDE68A),
+                    fontSize = 10.sp,
+                    maxLines = 1
+                )
             }
         }
         Surface(shape = RoundedCornerShape(10.dp), color = statusColor.copy(alpha = 0.18f)) {
@@ -540,6 +627,8 @@ private fun LichessTvEvalBar(cpWhite: Int?, text: String, enabled: Boolean, modi
 private fun LichessTvStudyPanel(
     detached: Boolean,
     engineEnabled: Boolean,
+    engineLocked: Boolean,
+    watchingPlayer: Boolean,
     evaluationText: String,
     enginePv: String,
     uciMoves: List<String>,
@@ -549,6 +638,8 @@ private fun LichessTvStudyPanel(
     onEngineToggle: () -> Unit,
     onAnalyze: () -> Unit,
     onReconnect: () -> Unit,
+    onWatchPlayer: () -> Unit,
+    onTopGame: () -> Unit,
     onFlip: () -> Unit,
     onNavigate: (Int) -> Unit,
     modifier: Modifier
@@ -583,10 +674,32 @@ private fun LichessTvStudyPanel(
                 }
                 OutlinedButton(
                     onClick = onEngineToggle,
+                    enabled = !engineLocked,
                     border = BorderStroke(1.5.dp, Color(0xFF4E3B2A)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2C2118))
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color(0xFF2C2118),
+                        disabledContentColor = Color(0xFF7C2D12)
+                    )
                 ) {
-                    Text(if (engineEnabled) "Engine: On" else "Engine: Off")
+                    Text(
+                        when {
+                            engineLocked -> "Engine: Locked"
+                            engineEnabled -> "Engine: On"
+                            else -> "Engine: Off"
+                        }
+                    )
+                }
+                OutlinedButton(
+                    onClick = onWatchPlayer,
+                    border = BorderStroke(1.5.dp, Color(0xFF084E9E)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF084E9E))
+                ) { Text("Watch player") }
+                if (watchingPlayer) {
+                    OutlinedButton(
+                        onClick = onTopGame,
+                        border = BorderStroke(1.5.dp, Color(0xFF2F6B1F)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2F6B1F))
+                    ) { Text("Top game") }
                 }
                 OutlinedButton(
                     onClick = onFlip,
