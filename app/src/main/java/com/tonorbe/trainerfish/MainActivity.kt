@@ -155,7 +155,8 @@ class MainActivity : ComponentActivity() {
                         onOpenTacticsFromNotificationConsumed = { pendingOpenTacticsFromNotification = false },
                         playGamesState = playGamesController.uiState,
                         onOpenLeaderboards = playGamesController::showLeaderboards,
-                        onLeaderboardScoreUpdate = playGamesController::recordAndSubmit
+                        onLeaderboardScoreUpdate = playGamesController::recordAndSubmit,
+                        onProEntitlementChanged = playGamesController::setProEntitlement
                     )
                 }
             }
@@ -245,7 +246,7 @@ class MainActivity : ComponentActivity() {
 }
 
 /** Simple root nav: landing -> trainer module / clock. */
-private enum class RootScreen { Home, Trainer, Clock }
+private enum class RootScreen { Home, Trainer, Clock, LichessTv }
 
 private const val ROOT_INITIAL_TACTICS_ELO = 1200
 
@@ -259,7 +260,8 @@ private fun TLAGMApp(
     onOpenTacticsFromNotificationConsumed: () -> Unit = {},
     playGamesState: TrainerFishPlayGamesUiState = TrainerFishPlayGamesUiState(),
     onOpenLeaderboards: () -> Unit = {},
-    onLeaderboardScoreUpdate: (TrainerFishLeaderboardUpdate) -> Unit = {}
+    onLeaderboardScoreUpdate: (TrainerFishLeaderboardUpdate) -> Unit = {},
+    onProEntitlementChanged: (Boolean) -> Unit = {}
 ) {
     val ctx = LocalContext.current
 
@@ -294,6 +296,23 @@ private fun TLAGMApp(
         initial = BillingManager.isProUnlocked(ctx)
     )
 
+    LaunchedEffect(rootProUnlocked) {
+        onProEntitlementChanged(rootProUnlocked)
+    }
+
+    val managedPlayGamesName = playGamesState.playerName
+        ?.trim()
+        ?.takeIf { rootProUnlocked && playGamesState.isAuthenticated && it.isNotBlank() }
+
+    LaunchedEffect(managedPlayGamesName) {
+        val googleName = managedPlayGamesName ?: return@LaunchedEffect
+        if (startupProfile.nickname != googleName) {
+            startupProfile.nickname = googleName
+        }
+        startupNickname = googleName
+        showFirstUseProfileDialog = false
+    }
+
     LaunchedEffect(openTacticsFromNotification) {
         if (openTacticsFromNotification) {
             selectedModeName = TrainerMode.WOODPECKER.name
@@ -308,6 +327,7 @@ private fun TLAGMApp(
             RootScreen.Home -> showRootExitSupportDialog = true
             RootScreen.Trainer -> screen = RootScreen.Home
             RootScreen.Clock -> screen = RootScreen.Home
+            RootScreen.LichessTv -> screen = RootScreen.Home
         }
     }
 
@@ -405,7 +425,9 @@ private fun TLAGMApp(
                 },
                 onClock = { screen = RootScreen.Clock },
                 playGamesState = playGamesState,
-                onOpenLeaderboards = onOpenLeaderboards
+                proUnlocked = rootProUnlocked,
+                onOpenLeaderboards = onOpenLeaderboards,
+                onWatchLichessTv = { screen = RootScreen.LichessTv }
             )
         }
 
@@ -433,6 +455,10 @@ private fun TLAGMApp(
             ClockScreen(
                 onExit = { screen = RootScreen.Home }
             )
+        }
+
+        RootScreen.LichessTv -> {
+            LichessTvScreen(onHome = { screen = RootScreen.Home })
         }
     }
 }

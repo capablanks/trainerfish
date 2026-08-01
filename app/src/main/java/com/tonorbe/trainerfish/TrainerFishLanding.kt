@@ -117,7 +117,9 @@ fun TrainerFishLandingScreen(
     onSelectMode: (TrainerMode) -> Unit,
     onClock: () -> Unit = {},
     playGamesState: TrainerFishPlayGamesUiState = TrainerFishPlayGamesUiState(),
-    onOpenLeaderboards: () -> Unit = {}
+    proUnlocked: Boolean = false,
+    onOpenLeaderboards: () -> Unit = {},
+    onWatchLichessTv: () -> Unit = {}
 ) {
     val ctx = LocalContext.current
     val cosSp = remember { ctx.getSharedPreferences("gm_cosmetics", android.content.Context.MODE_PRIVATE) }
@@ -188,6 +190,14 @@ fun TrainerFishLandingScreen(
                 emoji = "\uD83D\uDC1F",
                 mode = TrainerMode.BEAT_FISH,
                 colors = listOf(Color(0xFF06B6D4), Color(0xFF0F766E))
+            ),
+            LandingTile(
+                title = "Watch Lichess TV",
+                subtitle = "Live elite games with engine analysis",
+                emoji = "📺",
+                mode = null,
+                colors = listOf(Color(0xFF629924), Color(0xFF2D5F16), Color(0xFF111827)),
+                actionLabel = "Watch"
             ),
             LandingTile(
                 title = "Game Recorder",
@@ -273,6 +283,7 @@ fun TrainerFishLandingScreen(
 
                 TrainerFishLeaderboardCard(
                     state = playGamesState,
+                    proUnlocked = proUnlocked,
                     onClick = onOpenLeaderboards,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -305,6 +316,7 @@ fun TrainerFishLandingScreen(
                                         when (tile.title) {
                                             "Chess Clock" -> onClock()
                                             "Visual Studio" -> showVisualStudio = true
+                                            "Watch Lichess TV" -> onWatchLichessTv()
                                             else -> tile.mode?.let(onSelectMode)
                                         }
                                     }
@@ -324,6 +336,7 @@ fun TrainerFishLandingScreen(
                                 when (tile.title) {
                                     "Chess Clock" -> onClock()
                                     "Visual Studio" -> showVisualStudio = true
+                                    "Watch Lichess TV" -> onWatchLichessTv()
                                     else -> tile.mode?.let(onSelectMode)
                                 }
                             }
@@ -376,16 +389,26 @@ fun TrainerFishLandingScreen(
             onClose = { showVisualStudio = false }
         )
     }
+
 }
 
 @Composable
 private fun TrainerFishLeaderboardCard(
     state: TrainerFishPlayGamesUiState,
+    proUnlocked: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val subtitle = when {
         !state.isConfigured -> "Play Console IDs are not configured yet"
+        !proUnlocked && state.isChecking ->
+            "Connecting • Free users can view; Pro is required to publish scores"
+        !proUnlocked && state.isAuthenticated -> {
+            val player = state.playerName?.takeIf { it.isNotBlank() } ?: "Play Games player"
+            "Signed in as $player • View-only for Free — unlock Pro to publish your scores"
+        }
+        !proUnlocked ->
+            "View all rankings • View-only for Free — unlock Pro to publish your scores"
         state.isChecking -> "Connecting to Google Play Games..."
         state.isAuthenticated -> {
             val player = state.playerName?.takeIf { it.isNotBlank() } ?: "Play Games player"
@@ -395,6 +418,8 @@ private fun TrainerFishLeaderboardCard(
     }
     val action = when {
         !state.isConfigured -> "Setup"
+        !proUnlocked && state.isChecking -> "Wait"
+        !proUnlocked -> "View"
         state.isChecking -> "Wait"
         state.isAuthenticated -> "View"
         else -> "Sign in"

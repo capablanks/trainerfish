@@ -15,6 +15,7 @@ import com.tonorbe.trainerfish.ProfilePrefs
 import com.tonorbe.trainerfish.R
 import com.tonorbe.trainerfish.TacticsShard
 import com.tonorbe.trainerfish.WoodpeckerStore
+import com.tonorbe.trainerfish.billing.BillingManager
 import java.util.concurrent.Executors
 import kotlin.math.max
 
@@ -76,6 +77,8 @@ class TrainerFishPlayGamesController(
     }
     @Volatile
     private var statsReady = false
+    @Volatile
+    private var proEntitled = false
     private var signInInProgress = false
 
     var uiState by mutableStateOf(
@@ -131,9 +134,18 @@ class TrainerFishPlayGamesController(
 
     fun recordAndSubmit(update: TrainerFishLeaderboardUpdate) {
         statsExecutor.execute {
+            // Free users keep accumulating the same local statistics. If they later
+            // unlock Pro, flushBestScores() publishes their best current totals.
             stats.record(update)
             activity.runOnUiThread { submitScoresChangedBy(update) }
         }
+    }
+
+    fun setProEntitlement(isPro: Boolean) {
+        proEntitled = isPro
+        // Leaderboard browsing is available to everyone. Entitlement controls only
+        // score submission and the in-app Google Play Games profile-name override.
+        refreshAuthentication()
     }
 
     fun shutdown() {
@@ -227,7 +239,7 @@ class TrainerFishPlayGamesController(
     }
 
     private fun flushBestScores() {
-        if (!configured || !uiState.isAuthenticated || !statsReady) return
+        if (!proEntitled || !BillingManager.isPro.value || !configured || !uiState.isAuthenticated || !statsReady) return
 
         val snapshot = stats.snapshot()
         val client = PlayGames.getLeaderboardsClient(activity)
@@ -273,7 +285,7 @@ class TrainerFishPlayGamesController(
     }
 
     private fun submitScoresChangedBy(update: TrainerFishLeaderboardUpdate) {
-        if (!configured || !uiState.isAuthenticated || !statsReady) return
+        if (!proEntitled || !BillingManager.isPro.value || !configured || !uiState.isAuthenticated || !statsReady) return
 
         val snapshot = stats.snapshot()
         val client = PlayGames.getLeaderboardsClient(activity)
@@ -341,6 +353,8 @@ class TrainerFishPlayGamesController(
         score: Long,
         tag: String? = null
     ) {
+        // Defense in depth: even a future caller cannot publish a Free user's score.
+        if (!proEntitled || !BillingManager.isPro.value) return
         if (score <= 0L) return
         val leaderboardId = activity.getString(leaderboardIdRes).trim()
         if (leaderboardId.isBlank()) return

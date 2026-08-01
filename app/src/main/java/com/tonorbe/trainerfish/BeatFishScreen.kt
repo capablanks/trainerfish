@@ -7297,7 +7297,7 @@ private fun fenAfterUciPlies(startFen: String, uciMoves: List<String>, plies: In
 
 // =================== Core helpers ===================
 
-private fun bfPrettySan(board: LibBoard, mv: LibMove, isWhiteMove: Boolean): String {
+internal fun bfPrettySan(board: LibBoard, mv: LibMove, isWhiteMove: Boolean): String {
     val from = mv.from
     val to = mv.to
     val piece = board.getPiece(from)
@@ -7475,7 +7475,7 @@ private fun buildFenFromEditable(
     return "$sb $side $castling - 0 1"
 }
 
-private fun bfUciToMoveOnBoard(board: LibBoard, uci: String): LibMove? {
+internal fun bfUciToMoveOnBoard(board: LibBoard, uci: String): LibMove? {
     if (uci.length < 4) return null
 
     val fromSq = Square.fromValue(uci.substring(0, 2).uppercase())
