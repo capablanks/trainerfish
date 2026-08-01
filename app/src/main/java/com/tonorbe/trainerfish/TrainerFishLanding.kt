@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.tonorbe.trainerfish.playgames.TrainerFishPlayGamesUiState
 
 private data class LandingTile(
     val title: String,
@@ -114,7 +115,9 @@ fun TrainerFishLandingScreen(
     appThemeKey: String,
     onChangeAppThemeKey: (String) -> Unit,
     onSelectMode: (TrainerMode) -> Unit,
-    onClock: () -> Unit = {}
+    onClock: () -> Unit = {},
+    playGamesState: TrainerFishPlayGamesUiState = TrainerFishPlayGamesUiState(),
+    onOpenLeaderboards: () -> Unit = {}
 ) {
     val ctx = LocalContext.current
     val cosSp = remember { ctx.getSharedPreferences("gm_cosmetics", android.content.Context.MODE_PRIVATE) }
@@ -266,6 +269,25 @@ fun TrainerFishLandingScreen(
                     onClock = onClock
                 )
 
+                Spacer(Modifier.height(14.dp))
+
+                TrainerFishLeaderboardCard(
+                    state = playGamesState,
+                    onClick = onOpenLeaderboards,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                playGamesState.statusMessage?.let { message ->
+                    Spacer(Modifier.height(7.dp))
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.78f),
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
                 Spacer(Modifier.height(18.dp))
 
                 if (twoColumns) {
@@ -353,6 +375,104 @@ fun TrainerFishLandingScreen(
             onAppTheme = onChangeAppThemeKey,
             onClose = { showVisualStudio = false }
         )
+    }
+}
+
+@Composable
+private fun TrainerFishLeaderboardCard(
+    state: TrainerFishPlayGamesUiState,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val subtitle = when {
+        !state.isConfigured -> "Play Console IDs are not configured yet"
+        state.isChecking -> "Connecting to Google Play Games..."
+        state.isAuthenticated -> {
+            val player = state.playerName?.takeIf { it.isNotBlank() } ?: "Play Games player"
+            "Signed in as $player • Compare your training records"
+        }
+        else -> "Sign in to compare ELO, puzzle records, streaks, and cycles"
+    }
+    val action = when {
+        !state.isConfigured -> "Setup"
+        state.isChecking -> "Wait"
+        state.isAuthenticated -> "View"
+        else -> "Sign in"
+    }
+
+    Surface(
+        modifier = modifier
+            .shadow(10.dp, RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(22.dp))
+            .clickable(enabled = !state.isChecking, onClick = onClick),
+        color = Color.Transparent
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        listOf(Color(0xFF0F172A), Color(0xFF1D4ED8), Color(0xFFF59E0B))
+                    )
+                )
+                .padding(horizontal = 16.dp, vertical = 15.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    modifier = Modifier.size(52.dp),
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.16f)
+                ) {
+                    if (state.playerIconUri != null) {
+                        AsyncImage(
+                            model = state.playerIconUri,
+                            contentDescription = "Google Play Games player",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(text = "🏆", fontSize = 28.sp)
+                        }
+                    }
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "TrainerFish Leaderboards",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = subtitle,
+                        color = Color.White.copy(alpha = 0.84f),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
+                    )
+                }
+
+                Spacer(Modifier.width(10.dp))
+
+                Text(
+                    text = action,
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 11.dp, vertical = 8.dp)
+                )
+            }
+        }
     }
 }
 

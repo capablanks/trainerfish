@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.net.Uri
+import com.tonorbe.trainerfish.playgames.TrainerFishLeaderboardUpdate
 import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
@@ -238,6 +239,35 @@ private fun computeTrainerElo(
     return (playerRating + k * (result - expected))
         .roundToInt()
         .coerceIn(100, 4000)
+}
+
+private fun createTrainerFishLeaderboardUpdate(
+    currentElo: Int,
+    puzzleId: String,
+    puzzleRating: Int,
+    earnedPoints: Int,
+    totalPoints: Int,
+    previousBestTimeMs: Long,
+    previousBestPoints: Int,
+    previousBestTotal: Int,
+    cycleCompleted: Boolean
+): TrainerFishLeaderboardUpdate? {
+    if (puzzleId.isBlank() || totalPoints <= 0) return null
+
+    val isPerfect = earnedPoints == totalPoints
+    val wasPreviouslyRecorded = previousBestTimeMs > 0L || previousBestTotal > 0
+    val wasPreviouslyPerfect =
+        previousBestTotal > 0 && previousBestPoints >= previousBestTotal
+
+    return TrainerFishLeaderboardUpdate(
+        currentElo = currentElo,
+        puzzleId = puzzleId,
+        puzzleRating = puzzleRating,
+        isPerfect = isPerfect,
+        isFirstCompletion = !wasPreviouslyRecorded,
+        isFirstPerfectMastery = isPerfect && !wasPreviouslyPerfect,
+        cycleCompleted = cycleCompleted
+    )
 }
 
 private fun formatEloDelta(delta: Int): String = if (delta >= 0) "+$delta" else delta.toString()
@@ -1808,7 +1838,8 @@ fun ReplayScreen(
     onChangeAppThemeKey: (String) -> Unit = {},
     externalPgnUri: Uri? = null,
     onExternalPgnUriConsumed: () -> Unit = {},
-    autoContinueCycle: Boolean = false
+    autoContinueCycle: Boolean = false,
+    onLeaderboardScoreUpdate: (TrainerFishLeaderboardUpdate) -> Unit = {}
 
 ) {
 
@@ -3032,7 +3063,7 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
         return pool.firstOrNull { it !in solved }
     }
 
-    fun markSolvedForCycle(idx: Int, spentMs: Long, earnedForRecord: Int) {
+    fun markSolvedForCycle(idx: Int, spentMs: Long, earnedForRecord: Int): Boolean {
         if (scoringEnabled) {
             prefs.ptsEarned += earnedForRecord
             prefs.ptsTotal  += puzzleTotalPoints
@@ -3040,6 +3071,7 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
             prefs.solvedCount += 1
         }
         val solved = solvedSet()
+        val wasAlreadySolved = idx in solved
         solved += idx
         prefs.solvedCsv = setToCsv(solved)
         val pool = currentPool()
@@ -3053,6 +3085,7 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
         } else if (solved.size >= committedCount) {
             status = "Preparing fresh puzzles..."
         }
+        return !wasAlreadySolved && solved.size >= targetSize
     }
 
 
@@ -3208,10 +3241,20 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
             val (prevBestPts, prevBestTot) =
                 if (currentId.isNotBlank()) wp.puzzleBestPoints(currentId) else (0 to 0)
 
+            val puzzleRatingForLeaderboard = current?.rating
+                ?: games.getOrNull(currentIndex)?.rating
+                ?: TRAINER_ELO_INITIAL
+
             if (currentId.isNotBlank()) {
-                wp.markSolved(currentId, spent, baseEarn, puzzleTotalPoints)
+                wp.markSolved(
+                    puzzleId = currentId,
+                    ms = spent,
+                    earnedPoints = baseEarn,
+                    totalPoints = puzzleTotalPoints,
+                    puzzleRating = puzzleRatingForLeaderboard
+                )
             }
-            markSolvedForCycle(currentIndex, spent, baseEarn)
+            val cycleCompletedNow = markSolvedForCycle(currentIndex, spent, baseEarn)
             lastPuzzleEarned = baseEarn
             lastPuzzleTotal = puzzleTotalPoints
             lastPuzzleElapsedMs = spent
@@ -3222,13 +3265,10 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
             if (scoringEnabled && puzzleTotalPoints > 0) {
                 val eloBefore = userElo
                 val unlockedBefore = profile.maxUnlockedTacticsFloor
-                val puzzleRatingForElo = current?.rating
-                    ?: games.getOrNull(currentIndex)?.rating
-                    ?: TRAINER_ELO_INITIAL
                 val eloResult = if (baseEarn == puzzleTotalPoints) 1.0 else 0.0
                 val eloAfter = computeTrainerElo(
                     playerRating = eloBefore,
-                    opponentRatingRaw = puzzleRatingForElo,
+                    opponentRatingRaw = puzzleRatingForLeaderboard,
                     result = eloResult
                 )
                 val eloAfterFinal = if (eloResult == 0.0 && eloAfter >= eloBefore) {
@@ -3256,6 +3296,20 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                 lastRatingBefore = null
                 lastRatingAfter = null
                 lastRatingDelta = null
+            }
+
+            if (scoringEnabled) {
+                createTrainerFishLeaderboardUpdate(
+                    currentElo = userElo,
+                    puzzleId = currentId,
+                    puzzleRating = puzzleRatingForLeaderboard,
+                    earnedPoints = baseEarn,
+                    totalPoints = puzzleTotalPoints,
+                    previousBestTimeMs = prevBestTime,
+                    previousBestPoints = prevBestPts,
+                    previousBestTotal = prevBestTot,
+                    cycleCompleted = cycleCompletedNow
+                )?.let(onLeaderboardScoreUpdate)
             }
 
             // Check if this run set a new record for this puzzle

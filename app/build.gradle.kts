@@ -123,6 +123,7 @@ dependencies {
     // BillingManager uses the standard callback API; the optional KTX artifact is
     // unnecessary and requires a newer Kotlin metadata version than this project.
     implementation("com.android.billingclient:billing:9.1.0")
+    implementation("com.google.android.gms:play-services-games-v2:21.0.0")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("io.coil-kt:coil-svg:2.7.0")

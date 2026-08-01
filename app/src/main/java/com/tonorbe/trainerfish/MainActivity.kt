@@ -60,6 +60,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.tonorbe.trainerfish.billing.BillingManager
+import com.tonorbe.trainerfish.playgames.TrainerFishLeaderboardUpdate
+import com.tonorbe.trainerfish.playgames.TrainerFishPlayGamesController
+import com.tonorbe.trainerfish.playgames.TrainerFishPlayGamesUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -71,6 +74,7 @@ class MainActivity : ComponentActivity() {
 
     private var pendingOpenPgnUri by mutableStateOf<Uri?>(null)
     private var pendingOpenTacticsFromNotification by mutableStateOf(false)
+    private lateinit var playGamesController: TrainerFishPlayGamesController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,6 +98,8 @@ class MainActivity : ComponentActivity() {
             finish()
             return
         }
+
+        playGamesController = TrainerFishPlayGamesController(this)
 
         // \uD83D\uDD13 Initialise Billing (reads any existing Pro purchase)
         BillingManager.init(applicationContext)
@@ -146,7 +152,10 @@ class MainActivity : ComponentActivity() {
                         externalPgnUri = pendingOpenPgnUri,
                         onExternalPgnUriConsumed = { pendingOpenPgnUri = null },
                         openTacticsFromNotification = pendingOpenTacticsFromNotification,
-                        onOpenTacticsFromNotificationConsumed = { pendingOpenTacticsFromNotification = false }
+                        onOpenTacticsFromNotificationConsumed = { pendingOpenTacticsFromNotification = false },
+                        playGamesState = playGamesController.uiState,
+                        onOpenLeaderboards = playGamesController::showLeaderboards,
+                        onLeaderboardScoreUpdate = playGamesController::recordAndSubmit
                     )
                 }
             }
@@ -219,8 +228,18 @@ class MainActivity : ComponentActivity() {
         pendingOpenTacticsFromNotification = intent.getBooleanExtra("tf_open_tactics", false)
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (::playGamesController.isInitialized) {
+            playGamesController.refreshAuthentication()
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        if (::playGamesController.isInitialized) {
+            playGamesController.shutdown()
+        }
         BillingManager.shutdown()
     }
 }
@@ -237,7 +256,10 @@ private fun TLAGMApp(
     externalPgnUri: Uri? = null,
     onExternalPgnUriConsumed: () -> Unit = {},
     openTacticsFromNotification: Boolean = false,
-    onOpenTacticsFromNotificationConsumed: () -> Unit = {}
+    onOpenTacticsFromNotificationConsumed: () -> Unit = {},
+    playGamesState: TrainerFishPlayGamesUiState = TrainerFishPlayGamesUiState(),
+    onOpenLeaderboards: () -> Unit = {},
+    onLeaderboardScoreUpdate: (TrainerFishLeaderboardUpdate) -> Unit = {}
 ) {
     val ctx = LocalContext.current
 
@@ -381,7 +403,9 @@ private fun TLAGMApp(
                         }
                     }
                 },
-                onClock = { screen = RootScreen.Clock }
+                onClock = { screen = RootScreen.Clock },
+                playGamesState = playGamesState,
+                onOpenLeaderboards = onOpenLeaderboards
             )
         }
 
@@ -399,7 +423,8 @@ private fun TLAGMApp(
                     onChangeAppThemeKey = onChangeAppThemeKey,
                     externalPgnUri = null,
                     onExternalPgnUriConsumed = onExternalPgnUriConsumed,
-                    autoContinueCycle = autoContinueCycleRequest
+                    autoContinueCycle = autoContinueCycleRequest,
+                    onLeaderboardScoreUpdate = onLeaderboardScoreUpdate
                 )
             }
         }
