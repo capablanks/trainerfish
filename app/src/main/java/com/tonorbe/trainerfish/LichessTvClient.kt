@@ -35,7 +35,8 @@ internal enum class LichessTvConnectionStatus {
 
 internal enum class LichessTvSource {
     TOP_GAME,
-    WATCHED_PLAYER
+    WATCHED_PLAYER,
+    BROADCAST_BOARD
 }
 
 internal data class LichessTvPlayer(
@@ -87,6 +88,7 @@ internal class LichessTvClient {
     private var activeConnection: HttpURLConnection? = null
     private var streamJob: Job? = null
     private var pgnJob: Job? = null
+    private var activeBroadcastSelection: LichessBroadcastSelection? = null
 
     fun connect() {
         if (
@@ -97,21 +99,52 @@ internal class LichessTvClient {
     }
 
     fun connectTopGame(noticeMessage: String? = null) {
+        activeBroadcastSelection = null
         startConnection(LichessTvSource.TOP_GAME, null, noticeMessage)
     }
 
     fun watchPlayer(username: String) {
         val normalized = username.trim().removePrefix("@").trim()
         if (normalized.isBlank()) return
+        activeBroadcastSelection = null
         startConnection(LichessTvSource.WATCHED_PLAYER, normalized, null)
+    }
+
+    fun watchBroadcastBoard(selection: LichessBroadcastSelection) {
+        activeBroadcastSelection = selection
+        wantsLiveConnection = true
+        val serial = ++connectionSerial
+        pgnJob?.cancel()
+        streamJob?.cancel()
+        closeActiveConnection()
+        _state.value = LichessTvState(
+            status = if (selection.isOngoing) {
+                LichessTvConnectionStatus.CONNECTING
+            } else {
+                LichessTvConnectionStatus.FINISHED
+            },
+            source = LichessTvSource.BROADCAST_BOARD,
+            gameId = selection.gameId,
+            fen = selection.fen,
+            white = selection.white,
+            black = selection.black,
+            orientationWhite = true,
+            lastMoveUci = selection.lastMoveUci,
+            noticeMessage = selection.notice
+        )
+        streamJob = scope.launch { broadcastBoardLoop(serial, selection) }
     }
 
     fun reconnect() {
         val current = _state.value
-        if (current.source == LichessTvSource.WATCHED_PLAYER && !current.watchedUsername.isNullOrBlank()) {
-            watchPlayer(current.watchedUsername)
-        } else {
-            connectTopGame()
+        when {
+            current.source == LichessTvSource.WATCHED_PLAYER && !current.watchedUsername.isNullOrBlank() -> {
+                watchPlayer(current.watchedUsername)
+            }
+            current.source == LichessTvSource.BROADCAST_BOARD && activeBroadcastSelection != null -> {
+                watchBroadcastBoard(activeBroadcastSelection!!)
+            }
+            else -> connectTopGame()
         }
     }
 
@@ -331,6 +364,177 @@ internal class LichessTvClient {
             }
             firstAttempt = false
         }
+    }
+
+    private suspend fun broadcastBoardLoop(
+        serial: Long,
+        selection: LichessBroadcastSelection
+    ) {
+        var firstAttempt = true
+        var retryDelayMs = 2_000L
+
+        while (scope.isActive && isCurrent(serial)) {
+            _state.update { current ->
+                if (current.source != LichessTvSource.BROADCAST_BOARD) current else current.copy(
+                    status = if (firstAttempt) {
+                        LichessTvConnectionStatus.CONNECTING
+                    } else {
+                        LichessTvConnectionStatus.RECONNECTING
+                    },
+                    errorMessage = null,
+                    noticeMessage = selection.notice
+                )
+            }
+
+            var connection: HttpURLConnection? = null
+            try {
+                val encodedRoundId = URLEncoder.encode(selection.roundId, Charsets.UTF_8.name())
+                val url = "$BROADCAST_STREAM_BASE/$encodedRoundId.pgn?clocks=true&comments=false"
+                connection = (URL(url).openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 15_000
+                    readTimeout = 0
+                    setRequestProperty("Accept", "application/x-chess-pgn")
+                    setRequestProperty("User-Agent", USER_AGENT)
+                    useCaches = false
+                    doInput = true
+                }
+                activeConnection = connection
+                val code = connection.responseCode
+                if (code != HttpURLConnection.HTTP_OK) {
+                    throw IllegalStateException("Tournament broadcast returned HTTP $code")
+                }
+
+                retryDelayMs = 2_000L
+                BufferedReader(InputStreamReader(connection.inputStream, Charsets.UTF_8)).use { reader ->
+                    consumeBroadcastPgnStream(
+                        reader = reader,
+                        serial = serial,
+                        selection = selection
+                    )
+                }
+
+                if (!isCurrent(serial)) break
+                if (_state.value.status == LichessTvConnectionStatus.FINISHED) break
+                throw IllegalStateException("Tournament broadcast stream ended")
+            } catch (error: Throwable) {
+                if (!isCurrent(serial) || !scope.isActive) break
+                _state.update { current ->
+                    if (current.source != LichessTvSource.BROADCAST_BOARD) current else current.copy(
+                        status = LichessTvConnectionStatus.RECONNECTING,
+                        errorMessage = error.message ?: "Tournament broadcast connection lost"
+                    )
+                }
+                delay(retryDelayMs)
+                retryDelayMs = (retryDelayMs * 2).coerceAtMost(15_000L)
+            } finally {
+                if (activeConnection === connection) activeConnection = null
+                runCatching { connection?.disconnect() }
+            }
+            firstAttempt = false
+        }
+    }
+
+    private fun consumeBroadcastPgnStream(
+        reader: BufferedReader,
+        serial: Long,
+        selection: LichessBroadcastSelection
+    ) {
+        var block = StringBuilder()
+        var sawMoveText = false
+        var trailingBlankLines = 0
+
+        fun flushBlock() {
+            if (block.isNotBlank()) {
+                handleBroadcastPgnBlock(serial, selection, block.toString())
+            }
+            block = StringBuilder()
+            sawMoveText = false
+            trailingBlankLines = 0
+        }
+
+        while (scope.isActive && isCurrent(serial)) {
+            val line = reader.readLine() ?: break
+            if (line.startsWith("[Event ") && block.isNotBlank() && sawMoveText) {
+                flushBlock()
+            }
+            if (block.length + line.length + 1 <= MAX_PGN_CHARS) {
+                block.append(line).append('\n')
+            }
+
+            when {
+                line.isBlank() && sawMoveText -> {
+                    trailingBlankLines += 1
+                    if (trailingBlankLines >= 2) flushBlock()
+                }
+                line.isNotBlank() && !line.startsWith("[") -> {
+                    sawMoveText = true
+                    trailingBlankLines = 0
+                }
+                line.isNotBlank() -> trailingBlankLines = 0
+            }
+        }
+        flushBlock()
+    }
+
+    private fun handleBroadcastPgnBlock(
+        serial: Long,
+        selection: LichessBroadcastSelection,
+        pgn: String
+    ) {
+        if (!isCurrent(serial)) return
+        val gameUrl = pgnTag(pgn, "GameURL") ?: pgnTag(pgn, "Site") ?: return
+        val gameId = gameUrl.substringBefore('?').trimEnd('/').substringAfterLast('/')
+        if (gameId != selection.gameId) return
+        val loaded = parseTvPgn(pgn) ?: return
+        val result = pgnTag(pgn, "Result").orEmpty()
+        val finished = result.isNotBlank() && result != "*"
+        val finalFen = positionAfter(loaded.startFen, loaded.uciMoves) ?: _state.value.fen
+
+        _state.update { current ->
+            if (
+                current.source != LichessTvSource.BROADCAST_BOARD ||
+                current.gameId != selection.gameId
+            ) return@update current
+            current.copy(
+                status = if (finished) {
+                    LichessTvConnectionStatus.FINISHED
+                } else {
+                    LichessTvConnectionStatus.LIVE
+                },
+                fen = finalFen,
+                startFen = loaded.startFen,
+                lastMoveUci = loaded.uciMoves.lastOrNull() ?: current.lastMoveUci,
+                uciMoves = loaded.uciMoves,
+                sanMoves = loaded.sanMoves,
+                white = current.white.copy(seconds = loaded.whiteSeconds ?: current.white.seconds),
+                black = current.black.copy(seconds = loaded.blackSeconds ?: current.black.seconds),
+                pgnLoaded = true,
+                errorMessage = null,
+                noticeMessage = selection.notice
+            )
+        }
+    }
+
+    private fun positionAfter(startFen: String, uciMoves: List<String>): String? {
+        val board = runCatching {
+            com.github.bhlangonijr.chesslib.Board().apply { loadFromFen(startFen) }
+        }.getOrNull() ?: return null
+        for (uci in uciMoves) {
+            val move = bfUciToMoveOnBoard(board, uci) ?: return null
+            if (!board.doMove(move)) return null
+        }
+        return board.fen
+    }
+
+    private fun pgnTag(pgn: String, name: String): String? {
+        val escapedName = Regex.escape(name)
+        return Regex("(?m)^\\[$escapedName\\s+\"([^\"]*)\"\\]\\s*$")
+            .find(pgn)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
     }
 
     private suspend fun fallbackToTopGame(serial: Long, message: String) {
@@ -655,19 +859,39 @@ internal class LichessTvClient {
         val tree = runCatching { parsePgnTreeFromChunk(pgn) }.getOrNull() ?: return null
         val uci = ArrayList<String>()
         val san = ArrayList<String>()
+        var whiteSeconds: Int? = null
+        var blackSeconds: Int? = null
+        var ply = 0
         var nodeId = tree.nodes.getOrNull(tree.rootId)?.nextId
         while (nodeId != null) {
             val node = tree.nodes.getOrNull(nodeId) ?: break
             val moveUci = node.uci ?: break
             uci += moveUci
             san += node.san.ifBlank { moveUci }
+            parsePgnClockSeconds(node.postComment ?: node.preComment)?.let { seconds ->
+                if (ply % 2 == 0) whiteSeconds = seconds else blackSeconds = seconds
+            }
+            ply += 1
             nodeId = node.nextId
         }
         return LoadedTvPgn(
             startFen = tree.startFen?.takeIf { it.isNotBlank() } ?: LICHESS_TV_START_FEN,
             uciMoves = uci,
-            sanMoves = san
+            sanMoves = san,
+            whiteSeconds = whiteSeconds,
+            blackSeconds = blackSeconds
         )
+    }
+
+    private fun parsePgnClockSeconds(comment: String?): Int? {
+        val raw = comment?.let {
+            Regex("%clk\\s+([0-9]+):([0-9]{1,2}):([0-9]{1,2}(?:\\.[0-9]+)?)")
+                .find(it)
+        } ?: return null
+        val hours = raw.groupValues.getOrNull(1)?.toIntOrNull() ?: return null
+        val minutes = raw.groupValues.getOrNull(2)?.toIntOrNull() ?: return null
+        val seconds = raw.groupValues.getOrNull(3)?.toDoubleOrNull() ?: return null
+        return (hours * 3_600 + minutes * 60 + seconds).toInt().coerceAtLeast(0)
     }
 
     private fun applyFetchedPgn(gameId: String, fetched: LoadedTvPgn) {
@@ -682,12 +906,16 @@ internal class LichessTvClient {
             when {
                 fetchedIsPrefix -> current.copy(
                     startFen = fetched.startFen,
+                    white = current.white.copy(seconds = fetched.whiteSeconds ?: current.white.seconds),
+                    black = current.black.copy(seconds = fetched.blackSeconds ?: current.black.seconds),
                     pgnLoaded = true
                 )
                 currentIsPrefix || current.uciMoves.isEmpty() -> current.copy(
                     startFen = fetched.startFen,
                     uciMoves = fetched.uciMoves,
                     sanMoves = fetched.sanMoves,
+                    white = current.white.copy(seconds = fetched.whiteSeconds ?: current.white.seconds),
+                    black = current.black.copy(seconds = fetched.blackSeconds ?: current.black.seconds),
                     pgnLoaded = true
                 )
                 else -> current.copy(pgnLoaded = true)
@@ -706,7 +934,9 @@ internal class LichessTvClient {
     private data class LoadedTvPgn(
         val startFen: String,
         val uciMoves: List<String>,
-        val sanMoves: List<String>
+        val sanMoves: List<String>,
+        val whiteSeconds: Int?,
+        val blackSeconds: Int?
     )
 
     private fun JSONObject.optIntOrNull(name: String): Int? =
@@ -718,6 +948,7 @@ internal class LichessTvClient {
         private const val USER_CURRENT_GAME_BASE = "https://lichess.org/api/user"
         private const val USER_STATUS_URL = "https://lichess.org/api/users/status"
         private const val GAME_STREAM_BASE = "https://lichess.org/api/stream/game"
+        private const val BROADCAST_STREAM_BASE = "https://lichess.org/api/stream/broadcast/round"
         private const val USER_AGENT = "TrainerFish/5.0 (com.tonorbe.trainerfish)"
         private const val MAX_PGN_CHARS = 512_000
     }

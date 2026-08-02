@@ -16,15 +16,20 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -37,6 +42,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -59,12 +65,15 @@ import com.github.bhlangonijr.chesslib.Side
 import com.github.bhlangonijr.chesslib.move.Move as LibMove
 import com.tonorbe.trainerfish.engine.ProcEngine
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
 internal fun LichessTvScreen(onHome: () -> Unit) {
     val context = LocalContext.current
     val client = remember { LichessTvClient() }
+    val broadcastApi = remember { LichessBroadcastApi() }
+    val screenScope = rememberCoroutineScope()
     val tv by client.state.collectAsState()
     val engineCpRaw by ProcEngine.scoreCp.collectAsState()
     val engineLines by ProcEngine.lines.collectAsState()
@@ -74,6 +83,11 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     var whiteBottom by rememberSaveable { mutableStateOf(true) }
     var showWatchPlayerDialog by rememberSaveable { mutableStateOf(false) }
     var playerUsername by rememberSaveable { mutableStateOf("") }
+    var showBroadcastDialog by rememberSaveable { mutableStateOf(false) }
+    var broadcastLoading by remember { mutableStateOf(false) }
+    var broadcastError by remember { mutableStateOf<String?>(null) }
+    var liveBroadcasts by remember { mutableStateOf<List<LichessBroadcastPreview>>(emptyList()) }
+    var selectedBroadcastRound by remember { mutableStateOf<LichessBroadcastRound?>(null) }
     var analysisStartFen by remember { mutableStateOf(LICHESS_TV_START_FEN) }
     var analysisFen by remember { mutableStateOf(LICHESS_TV_START_FEN) }
     var analysisUciMoves by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -148,6 +162,47 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         selectedSquare = null
         promotionChoices = emptyList()
         client.connectTopGame()
+    }
+
+    fun refreshBroadcasts() {
+        selectedBroadcastRound = null
+        broadcastLoading = true
+        broadcastError = null
+        screenScope.launch {
+            runCatching { broadcastApi.loadLiveBroadcasts() }
+                .onSuccess { liveBroadcasts = it }
+                .onFailure {
+                    liveBroadcasts = emptyList()
+                    broadcastError = it.message ?: "Could not load live tournament broadcasts."
+                }
+            broadcastLoading = false
+        }
+    }
+
+    fun openBroadcasts() {
+        showBroadcastDialog = true
+        refreshBroadcasts()
+    }
+
+    fun openBroadcastRound(preview: LichessBroadcastPreview) {
+        broadcastLoading = true
+        broadcastError = null
+        screenScope.launch {
+            runCatching { broadcastApi.loadRound(preview) }
+                .onSuccess { selectedBroadcastRound = it }
+                .onFailure {
+                    broadcastError = it.message ?: "Could not load the tournament boards."
+                }
+            broadcastLoading = false
+        }
+    }
+
+    fun watchBroadcastBoard(round: LichessBroadcastRound, board: LichessBroadcastBoard) {
+        detached = false
+        selectedSquare = null
+        promotionChoices = emptyList()
+        showBroadcastDialog = false
+        client.watchBroadcastBoard(round.selectionFor(board))
     }
 
     fun applyAnalysisMove(move: LibMove) {
@@ -326,7 +381,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                             detached = detached,
                             engineEnabled = effectiveEngineEnabled,
                             engineLocked = watchedPlayerEngineLocked,
-                            watchingPlayer = tv.source == LichessTvSource.WATCHED_PLAYER,
+                            watchingAlternateGame = tv.source != LichessTvSource.TOP_GAME,
                             evaluationText = engineEvaluation,
                             enginePv = enginePv,
                             uciMoves = shownUciMoves,
@@ -340,6 +395,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                                 playerUsername = tv.watchedUsername ?: playerUsername
                                 showWatchPlayerDialog = true
                             },
+                            onBrowseBroadcasts = ::openBroadcasts,
                             onTopGame = ::showTopGame,
                             onFlip = { whiteBottom = !whiteBottom },
                             onNavigate = ::navigateToPly,
@@ -368,7 +424,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                             detached = detached,
                             engineEnabled = effectiveEngineEnabled,
                             engineLocked = watchedPlayerEngineLocked,
-                            watchingPlayer = tv.source == LichessTvSource.WATCHED_PLAYER,
+                            watchingAlternateGame = tv.source != LichessTvSource.TOP_GAME,
                             evaluationText = engineEvaluation,
                             enginePv = enginePv,
                             uciMoves = shownUciMoves,
@@ -382,6 +438,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                                 playerUsername = tv.watchedUsername ?: playerUsername
                                 showWatchPlayerDialog = true
                             },
+                            onBrowseBroadcasts = ::openBroadcasts,
                             onTopGame = ::showTopGame,
                             onFlip = { whiteBottom = !whiteBottom },
                             onNavigate = ::navigateToPly,
@@ -424,6 +481,25 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         )
     }
 
+    if (showBroadcastDialog) {
+        LichessBroadcastDialog(
+            loading = broadcastLoading,
+            errorMessage = broadcastError,
+            broadcasts = liveBroadcasts,
+            selectedRound = selectedBroadcastRound,
+            onDismiss = { showBroadcastDialog = false },
+            onRefresh = ::refreshBroadcasts,
+            onBack = {
+                selectedBroadcastRound = null
+                broadcastError = null
+            },
+            onSelectBroadcast = ::openBroadcastRound,
+            onSelectBoard = { board ->
+                selectedBroadcastRound?.let { round -> watchBroadcastBoard(round, board) }
+            }
+        )
+    }
+
     if (promotionChoices.isNotEmpty()) {
         AlertDialog(
             onDismissRequest = { promotionChoices = emptyList() },
@@ -454,6 +530,216 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
 }
 
 @Composable
+private fun LichessBroadcastDialog(
+    loading: Boolean,
+    errorMessage: String?,
+    broadcasts: List<LichessBroadcastPreview>,
+    selectedRound: LichessBroadcastRound?,
+    onDismiss: () -> Unit,
+    onRefresh: () -> Unit,
+    onBack: () -> Unit,
+    onSelectBroadcast: (LichessBroadcastPreview) -> Unit,
+    onSelectBoard: (LichessBroadcastBoard) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                selectedRound?.preview?.tournamentName ?: "Live Tournament Broadcasts",
+                fontWeight = FontWeight.Black
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                selectedRound?.let {
+                    Text(
+                        "${it.preview.roundName} • choose a board to feature",
+                        color = Color(0xFF5D4632),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                } ?: Text(
+                    "Choose a tournament, then select the board you want to watch.",
+                    color = Color(0xFF5D4632),
+                    fontSize = 12.sp
+                )
+
+                if (loading) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Color(0xFF2F6B1F))
+                    }
+                } else {
+                    errorMessage?.let {
+                        Surface(
+                            shape = RoundedCornerShape(9.dp),
+                            color = Color(0xFFFFE4E6)
+                        ) {
+                            Text(
+                                it,
+                                color = Color(0xFF9F1239),
+                                fontSize = 12.sp,
+                                modifier = Modifier.fillMaxWidth().padding(9.dp)
+                            )
+                        }
+                    }
+
+                    if (selectedRound != null) {
+                        if (selectedRound.boards.isEmpty() && errorMessage == null) {
+                            Text(
+                                "No boards are available in this round yet.",
+                                color = Color(0xFF5D4632),
+                                modifier = Modifier.padding(vertical = 24.dp)
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp, max = 430.dp),
+                                verticalArrangement = Arrangement.spacedBy(7.dp)
+                            ) {
+                                itemsIndexed(
+                                    items = selectedRound.boards,
+                                    key = { _, board -> board.gameId }
+                                ) { _, board ->
+                                    LichessBroadcastBoardRow(board = board, onClick = { onSelectBoard(board) })
+                                }
+                            }
+                        }
+                    } else {
+                        if (broadcasts.isEmpty() && errorMessage == null) {
+                            Text(
+                                "No tournament rounds are being broadcast live right now.",
+                                color = Color(0xFF5D4632),
+                                modifier = Modifier.padding(vertical = 24.dp)
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp, max = 430.dp),
+                                verticalArrangement = Arrangement.spacedBy(7.dp)
+                            ) {
+                                items(broadcasts, key = { it.roundId }) { broadcast ->
+                                    LichessBroadcastTournamentRow(
+                                        broadcast = broadcast,
+                                        onClick = { onSelectBroadcast(broadcast) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        },
+        dismissButton = {
+            if (selectedRound != null) {
+                TextButton(onClick = onBack) { Text("← Tournaments") }
+            } else {
+                TextButton(enabled = !loading, onClick = onRefresh) { Text("Refresh") }
+            }
+        }
+    )
+}
+
+@Composable
+private fun LichessBroadcastTournamentRow(
+    broadcast: LichessBroadcastPreview,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(11.dp),
+        color = Color(0xFFE8F5E9),
+        shadowElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(9.dp)
+        ) {
+            Surface(shape = RoundedCornerShape(7.dp), color = Color(0xFF166534)) {
+                Text(
+                    "LIVE",
+                    color = Color.White,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    broadcast.tournamentName,
+                    color = Color(0xFF142117),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 13.sp,
+                    maxLines = 2
+                )
+                Text(
+                    listOfNotNull(broadcast.roundName, broadcast.location).joinToString(" • "),
+                    color = Color(0xFF3F5D45),
+                    fontSize = 11.sp,
+                    maxLines = 1
+                )
+                broadcast.playersSummary?.let {
+                    Text(it, color = Color(0xFF617366), fontSize = 10.sp, maxLines = 1)
+                }
+            }
+            Text("›", color = Color(0xFF166534), fontSize = 26.sp, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
+private fun LichessBroadcastBoardRow(
+    board: LichessBroadcastBoard,
+    onClick: () -> Unit
+) {
+    val statusColor = if (board.isOngoing) Color(0xFFB91C1C) else Color(0xFF334155)
+    val statusText = if (board.isOngoing) "LIVE" else board.status
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(11.dp),
+        color = if (board.isOngoing) Color(0xFFFFF7ED) else Color(0xFFF1F5F9),
+        shadowElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(9.dp)
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("BOARD", color = Color(0xFF64748B), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    board.boardNumber.toString(),
+                    color = Color(0xFF0F172A),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "${board.white.displayName}  ${board.white.rating ?: "—"}",
+                    color = Color(0xFF111827),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    maxLines = 1
+                )
+                Text(
+                    "${board.black.displayName}  ${board.black.rating ?: "—"}",
+                    color = Color(0xFF111827),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    maxLines = 1
+                )
+            }
+            Text(statusText, color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
 private fun LichessTvHeader(
     state: LichessTvState,
     detached: Boolean,
@@ -462,6 +748,8 @@ private fun LichessTvHeader(
     val (statusText, statusColor) = when {
         detached -> "ANALYSIS • STREAM PAUSED" to Color(0xFFF59E0B)
         state.status == LichessTvConnectionStatus.FINISHED -> "GAME FINISHED" to Color(0xFF93C5FD)
+        state.source == LichessTvSource.BROADCAST_BOARD &&
+            state.status == LichessTvConnectionStatus.LIVE -> "BROADCAST LIVE" to Color(0xFF67E8F9)
         state.source == LichessTvSource.WATCHED_PLAYER &&
             state.status == LichessTvConnectionStatus.LIVE -> "PLAYER LIVE" to Color(0xFFFACC15)
         state.status == LichessTvConnectionStatus.LIVE -> "LIVE" to Color(0xFF4ADE80)
@@ -628,7 +916,7 @@ private fun LichessTvStudyPanel(
     detached: Boolean,
     engineEnabled: Boolean,
     engineLocked: Boolean,
-    watchingPlayer: Boolean,
+    watchingAlternateGame: Boolean,
     evaluationText: String,
     enginePv: String,
     uciMoves: List<String>,
@@ -639,6 +927,7 @@ private fun LichessTvStudyPanel(
     onAnalyze: () -> Unit,
     onReconnect: () -> Unit,
     onWatchPlayer: () -> Unit,
+    onBrowseBroadcasts: () -> Unit,
     onTopGame: () -> Unit,
     onFlip: () -> Unit,
     onNavigate: (Int) -> Unit,
@@ -694,7 +983,12 @@ private fun LichessTvStudyPanel(
                     border = BorderStroke(1.5.dp, Color(0xFF084E9E)),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF084E9E))
                 ) { Text("Watch player") }
-                if (watchingPlayer) {
+                OutlinedButton(
+                    onClick = onBrowseBroadcasts,
+                    border = BorderStroke(1.5.dp, Color(0xFF6D28D9)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF5B21B6))
+                ) { Text("Live broadcasts") }
+                if (watchingAlternateGame) {
                     OutlinedButton(
                         onClick = onTopGame,
                         border = BorderStroke(1.5.dp, Color(0xFF2F6B1F)),
