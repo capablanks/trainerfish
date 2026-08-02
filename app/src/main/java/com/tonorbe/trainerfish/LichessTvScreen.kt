@@ -343,107 +343,118 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     listOf(Color(0xFF07140A), Color(0xFF102A15), Color(0xFF111827))
                 )
             )
-            .padding(8.dp)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            LichessTvHeader(
-                state = tv,
-                detached = detached,
-                onHome = onHome
-            )
-            Spacer(Modifier.height(7.dp))
-            LichessTvPlayers(white = tv.white, black = tv.black)
-            Spacer(Modifier.height(7.dp))
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val landscape = maxWidth > maxHeight * 1.12f
+            val landscapeEvalSpace = 26.dp
+            val portraitEvalSpace = 16.dp
 
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                val landscape = maxWidth > maxHeight * 1.12f
-                if (landscape) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            @Composable
+            fun BoardPane(modifier: Modifier) {
+                LichessTvBoardPane(
+                    board = displayPieces,
+                    selected = displaySelected,
+                    lastFrom = displayLastFrom,
+                    lastTo = displayLastTo,
+                    whiteBottom = whiteBottom,
+                    pieceSet = pieceSet,
+                    lightSquare = lightSquare,
+                    darkSquare = darkSquare,
+                    evaluationCpWhite = engineCpWhite,
+                    evaluationText = engineEvaluation,
+                    engineEnabled = effectiveEngineEnabled,
+                    onSquareClick = ::onBoardSquare,
+                    landscape = landscape,
+                    modifier = modifier
+                )
+            }
+
+            @Composable
+            fun StudyPanel(modifier: Modifier) {
+                LichessTvStudyPanel(
+                    detached = detached,
+                    engineEnabled = effectiveEngineEnabled,
+                    engineLocked = watchedPlayerEngineLocked,
+                    watchingAlternateGame = tv.source != LichessTvSource.TOP_GAME,
+                    evaluationText = engineEvaluation,
+                    enginePv = enginePv,
+                    uciMoves = shownUciMoves,
+                    sanMoves = shownSanMoves,
+                    currentPly = shownPly,
+                    pgnLoaded = tv.pgnLoaded,
+                    onEngineToggle = { engineEnabled = !engineEnabled },
+                    onAnalyze = { enterAnalysis(tv.uciMoves.size) },
+                    onReconnect = ::reconnect,
+                    onWatchPlayer = {
+                        playerUsername = tv.watchedUsername ?: playerUsername
+                        showWatchPlayerDialog = true
+                    },
+                    onBrowseBroadcasts = ::openBroadcasts,
+                    onTopGame = ::showTopGame,
+                    onFlip = { whiteBottom = !whiteBottom },
+                    onNavigate = ::navigateToPly,
+                    modifier = modifier
+                )
+            }
+
+            if (landscape) {
+                Row(modifier = Modifier.fillMaxSize()) {
+                    // The board owns the full screen height. The evaluation rail extends
+                    // beside it without taking a single pixel from the board itself.
+                    BoardPane(
+                        Modifier
+                            .width(maxHeight + landscapeEvalSpace)
+                            .fillMaxHeight()
+                    )
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(start = 8.dp, top = 5.dp, end = 8.dp, bottom = 8.dp)
                     ) {
-                        LichessTvBoardPane(
-                            board = displayPieces,
-                            selected = displaySelected,
-                            lastFrom = displayLastFrom,
-                            lastTo = displayLastTo,
-                            whiteBottom = whiteBottom,
-                            pieceSet = pieceSet,
-                            lightSquare = lightSquare,
-                            darkSquare = darkSquare,
-                            evaluationCpWhite = engineCpWhite,
-                            evaluationText = engineEvaluation,
-                            engineEnabled = effectiveEngineEnabled,
-                            onSquareClick = ::onBoardSquare,
-                            modifier = Modifier.weight(1.08f).fillMaxHeight()
-                        )
-                        LichessTvStudyPanel(
+                        LichessTvHeader(
+                            state = tv,
                             detached = detached,
-                            engineEnabled = effectiveEngineEnabled,
-                            engineLocked = watchedPlayerEngineLocked,
-                            watchingAlternateGame = tv.source != LichessTvSource.TOP_GAME,
-                            evaluationText = engineEvaluation,
-                            enginePv = enginePv,
-                            uciMoves = shownUciMoves,
-                            sanMoves = shownSanMoves,
-                            currentPly = shownPly,
-                            pgnLoaded = tv.pgnLoaded,
-                            onEngineToggle = { engineEnabled = !engineEnabled },
-                            onAnalyze = { enterAnalysis(tv.uciMoves.size) },
-                            onReconnect = ::reconnect,
-                            onWatchPlayer = {
-                                playerUsername = tv.watchedUsername ?: playerUsername
-                                showWatchPlayerDialog = true
-                            },
-                            onBrowseBroadcasts = ::openBroadcasts,
-                            onTopGame = ::showTopGame,
-                            onFlip = { whiteBottom = !whiteBottom },
-                            onNavigate = ::navigateToPly,
-                            modifier = Modifier.weight(0.92f).fillMaxHeight()
+                            onHome = onHome
                         )
-                    }
-                } else {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        LichessTvBoardPane(
-                            board = displayPieces,
-                            selected = displaySelected,
-                            lastFrom = displayLastFrom,
-                            lastTo = displayLastTo,
-                            whiteBottom = whiteBottom,
-                            pieceSet = pieceSet,
-                            lightSquare = lightSquare,
-                            darkSquare = darkSquare,
-                            evaluationCpWhite = engineCpWhite,
-                            evaluationText = engineEvaluation,
-                            engineEnabled = effectiveEngineEnabled,
-                            onSquareClick = ::onBoardSquare,
-                            modifier = Modifier.fillMaxWidth().weight(1.30f)
-                        )
+                        Spacer(Modifier.height(5.dp))
+                        LichessTvPlayers(white = tv.white, black = tv.black)
                         Spacer(Modifier.height(7.dp))
-                        LichessTvStudyPanel(
+                        StudyPanel(Modifier.fillMaxWidth().weight(1f))
+                    }
+                }
+            } else {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        LichessTvHeader(
+                            state = tv,
                             detached = detached,
-                            engineEnabled = effectiveEngineEnabled,
-                            engineLocked = watchedPlayerEngineLocked,
-                            watchingAlternateGame = tv.source != LichessTvSource.TOP_GAME,
-                            evaluationText = engineEvaluation,
-                            enginePv = enginePv,
-                            uciMoves = shownUciMoves,
-                            sanMoves = shownSanMoves,
-                            currentPly = shownPly,
-                            pgnLoaded = tv.pgnLoaded,
-                            onEngineToggle = { engineEnabled = !engineEnabled },
-                            onAnalyze = { enterAnalysis(tv.uciMoves.size) },
-                            onReconnect = ::reconnect,
-                            onWatchPlayer = {
-                                playerUsername = tv.watchedUsername ?: playerUsername
-                                showWatchPlayerDialog = true
-                            },
-                            onBrowseBroadcasts = ::openBroadcasts,
-                            onTopGame = ::showTopGame,
-                            onFlip = { whiteBottom = !whiteBottom },
-                            onNavigate = ::navigateToPly,
-                            modifier = Modifier.fillMaxWidth().weight(0.70f)
+                            onHome = onHome
                         )
+                        Spacer(Modifier.height(4.dp))
+                        LichessTvPlayers(white = tv.white, black = tv.black)
+                    }
+
+                    // Fix the pane height from the screen width instead of assigning a
+                    // weight. This guarantees a wall-to-wall board on every portrait
+                    // screen and prevents spare height from centering it in empty space.
+                    BoardPane(
+                        Modifier
+                            .fillMaxWidth()
+                            .height((maxWidth + portraitEvalSpace).coerceAtLeast(136.dp))
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .padding(start = 6.dp, top = 5.dp, end = 6.dp, bottom = 6.dp)
+                    ) {
+                        StudyPanel(Modifier.fillMaxSize())
                     }
                 }
             }
@@ -761,12 +772,15 @@ private fun LichessTvHeader(
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         TextButton(onClick = onHome) {
             Text("← Home", color = Color.White, fontWeight = FontWeight.Bold)
         }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text(
                 "Grandmaster Chess TV",
                 color = Color.White,
@@ -851,16 +865,20 @@ private fun LichessTvBoardPane(
     evaluationText: String,
     engineEnabled: Boolean,
     onSquareClick: (Int) -> Unit,
+    landscape: Boolean,
     modifier: Modifier
 ) {
-    BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
-        val boardSize = minOf(maxWidth - 34.dp, maxHeight).coerceAtLeast(120.dp)
-        Row(
-            modifier = Modifier
-                .width(boardSize + 34.dp)
-                .height(boardSize),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.TopStart) {
+        val landscapeEvalSpace = 26.dp
+        val portraitEvalSpace = 16.dp
+        val boardSize = if (landscape) {
+            minOf(maxWidth - landscapeEvalSpace, maxHeight)
+        } else {
+            minOf(maxWidth, maxHeight - portraitEvalSpace)
+        }.coerceAtLeast(120.dp)
+
+        @Composable
+        fun BoardOnly() {
             Box(modifier = Modifier.size(boardSize)) {
                 ChessBoard(
                     board = board,
@@ -874,26 +892,68 @@ private fun LichessTvBoardPane(
                     whiteBottom = whiteBottom
                 )
             }
-            Spacer(Modifier.width(4.dp))
-            LichessTvEvalBar(
-                cpWhite = evaluationCpWhite,
-                text = evaluationText,
-                enabled = engineEnabled,
-                modifier = Modifier.width(30.dp).fillMaxHeight()
-            )
+        }
+
+        if (landscape) {
+            Row(
+                modifier = Modifier
+                    .width(boardSize + landscapeEvalSpace)
+                    .height(boardSize),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                BoardOnly()
+                Spacer(Modifier.width(2.dp))
+                LichessTvEvalBar(
+                    cpWhite = evaluationCpWhite,
+                    text = evaluationText,
+                    enabled = engineEnabled,
+                    horizontal = false,
+                    modifier = Modifier.width(24.dp).fillMaxHeight()
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .width(boardSize)
+                    .height(boardSize + portraitEvalSpace),
+                horizontalAlignment = Alignment.Start
+            ) {
+                BoardOnly()
+                Spacer(Modifier.height(2.dp))
+                LichessTvEvalBar(
+                    cpWhite = evaluationCpWhite,
+                    text = evaluationText,
+                    enabled = engineEnabled,
+                    horizontal = true,
+                    modifier = Modifier.fillMaxWidth().height(14.dp)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun LichessTvEvalBar(cpWhite: Int?, text: String, enabled: Boolean, modifier: Modifier) {
+private fun LichessTvEvalBar(
+    cpWhite: Int?,
+    text: String,
+    enabled: Boolean,
+    horizontal: Boolean,
+    modifier: Modifier
+) {
     val whiteShare = if (!enabled || cpWhite == null) 0.5f else {
         (0.5f + cpWhite.coerceIn(-1_200, 1_200) / 2_400f).coerceIn(0.06f, 0.94f)
     }
     Box(modifier = modifier.clip(RoundedCornerShape(7.dp)).background(Color(0xFF111827))) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Box(Modifier.fillMaxWidth().weight(1f - whiteShare).background(Color(0xFF151515)))
-            Box(Modifier.fillMaxWidth().weight(whiteShare).background(Color(0xFFF3F4F6)))
+        if (horizontal) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                Box(Modifier.fillMaxHeight().weight(1f - whiteShare).background(Color(0xFF151515)))
+                Box(Modifier.fillMaxHeight().weight(whiteShare).background(Color(0xFFF3F4F6)))
+            }
+        } else {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Box(Modifier.fillMaxWidth().weight(1f - whiteShare).background(Color(0xFF151515)))
+                Box(Modifier.fillMaxWidth().weight(whiteShare).background(Color(0xFFF3F4F6)))
+            }
         }
         Text(
             text = text,
@@ -906,7 +966,7 @@ private fun LichessTvEvalBar(cpWhite: Int?, text: String, enabled: Boolean, modi
             modifier = Modifier
                 .align(Alignment.Center)
                 .background(Color(0xE6111827), RoundedCornerShape(4.dp))
-                .padding(horizontal = 2.dp, vertical = 2.dp)
+                .padding(horizontal = 2.dp, vertical = if (horizontal) 0.dp else 2.dp)
         )
     }
 }
