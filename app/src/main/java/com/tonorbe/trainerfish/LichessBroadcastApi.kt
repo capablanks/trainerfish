@@ -27,6 +27,9 @@ internal data class LichessBroadcastBoard(
 ) {
     val isOngoing: Boolean
         get() = status.isBlank() || status == "*"
+
+    val result: String?
+        get() = lichessTvResultOrNull(status)
 }
 
 internal data class LichessBroadcastRound(
@@ -44,7 +47,8 @@ internal data class LichessBroadcastSelection(
     val lastMoveUci: String?,
     val white: LichessTvPlayer,
     val black: LichessTvPlayer,
-    val isOngoing: Boolean
+    val isOngoing: Boolean,
+    val result: String?
 ) {
     val notice: String
         get() = "$tournamentName • $roundName • Board $boardNumber"
@@ -61,7 +65,8 @@ internal fun LichessBroadcastRound.selectionFor(board: LichessBroadcastBoard) =
         lastMoveUci = board.lastMoveUci,
         white = board.white,
         black = board.black,
-        isOngoing = board.isOngoing
+        isOngoing = board.isOngoing,
+        result = board.result
     )
 
 /**

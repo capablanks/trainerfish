@@ -1251,6 +1251,7 @@ private fun LichessBroadcastSelectionRow(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    val resultLabel = lichessTvResultLabel(selection.result)
     Surface(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(11.dp),
@@ -1297,8 +1298,16 @@ private fun LichessBroadcastSelectionRow(
                     )
                 }
                 Text(
-                    if (selected) "✓ SELECTED" else "LIVE",
-                    color = if (selected) Color(0xFF15803D) else Color(0xFFB91C1C),
+                    when {
+                        selected -> "✓ SELECTED"
+                        resultLabel != null -> "RESULT $resultLabel"
+                        else -> "LIVE"
+                    },
+                    color = when {
+                        selected -> Color(0xFF15803D)
+                        resultLabel != null -> Color(0xFF334155)
+                        else -> Color(0xFFB91C1C)
+                    },
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Black
                 )
@@ -1374,7 +1383,11 @@ private fun LichessBroadcastBoardRow(
     onClick: () -> Unit
 ) {
     val statusColor = if (board.isOngoing) Color(0xFFB91C1C) else Color(0xFF334155)
-    val statusText = if (board.isOngoing) "LIVE" else board.status
+    val statusText = if (board.isOngoing) {
+        "LIVE"
+    } else {
+        lichessTvResultLabel(board.result)?.let { "RESULT $it" } ?: "FINISHED"
+    }
     Surface(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(11.dp),
@@ -1435,9 +1448,13 @@ private fun LichessTvHeader(
     onHelp: () -> Unit,
     onLiveToggle: () -> Unit
 ) {
+    val finishedResult = lichessTvResultLabel(state.result)
     val (statusText, statusColor) = when {
         detached -> "ANALYSIS • STREAM PAUSED" to Color(0xFFF59E0B)
-        state.status == LichessTvConnectionStatus.FINISHED -> "GAME FINISHED" to Color(0xFF93C5FD)
+        state.source == LichessTvSource.BROADCAST_BOARD && finishedResult != null ->
+            "FINISHED • $finishedResult" to Color(0xFF93C5FD)
+        state.status == LichessTvConnectionStatus.FINISHED ->
+            (finishedResult?.let { "FINISHED • $it" } ?: "GAME FINISHED") to Color(0xFF93C5FD)
         state.source == LichessTvSource.BROADCAST_BOARD &&
             state.status == LichessTvConnectionStatus.LIVE -> "BROADCAST LIVE" to Color(0xFF67E8F9)
         state.source == LichessTvSource.WATCHED_PLAYER &&

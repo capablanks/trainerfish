@@ -173,7 +173,7 @@ private fun helpSections(topic: TrainerHelpTopic): List<TrainerHelpSection> = wh
         ),
         TrainerHelpSection(
             "Switch broadcast boards",
-            "Swipe the board left for the next selected game or right for the previous one, or use ⏮ and ⏭ below the PGN. Only the displayed game is streamed, so an eight-game list remains lightweight. Use Clear list in the chooser to start a new selection."
+            "Swipe the board left for the next selected game or right for the previous one, or use ⏮ and ⏭ below the PGN. Only the displayed game is streamed, so an eight-game list remains lightweight. When a board finishes, its final result appears in the top status badge and the broadcast chooser. Use Clear list in the chooser to start a new selection."
         ),
         TrainerHelpSection(
             "Live and analysis",

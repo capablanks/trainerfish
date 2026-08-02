@@ -69,9 +69,26 @@ internal data class LichessTvState(
     val uciMoves: List<String> = emptyList(),
     val sanMoves: List<String> = emptyList(),
     val pgnLoaded: Boolean = false,
+    val result: String? = null,
     val errorMessage: String? = null,
     val noticeMessage: String? = null
 )
+
+internal fun lichessTvResultOrNull(raw: String?): String? = when (
+    raw?.trim()?.replace('\u2013', '-')?.replace('\u2014', '-')
+) {
+    "1-0" -> "1-0"
+    "0-1" -> "0-1"
+    "1/2-1/2", "\u00bd-\u00bd" -> "1/2-1/2"
+    else -> null
+}
+
+internal fun lichessTvResultLabel(result: String?): String? = when (lichessTvResultOrNull(result)) {
+    "1-0" -> "1\u20130"
+    "0-1" -> "0\u20131"
+    "1/2-1/2" -> "\u00bd\u2013\u00bd"
+    else -> null
+}
 
 /**
  * One unauthenticated spectator connection to either Lichess's TV feed or the
@@ -133,6 +150,7 @@ internal class LichessTvClient {
             black = selection.black,
             orientationWhite = true,
             lastMoveUci = selection.lastMoveUci,
+            result = selection.result,
             noticeMessage = selection.notice
         )
         streamJob = scope.launch { broadcastBoardLoop(serial, selection) }
@@ -495,8 +513,9 @@ internal class LichessTvClient {
         val gameId = gameUrl.substringBefore('?').trimEnd('/').substringAfterLast('/')
         if (gameId != selection.gameId) return
         val loaded = parseTvPgn(pgn) ?: return
-        val result = pgnTag(pgn, "Result").orEmpty()
-        val finished = result.isNotBlank() && result != "*"
+        val rawResult = pgnTag(pgn, "Result").orEmpty()
+        val result = lichessTvResultOrNull(rawResult)
+        val finished = rawResult.isNotBlank() && rawResult != "*"
         val finalFen = positionAfter(loaded.startFen, loaded.uciMoves) ?: _state.value.fen
 
         _state.update { current ->
@@ -518,6 +537,7 @@ internal class LichessTvClient {
                 white = current.white.copy(seconds = loaded.whiteSeconds ?: current.white.seconds),
                 black = current.black.copy(seconds = loaded.blackSeconds ?: current.black.seconds),
                 pgnLoaded = true,
+                result = result ?: current.result,
                 errorMessage = null,
                 noticeMessage = selection.notice
             )
