@@ -345,7 +345,9 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
             )
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val landscape = maxWidth > maxHeight * 1.12f
+            val screenMaxWidth = maxWidth
+            val screenMaxHeight = maxHeight
+            val landscape = screenMaxWidth > screenMaxHeight * 1.12f
             val landscapeEvalSpace = 26.dp
             val portraitEvalSpace = 16.dp
 
@@ -403,7 +405,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     // beside it without taking a single pixel from the board itself.
                     BoardPane(
                         Modifier
-                            .width(maxHeight + landscapeEvalSpace)
+                            .width(screenMaxHeight + landscapeEvalSpace)
                             .fillMaxHeight()
                     )
                     Column(
@@ -445,7 +447,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     BoardPane(
                         Modifier
                             .fillMaxWidth()
-                            .height((maxWidth + portraitEvalSpace).coerceAtLeast(136.dp))
+                            .height((screenMaxWidth + portraitEvalSpace).coerceAtLeast(136.dp))
                     )
 
                     Box(
