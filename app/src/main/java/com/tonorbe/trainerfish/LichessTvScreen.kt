@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,11 +25,15 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -995,6 +998,8 @@ private fun LichessTvStudyPanel(
     onNavigate: (Int) -> Unit,
     modifier: Modifier
 ) {
+    var controlsMenuExpanded by remember { mutableStateOf(false) }
+
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
@@ -1003,87 +1008,86 @@ private fun LichessTvStudyPanel(
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(10.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(7.dp)
-            ) {
-                if (detached) {
-                    Button(
-                        onClick = onReconnect,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF2F6B1F),
-                            contentColor = Color.White
-                        )
-                    ) { Text("Reconnect live") }
-                } else {
-                    Button(
-                        onClick = onAnalyze,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFF59E0B),
-                            contentColor = Color(0xFF211407)
-                        )
-                    ) { Text("Analyze game") }
-                }
-                OutlinedButton(
-                    onClick = onEngineToggle,
-                    enabled = !engineLocked,
-                    border = BorderStroke(1.5.dp, Color(0xFF4E3B2A)),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFF2C2118),
-                        disabledContentColor = Color(0xFF7C2D12)
-                    )
-                ) {
-                    Text(
-                        when {
-                            engineLocked -> "Engine: Locked"
-                            engineEnabled -> "Engine: On"
-                            else -> "Engine: Off"
-                        }
-                    )
-                }
-                OutlinedButton(
-                    onClick = onWatchPlayer,
-                    border = BorderStroke(1.5.dp, Color(0xFF084E9E)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF084E9E))
-                ) { Text("Watch player") }
-                OutlinedButton(
-                    onClick = onBrowseBroadcasts,
-                    border = BorderStroke(1.5.dp, Color(0xFF6D28D9)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF5B21B6))
-                ) { Text("Live broadcasts") }
-                if (watchingAlternateGame) {
-                    OutlinedButton(
-                        onClick = onTopGame,
-                        border = BorderStroke(1.5.dp, Color(0xFF2F6B1F)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2F6B1F))
-                    ) { Text("Top game") }
-                }
-                OutlinedButton(
-                    onClick = onFlip,
-                    border = BorderStroke(1.5.dp, Color(0xFF4E3B2A)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2C2118))
-                ) { Text("Flip") }
-            }
-
-            Spacer(Modifier.height(7.dp))
-            Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFF2C2118)) {
-                Column(modifier = Modifier.fillMaxWidth().padding(9.dp)) {
-                    Text(
-                        "Engine $evaluationText",
-                        color = Color(0xFFFFD166),
-                        fontWeight = FontWeight.Black,
-                        fontSize = 13.sp
-                    )
-                    Text(enginePv, color = Color.White.copy(alpha = 0.90f), fontSize = 11.sp, maxLines = 2)
-                }
-            }
-
-            Spacer(Modifier.height(7.dp))
-            Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("PGN moves", color = Color(0xFF4E3B2A), fontWeight = FontWeight.Black)
+                Box {
+                    IconButton(
+                        onClick = { controlsMenuExpanded = true },
+                        modifier = Modifier.size(34.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "Grandmaster Chess TV controls",
+                            tint = Color(0xFF2C2118),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = controlsMenuExpanded,
+                        onDismissRequest = { controlsMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(if (detached) "Reconnect live" else "Analyze game") },
+                            onClick = {
+                                controlsMenuExpanded = false
+                                if (detached) onReconnect() else onAnalyze()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    when {
+                                        engineLocked -> "Engine locked"
+                                        engineEnabled -> "Turn engine off"
+                                        else -> "Turn engine on"
+                                    }
+                                )
+                            },
+                            enabled = !engineLocked,
+                            onClick = {
+                                controlsMenuExpanded = false
+                                onEngineToggle()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Watch player") },
+                            onClick = {
+                                controlsMenuExpanded = false
+                                onWatchPlayer()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Live broadcasts") },
+                            onClick = {
+                                controlsMenuExpanded = false
+                                onBrowseBroadcasts()
+                            }
+                        )
+                        if (watchingAlternateGame) {
+                            DropdownMenuItem(
+                                text = { Text("Show top game") },
+                                onClick = {
+                                    controlsMenuExpanded = false
+                                    onTopGame()
+                                }
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text("Flip board") },
+                            onClick = {
+                                controlsMenuExpanded = false
+                                onFlip()
+                            }
+                        )
+                    }
+                }
+                Text(
+                    "PGN moves",
+                    color = Color(0xFF4E3B2A),
+                    fontWeight = FontWeight.Black
+                )
+                Spacer(Modifier.weight(1f))
                 Text(
                     if (pgnLoaded || detached) "$currentPly / ${uciMoves.size}" else "Loading current PGN…",
                     color = Color(0xFF7C5A3A),
@@ -1109,13 +1113,27 @@ private fun LichessTvStudyPanel(
                 LichessTvNavButton("▶", enabled = currentPly < uciMoves.size) { onNavigate(currentPly + 1) }
                 LichessTvNavButton("▶|", enabled = currentPly < uciMoves.size) { onNavigate(uciMoves.size) }
             }
-            Text(
-                "Live game data provided by lichess.org",
-                color = Color(0xFF7C5A3A),
-                fontSize = 9.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+
+            Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF2C2118)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 9.dp, vertical = 7.dp)
+                ) {
+                    Text(
+                        "Engine $evaluationText",
+                        color = Color(0xFFFFD166),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        enginePv,
+                        color = Color.White.copy(alpha = 0.90f),
+                        fontSize = 11.sp,
+                        maxLines = 2
+                    )
+                }
+            }
         }
     }
 }
