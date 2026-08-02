@@ -177,7 +177,7 @@ private fun helpSections(topic: TrainerHelpTopic): List<TrainerHelpSection> = wh
         ),
         TrainerHelpSection(
             "Moves and engine",
-            "Tap a move or use the navigation controls to detach and review. Broadcast analysis searches to depth 50. Engine analysis is locked only while following a specific player's game."
+            "Tap a move or use the navigation controls to detach and review. Tap the large power button beside the evaluation to turn Stockfish on or off; green means on and red means off. Broadcast analysis searches to depth 50. Engine analysis is locked only while following a specific player's game."
         )
     )
 

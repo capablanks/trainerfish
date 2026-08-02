@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -61,6 +62,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.bhlangonijr.chesslib.Board
@@ -1089,10 +1091,19 @@ private fun LichessTvPlayerCard(
                 Text(player.displayName, color = foreground, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(player.rating?.toString() ?: "—", color = foreground, fontWeight = FontWeight.Black)
-                player.seconds?.let {
-                    Text(lichessTvClock(it), color = foreground.copy(alpha = 0.90f), fontSize = 11.sp)
-                }
+                Text(
+                    player.seconds?.let(::lichessTvClock) ?: "—:—",
+                    color = foreground,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1
+                )
+                Text(
+                    "Elo ${player.rating ?: "—"}",
+                    color = foreground.copy(alpha = 0.76f),
+                    fontSize = 10.sp,
+                    maxLines = 1
+                )
             }
         }
     }
@@ -1374,23 +1385,56 @@ private fun LichessTvStudyPanel(
             }
 
             Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF2C2118)) {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 9.dp, vertical = 7.dp)
+                        .padding(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        "Engine $evaluationText",
-                        color = Color(0xFFFFD166),
-                        fontWeight = FontWeight.Black,
-                        fontSize = 13.sp
-                    )
-                    Text(
-                        enginePv,
-                        color = Color.White.copy(alpha = 0.90f),
-                        fontSize = 11.sp,
-                        maxLines = 2
-                    )
+                    Surface(
+                        modifier = Modifier.size(46.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        color = when {
+                            engineLocked -> Color(0xFF64748B)
+                            engineEnabled -> Color(0xFF15803D)
+                            else -> Color(0xFFB91C1C)
+                        },
+                        shadowElevation = 3.dp
+                    ) {
+                        IconButton(
+                            onClick = onEngineToggle,
+                            enabled = !engineLocked,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PowerSettingsNew,
+                                contentDescription = when {
+                                    engineLocked -> "Engine locked"
+                                    engineEnabled -> "Turn engine off"
+                                    else -> "Turn engine on"
+                                },
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Engine $evaluationText",
+                            color = Color(0xFFFFD166),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 13.sp,
+                            maxLines = 1
+                        )
+                        Text(
+                            enginePv,
+                            color = Color.White.copy(alpha = 0.90f),
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }
