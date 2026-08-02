@@ -1,5 +1,10 @@
 package com.tonorbe.trainerfish
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -73,6 +78,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import com.github.bhlangonijr.chesslib.Board
 import com.github.bhlangonijr.chesslib.move.MoveGenerator
 import com.github.bhlangonijr.chesslib.PieceType as LibPieceType
@@ -85,6 +91,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -125,6 +132,21 @@ private fun tvPgnName(s:LichessTvState):String{
     val d=SimpleDateFormat("yyyyMMdd",Locale.US).format(Date())
     return "TrainerFish_${safe(s.white.name)}_vs_${safe(s.black.name)}_$d.pgn"
 }
+
+private fun copyTvPgnToClipboard(context: Context, pgn: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    clipboard.setPrimaryClip(ClipData.newPlainText("TrainerFish PGN", pgn))
+}
+
+private fun tvPgnContentUri(context: Context, fileName: String, pgn: String): Uri? = runCatching {
+    val shareDir = File(context.cacheDir, "share").apply { mkdirs() }
+    val pgnFile = File(shareDir, fileName).apply { writeText(pgn, Charsets.UTF_8) }
+    FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        pgnFile
+    )
+}.getOrNull()
 
 @Composable
 internal fun LichessTvScreen(onHome: () -> Unit) {
@@ -269,6 +291,60 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     fun savePgn() {
         if(tv.sanMoves.isEmpty()) { Toast.makeText(context,"No moves to save yet.",Toast.LENGTH_SHORT).show(); return }
         pendingPgn=tvPgn(tv); pgnLauncher.launch(tvPgnName(tv))
+    }
+
+    fun copyPgnToClipboard() {
+        if (tv.sanMoves.isEmpty()) {
+            Toast.makeText(context, "No moves to copy yet.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        copyTvPgnToClipboard(context, tvPgn(tv))
+        Toast.makeText(
+            context,
+            "PGN copied. Beat the Fish can paste it from the clipboard.",
+            Toast.LENGTH_LONG
+        ).show()
+    }
+
+    fun openPgnInChessOpeningsCoach() {
+        if (tv.sanMoves.isEmpty()) {
+            Toast.makeText(context, "No moves to open yet.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val pgn = tvPgn(tv)
+        copyTvPgnToClipboard(context, pgn)
+        val uri = tvPgnContentUri(context, tvPgnName(tv), pgn)
+        if (uri == null) {
+            Toast.makeText(
+                context,
+                "PGN copied, but the temporary PGN file could not be prepared.",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
+        runCatching {
+            context.grantUriPermission(
+                "com.tonorbe.chessopeningscoach",
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        }
+        val opened = context.openChessOpeningsCoach(CocTarget.PGN_READER, uri)
+        if (opened) {
+            Toast.makeText(
+                context,
+                "PGN copied and opened in Chess Openings Coach.",
+                Toast.LENGTH_LONG
+            ).show()
+        } else {
+            context.openChessOpeningsCoachPlayStore()
+            Toast.makeText(
+                context,
+                "Chess Openings Coach was not found. The PGN is still on the clipboard.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
     fun refreshBroadcasts() {
@@ -763,6 +839,8 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     onChooseFavorites = ::openFollowSettings,
                     onTopGame = ::showTopGame,
                     onSavePgn = ::savePgn,
+                    onOpenInCoach = ::openPgnInChessOpeningsCoach,
+                    onCopyPgn = ::copyPgnToClipboard,
                     onFlip = { whiteBottom = !whiteBottom },
                     onHelp = ::openHelp,
                     onPreviousGame = { switchBroadcastGame(-1) },
@@ -1799,6 +1877,8 @@ private fun LichessTvStudyPanel(
     onChooseFavorites: () -> Unit,
     onTopGame: () -> Unit,
     onSavePgn: () -> Unit,
+    onOpenInCoach: () -> Unit,
+    onCopyPgn: () -> Unit,
     onFlip: () -> Unit,
     onHelp: () -> Unit,
     onPreviousGame: () -> Unit,
@@ -1852,6 +1932,14 @@ private fun LichessTvStudyPanel(
                         DropdownMenuItem(
                             text = { Text("Save game to PGN") }, enabled = canSavePgn,
                             onClick = { controlsMenuExpanded = false; onSavePgn() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Open in Chess Openings Coach") }, enabled = canSavePgn,
+                            onClick = { controlsMenuExpanded = false; onOpenInCoach() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Copy PGN to clipboard") }, enabled = canSavePgn,
+                            onClick = { controlsMenuExpanded = false; onCopyPgn() }
                         )
                         DropdownMenuItem(
                             text = {

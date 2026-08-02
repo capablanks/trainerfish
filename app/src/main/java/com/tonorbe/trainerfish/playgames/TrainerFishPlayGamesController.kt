@@ -100,6 +100,17 @@ class TrainerFishPlayGamesController(
     }
 
     fun refreshAuthentication(onAuthenticated: (() -> Unit)? = null) {
+        if (!proEntitled || !BillingManager.isPro.value) {
+            uiState = uiState.copy(
+                isChecking = false,
+                isAuthenticated = false,
+                playerName = null,
+                playerTitle = null,
+                playerIconUri = null,
+                statusMessage = null
+            )
+            return
+        }
         if (!configured) {
             uiState = uiState.copy(
                 isChecking = false,
@@ -143,8 +154,7 @@ class TrainerFishPlayGamesController(
 
     fun setProEntitlement(isPro: Boolean) {
         proEntitled = isPro
-        // Leaderboard browsing is available to everyone. Entitlement controls only
-        // score submission and the in-app Google Play Games profile-name override.
+        // Leaderboard browsing and score publication are the app's full Pro gate.
         refreshAuthentication()
     }
 
@@ -153,6 +163,10 @@ class TrainerFishPlayGamesController(
     }
 
     fun showLeaderboards() {
+        if (!proEntitled || !BillingManager.isPro.value) {
+            uiState = uiState.copy(statusMessage = "TrainerFish Leaderboards require Pro")
+            return
+        }
         if (!configured) {
             uiState = uiState.copy(statusMessage = CONFIGURATION_MESSAGE)
             return

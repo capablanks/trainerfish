@@ -292,6 +292,8 @@ private fun TLAGMApp(
     var selectedModeName by rememberSaveable { mutableStateOf(TrainerMode.WOODPECKER.name) }
     var autoContinueCycleRequest by rememberSaveable { mutableStateOf(false) }
     var showRootExitSupportDialog by rememberSaveable { mutableStateOf(false) }
+    var showChessTvSupportDialog by rememberSaveable { mutableStateOf(false) }
+    var showLeaderboardProDialog by rememberSaveable { mutableStateOf(false) }
     val rootProUnlocked by BillingManager.isPro.collectAsState(
         initial = BillingManager.isProUnlocked(ctx)
     )
@@ -347,6 +349,36 @@ private fun TLAGMApp(
             }
             android.os.Process.killProcess(android.os.Process.myPid())
         }
+    )
+
+    TrainerFishFeatureProDialog(
+        show = showChessTvSupportDialog && !rootProUnlocked,
+        title = "Support TrainerFish Chess TV",
+        message = "Chess TV is fully available to Free users. Before entering, please consider the lifetime Pro unlock to support live viewing, engine analysis, broadcasts, and continued TrainerFish development.",
+        confirmLabel = "Buy Pro",
+        dismissLabel = "Maybe later",
+        onConfirm = {
+            showChessTvSupportDialog = false
+            screen = RootScreen.LichessTv
+            (ctx as? Activity)?.let { BillingManager.launchPurchase(it) }
+        },
+        onDismiss = {
+            showChessTvSupportDialog = false
+            screen = RootScreen.LichessTv
+        }
+    )
+
+    TrainerFishFeatureProDialog(
+        show = showLeaderboardProDialog && !rootProUnlocked,
+        title = "TrainerFish Leaderboards are Pro",
+        message = "The leaderboards are TrainerFish's remaining full Pro feature. Unlock Pro to view the rankings and publish your training records to Google Play Games.",
+        confirmLabel = "Buy Pro",
+        dismissLabel = "Maybe later",
+        onConfirm = {
+            showLeaderboardProDialog = false
+            (ctx as? Activity)?.let { BillingManager.launchPurchase(it) }
+        },
+        onDismiss = { showLeaderboardProDialog = false }
     )
 
     fun selectedMode(): TrainerMode =
@@ -426,8 +458,14 @@ private fun TLAGMApp(
                 onClock = { screen = RootScreen.Clock },
                 playGamesState = playGamesState,
                 proUnlocked = rootProUnlocked,
-                onOpenLeaderboards = onOpenLeaderboards,
-                onWatchLichessTv = { screen = RootScreen.LichessTv }
+                onOpenLeaderboards = {
+                    if (rootProUnlocked) onOpenLeaderboards()
+                    else showLeaderboardProDialog = true
+                },
+                onWatchLichessTv = {
+                    if (rootProUnlocked) screen = RootScreen.LichessTv
+                    else showChessTvSupportDialog = true
+                }
             )
         }
 
@@ -464,6 +502,33 @@ private fun TLAGMApp(
 }
 
 
+
+@Composable
+private fun TrainerFishFeatureProDialog(
+    show: Boolean,
+    title: String,
+    message: String,
+    confirmLabel: String,
+    dismissLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    if (!show) return
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title, fontWeight = FontWeight.Bold) },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(confirmLabel, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(dismissLabel) }
+        }
+    )
+}
 
 @Composable
 private fun TrainerFishExitSupportDialog(
