@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -27,6 +29,10 @@ object ProcEngine {
     // True only while a 'go' search is considered active. Used to ignore late 'info' lines
     // from a previous position after we sent 'stop'.
     private val inSearch = AtomicBoolean(false)
+
+    // Serializes TV position changes. A new UCI "position/go" command must not
+    // overtake the bestmove that ends the previous search.
+    private val evaluationMutex = Mutex()
 
     private var readerJob: Job? = null
 
@@ -197,6 +203,70 @@ object ProcEngine {
         if (!running.get()) return
         val n = lines.coerceIn(1, 4)   // we only support 1..4 from the UI
         send("setoption name MultiPV value $n")
+    }
+
+    private suspend fun stopSearchAndWaitLocked(timeoutMs: Long): Boolean {
+        if (!running.get() || !inSearch.get()) return true
+
+        send("stop")
+        return withTimeoutOrNull(timeoutMs.coerceAtLeast(100L)) {
+            while (running.get() && inSearch.get()) delay(5L)
+            true
+        } ?: !inSearch.get()
+    }
+
+    /**
+     * Stop the active search and wait for its UCI bestmove before allowing a
+     * caller to replace the position. This prevents overlapping live-TV
+     * searches from racing inside Stockfish's PV formatter.
+     */
+    suspend fun stopSearchAndWait(timeoutMs: Long = 2_000L): Boolean {
+        evaluationMutex.lock()
+        return try {
+            stopSearchAndWaitLocked(timeoutMs)
+        } finally {
+            evaluationMutex.unlock()
+        }
+    }
+
+    /** Safely replace a live position with a short timed search. */
+    suspend fun evaluateFenSafely(
+        fen: String,
+        movetimeMs: Int = 500,
+        multiPv: Int = 1
+    ): Boolean {
+        evaluationMutex.lock()
+        return try {
+            if (!running.get() || !stopSearchAndWaitLocked(2_000L)) {
+                false
+            } else {
+                setMultiPv(multiPv)
+                evaluateFen(fen, movetimeMs)
+                true
+            }
+        } finally {
+            evaluationMutex.unlock()
+        }
+    }
+
+    /** Safely replace a live position with a fixed-depth search. */
+    suspend fun evaluateFenDepthSafely(
+        fen: String,
+        depthMax: Int = 60,
+        multiPv: Int = 1
+    ): Boolean {
+        evaluationMutex.lock()
+        return try {
+            if (!running.get() || !stopSearchAndWaitLocked(2_000L)) {
+                false
+            } else {
+                setMultiPv(multiPv)
+                evaluateFenDepth(fen, depthMax)
+                true
+            }
+        } finally {
+            evaluationMutex.unlock()
+        }
     }
 
     /** Quick evaluation used by UI. */

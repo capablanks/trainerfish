@@ -1825,7 +1825,9 @@ void MainThread::check_time() {
 string UCI::pv(const Position& pos, Depth depth) {
 
   std::stringstream ss;
-  TimePoint elapsed = Time.elapsed() + 1;
+  // A live GUI can stop one search just as another position arrives. Keep the
+  // UCI NPS divisor valid even if the shared timer is briefly reset mid-PV.
+  TimePoint elapsed = std::max<TimePoint>(1, Time.elapsed() + 1);
   const RootMoves& rootMoves = pos.this_thread()->rootMoves;
   size_t pvIdx = pos.this_thread()->pvIdx;
   size_t multiPV = std::min((size_t)Options["MultiPV"], rootMoves.size());

@@ -190,6 +190,11 @@ internal class LichessTvClient {
         }
     }
 
+    /** Pause the network feed while a modal source/game chooser covers the TV. */
+    fun pauseForDialog() {
+        detachForAnalysis()
+    }
+
     fun close() {
         wantsLiveConnection = false
         connectionSerial++

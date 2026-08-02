@@ -89,6 +89,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     var showWatchPlayerDialog by rememberSaveable { mutableStateOf(false) }
     var playerUsername by rememberSaveable { mutableStateOf("") }
     var showBroadcastDialog by rememberSaveable { mutableStateOf(false) }
+    var resumeLiveAfterBroadcastDialog by rememberSaveable { mutableStateOf(false) }
     var broadcastLoading by remember { mutableStateOf(false) }
     var broadcastError by remember { mutableStateOf<String?>(null) }
     var liveBroadcasts by remember { mutableStateOf<List<LichessBroadcastPreview>>(emptyList()) }
@@ -193,8 +194,20 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     }
 
     fun openBroadcasts() {
+        resumeLiveAfterBroadcastDialog = !detached
+        if (resumeLiveAfterBroadcastDialog) client.pauseForDialog()
+        // Stop immediately; the engine effect below also waits for bestmove
+        // before clearing output. No live position can change behind the dialog.
+        ProcEngine.send("stop")
         showBroadcastDialog = true
         refreshBroadcasts()
+    }
+
+    fun closeBroadcasts() {
+        showBroadcastDialog = false
+        val shouldResumeLive = resumeLiveAfterBroadcastDialog
+        resumeLiveAfterBroadcastDialog = false
+        if (shouldResumeLive) client.reconnect()
     }
 
     fun openBroadcastRound(preview: LichessBroadcastPreview) {
@@ -251,6 +264,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         detached = false
         selectedSquare = null
         promotionChoices = emptyList()
+        resumeLiveAfterBroadcastDialog = false
         showBroadcastDialog = false
         client.watchBroadcastBoard(selections[activeBroadcastIndex])
     }
@@ -351,22 +365,22 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
 
     val watchedPlayerEngineLocked =
         tv.source == LichessTvSource.WATCHED_PLAYER && tv.watchedGameOngoing
-    val effectiveEngineEnabled = engineEnabled && !watchedPlayerEngineLocked
+    val effectiveEngineEnabled =
+        engineEnabled && !watchedPlayerEngineLocked && !showBroadcastDialog
     val useDeepBroadcastAnalysis = tv.source == LichessTvSource.BROADCAST_BOARD
     val displayedFen = if (detached) analysisFen else tv.fen
     LaunchedEffect(effectiveEngineEnabled, useDeepBroadcastAnalysis, displayedFen) {
         if (!effectiveEngineEnabled) {
-            ProcEngine.send("stop")
+            ProcEngine.stopSearchAndWait()
             ProcEngine.clearOutput()
             return@LaunchedEffect
         }
         runCatching { ProcEngine.start("lichess-tv") }
-        runCatching { ProcEngine.setMultiPv(1) }
         delay(80L)
         if (useDeepBroadcastAnalysis) {
-            ProcEngine.evaluateFenDepth(displayedFen, 50)
+            ProcEngine.evaluateFenDepthSafely(displayedFen, 50, multiPv = 1)
         } else {
-            ProcEngine.evaluateFen(displayedFen, 1_200)
+            ProcEngine.evaluateFenSafely(displayedFen, 1_200, multiPv = 1)
         }
     }
 
@@ -612,7 +626,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
             errorMessage = broadcastError,
             broadcasts = liveBroadcasts,
             selectedRound = selectedBroadcastRound,
-            onDismiss = { showBroadcastDialog = false },
+            onDismiss = ::closeBroadcasts,
             onRefresh = ::refreshBroadcasts,
             onBack = {
                 selectedBroadcastRound = null
@@ -674,6 +688,7 @@ private fun LichessBroadcastDialog(
     onToggleBoard: (LichessBroadcastBoard) -> Unit,
     onDone: () -> Unit
 ) {
+    val instructionScrollState = rememberScrollState()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -694,7 +709,12 @@ private fun LichessBroadcastDialog(
                     Text(
                         "Choose up to 5 games, then tap Done. In broadcast mode, swipe the board left or right to move between your chosen games.",
                         color = Color(0xFF5D4632),
-                        fontSize = 12.sp
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(43.dp)
+                            .verticalScroll(instructionScrollState)
                     )
                     selectionMessage?.let { message ->
                         Text(
