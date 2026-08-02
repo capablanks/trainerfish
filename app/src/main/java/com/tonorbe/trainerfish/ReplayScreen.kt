@@ -8649,7 +8649,7 @@ private fun TacticsControlCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
                     ) {
                         PushButton(
-                            text = "◀",
+                            text = "◀ Back",
                             onClick = onReviewBack,
                             enabled = canReview && !isAnimating,
                             compact = true,
@@ -8657,7 +8657,7 @@ private fun TacticsControlCard(
                             textColor = Color(0xFF111827),
                         )
                         PushButton(
-                            text = "▶",
+                            text = "Next ▶",
                             onClick = onReviewForward,
                             enabled = canReview && !isAnimating,
                             compact = true,

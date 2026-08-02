@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -91,6 +93,12 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     var broadcastError by remember { mutableStateOf<String?>(null) }
     var liveBroadcasts by remember { mutableStateOf<List<LichessBroadcastPreview>>(emptyList()) }
     var selectedBroadcastRound by remember { mutableStateOf<LichessBroadcastRound?>(null) }
+    var selectedBroadcastGames by remember {
+        mutableStateOf<List<LichessBroadcastSelection>>(emptyList())
+    }
+    var activeBroadcastIndex by remember { mutableStateOf(0) }
+    var pendingBroadcastGameIds by remember { mutableStateOf<List<String>>(emptyList()) }
+    var broadcastSelectionMessage by remember { mutableStateOf<String?>(null) }
     var analysisStartFen by remember { mutableStateOf(LICHESS_TV_START_FEN) }
     var analysisFen by remember { mutableStateOf(LICHESS_TV_START_FEN) }
     var analysisUciMoves by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -169,6 +177,8 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
 
     fun refreshBroadcasts() {
         selectedBroadcastRound = null
+        pendingBroadcastGameIds = emptyList()
+        broadcastSelectionMessage = null
         broadcastLoading = true
         broadcastError = null
         screenScope.launch {
@@ -192,7 +202,17 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         broadcastError = null
         screenScope.launch {
             runCatching { broadcastApi.loadRound(preview) }
-                .onSuccess { selectedBroadcastRound = it }
+                .onSuccess { round ->
+                    selectedBroadcastRound = round
+                    pendingBroadcastGameIds = if (
+                        selectedBroadcastGames.firstOrNull()?.roundId == round.preview.roundId
+                    ) {
+                        selectedBroadcastGames.map { it.gameId }
+                    } else {
+                        emptyList()
+                    }
+                    broadcastSelectionMessage = null
+                }
                 .onFailure {
                     broadcastError = it.message ?: "Could not load the tournament boards."
                 }
@@ -200,12 +220,57 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         }
     }
 
-    fun watchBroadcastBoard(round: LichessBroadcastRound, board: LichessBroadcastBoard) {
+    fun toggleBroadcastBoard(board: LichessBroadcastBoard) {
+        pendingBroadcastGameIds = when {
+            board.gameId in pendingBroadcastGameIds -> {
+                broadcastSelectionMessage = null
+                pendingBroadcastGameIds.filterNot { it == board.gameId }
+            }
+            pendingBroadcastGameIds.size < 5 -> {
+                broadcastSelectionMessage = null
+                pendingBroadcastGameIds + board.gameId
+            }
+            else -> {
+                broadcastSelectionMessage = "You can choose up to 5 games."
+                pendingBroadcastGameIds
+            }
+        }
+    }
+
+    fun watchSelectedBroadcasts(round: LichessBroadcastRound) {
+        val boardsById = round.boards.associateBy { it.gameId }
+        val selections = pendingBroadcastGameIds.mapNotNull { gameId ->
+            boardsById[gameId]?.let(round::selectionFor)
+        }
+        if (selections.isEmpty()) return
+
+        val currentGameId = tv.gameId.takeIf { tv.source == LichessTvSource.BROADCAST_BOARD }
+        val restoredIndex = selections.indexOfFirst { it.gameId == currentGameId }
+        activeBroadcastIndex = restoredIndex.takeIf { it >= 0 } ?: 0
+        selectedBroadcastGames = selections
         detached = false
         selectedSquare = null
         promotionChoices = emptyList()
         showBroadcastDialog = false
-        client.watchBroadcastBoard(round.selectionFor(board))
+        client.watchBroadcastBoard(selections[activeBroadcastIndex])
+    }
+
+    fun switchBroadcastGame(direction: Int) {
+        if (
+            detached ||
+            tv.source != LichessTvSource.BROADCAST_BOARD ||
+            selectedBroadcastGames.size < 2
+        ) return
+
+        val nextIndex = Math.floorMod(
+            activeBroadcastIndex + direction,
+            selectedBroadcastGames.size
+        )
+        if (nextIndex == activeBroadcastIndex) return
+        activeBroadcastIndex = nextIndex
+        selectedSquare = null
+        promotionChoices = emptyList()
+        client.watchBroadcastBoard(selectedBroadcastGames[nextIndex])
     }
 
     fun applyAnalysisMove(move: LibMove) {
@@ -340,6 +405,13 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     val shownUciMoves = if (detached) analysisUciMoves else tv.uciMoves
     val shownSanMoves = if (detached) analysisSanMoves else tv.sanMoves
     val shownPly = if (detached) analysisPly else shownUciMoves.size
+    val broadcastPositionLabel = if (
+        tv.source == LichessTvSource.BROADCAST_BOARD && selectedBroadcastGames.size > 1
+    ) {
+        "Game ${activeBroadcastIndex + 1}/${selectedBroadcastGames.size}"
+    } else {
+        null
+    }
 
     BackHandler(onBack = onHome)
 
@@ -361,6 +433,30 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
 
             @Composable
             fun BoardPane(modifier: Modifier) {
+                val broadcastSwipeModifier = if (
+                    !detached &&
+                    tv.source == LichessTvSource.BROADCAST_BOARD &&
+                    selectedBroadcastGames.size > 1
+                ) {
+                    Modifier.pointerInput(activeBroadcastIndex, selectedBroadcastGames.size) {
+                        var horizontalDrag = 0f
+                        detectHorizontalDragGestures(
+                            onDragStart = { horizontalDrag = 0f },
+                            onHorizontalDrag = { _, dragAmount -> horizontalDrag += dragAmount },
+                            onDragCancel = { horizontalDrag = 0f },
+                            onDragEnd = {
+                                val threshold = size.width * 0.16f
+                                when {
+                                    horizontalDrag <= -threshold -> switchBroadcastGame(1)
+                                    horizontalDrag >= threshold -> switchBroadcastGame(-1)
+                                }
+                                horizontalDrag = 0f
+                            }
+                        )
+                    }
+                } else {
+                    Modifier
+                }
                 LichessTvBoardPane(
                     board = displayPieces,
                     selected = displaySelected,
@@ -375,7 +471,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     engineEnabled = effectiveEngineEnabled,
                     onSquareClick = ::onBoardSquare,
                     landscape = landscape,
-                    modifier = modifier
+                    modifier = modifier.then(broadcastSwipeModifier)
                 )
             }
 
@@ -425,6 +521,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                         LichessTvHeader(
                             state = tv,
                             detached = detached,
+                            broadcastPositionLabel = broadcastPositionLabel,
                             onHome = onHome
                         )
                         Spacer(Modifier.height(5.dp))
@@ -443,6 +540,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                         LichessTvHeader(
                             state = tv,
                             detached = detached,
+                            broadcastPositionLabel = broadcastPositionLabel,
                             onHome = onHome
                         )
                         Spacer(Modifier.height(4.dp))
@@ -512,11 +610,16 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
             onRefresh = ::refreshBroadcasts,
             onBack = {
                 selectedBroadcastRound = null
+                pendingBroadcastGameIds = emptyList()
+                broadcastSelectionMessage = null
                 broadcastError = null
             },
             onSelectBroadcast = ::openBroadcastRound,
-            onSelectBoard = { board ->
-                selectedBroadcastRound?.let { round -> watchBroadcastBoard(round, board) }
+            selectedGameIds = pendingBroadcastGameIds,
+            selectionMessage = broadcastSelectionMessage,
+            onToggleBoard = ::toggleBroadcastBoard,
+            onDone = {
+                selectedBroadcastRound?.let(::watchSelectedBroadcasts)
             }
         )
     }
@@ -560,7 +663,10 @@ private fun LichessBroadcastDialog(
     onRefresh: () -> Unit,
     onBack: () -> Unit,
     onSelectBroadcast: (LichessBroadcastPreview) -> Unit,
-    onSelectBoard: (LichessBroadcastBoard) -> Unit
+    selectedGameIds: List<String>,
+    selectionMessage: String?,
+    onToggleBoard: (LichessBroadcastBoard) -> Unit,
+    onDone: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -574,11 +680,24 @@ private fun LichessBroadcastDialog(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 selectedRound?.let {
                     Text(
-                        "${it.preview.roundName} • choose a board to feature",
+                        "${it.preview.roundName} • ${selectedGameIds.size}/5 selected",
                         color = Color(0xFF5D4632),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    Text(
+                        "Choose up to 5 games, then tap Done. In broadcast mode, swipe the board left or right to move between your chosen games.",
+                        color = Color(0xFF5D4632),
+                        fontSize = 12.sp
+                    )
+                    selectionMessage?.let { message ->
+                        Text(
+                            message,
+                            color = Color(0xFFB91C1C),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 } ?: Text(
                     "Choose a tournament, then select the board you want to watch.",
                     color = Color(0xFF5D4632),
@@ -623,7 +742,11 @@ private fun LichessBroadcastDialog(
                                     items = selectedRound.boards,
                                     key = { _, board -> board.gameId }
                                 ) { _, board ->
-                                    LichessBroadcastBoardRow(board = board, onClick = { onSelectBoard(board) })
+                                    LichessBroadcastBoardRow(
+                                        board = board,
+                                        selected = board.gameId in selectedGameIds,
+                                        onClick = { onToggleBoard(board) }
+                                    )
                                 }
                             }
                         }
@@ -652,7 +775,14 @@ private fun LichessBroadcastDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            if (selectedRound != null) {
+                TextButton(
+                    enabled = selectedGameIds.isNotEmpty(),
+                    onClick = onDone
+                ) { Text("Done (${selectedGameIds.size})") }
+            } else {
+                TextButton(onClick = onDismiss) { Text("Close") }
+            }
         },
         dismissButton = {
             if (selectedRound != null) {
@@ -715,6 +845,7 @@ private fun LichessBroadcastTournamentRow(
 @Composable
 private fun LichessBroadcastBoardRow(
     board: LichessBroadcastBoard,
+    selected: Boolean,
     onClick: () -> Unit
 ) {
     val statusColor = if (board.isOngoing) Color(0xFFB91C1C) else Color(0xFF334155)
@@ -722,7 +853,12 @@ private fun LichessBroadcastBoardRow(
     Surface(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(11.dp),
-        color = if (board.isOngoing) Color(0xFFFFF7ED) else Color(0xFFF1F5F9),
+        color = when {
+            selected -> Color(0xFFDCFCE7)
+            board.isOngoing -> Color(0xFFFFF7ED)
+            else -> Color(0xFFF1F5F9)
+        },
+        border = if (selected) BorderStroke(2.dp, Color(0xFF15803D)) else null,
         shadowElevation = 2.dp
     ) {
         Row(
@@ -755,7 +891,12 @@ private fun LichessBroadcastBoardRow(
                     maxLines = 1
                 )
             }
-            Text(statusText, color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Black)
+            Column(horizontalAlignment = Alignment.End) {
+                if (selected) {
+                    Text("✓ SELECTED", color = Color(0xFF15803D), fontSize = 9.sp, fontWeight = FontWeight.Black)
+                }
+                Text(statusText, color = statusColor, fontSize = 10.sp, fontWeight = FontWeight.Black)
+            }
         }
     }
 }
@@ -764,6 +905,7 @@ private fun LichessBroadcastBoardRow(
 private fun LichessTvHeader(
     state: LichessTvState,
     detached: Boolean,
+    broadcastPositionLabel: String?,
     onHome: () -> Unit
 ) {
     val (statusText, statusColor) = when {
@@ -798,8 +940,13 @@ private fun LichessTvHeader(
                 fontWeight = FontWeight.Black,
                 maxLines = 1
             )
-            val detail = state.errorMessage ?: state.noticeMessage ?: state.watchedUsername?.let {
+            val sourceDetail = state.errorMessage ?: state.noticeMessage ?: state.watchedUsername?.let {
                 "Watching @$it"
+            }
+            val detail = if (broadcastPositionLabel != null && state.errorMessage == null) {
+                listOfNotNull(broadcastPositionLabel, sourceDetail).joinToString(" • ")
+            } else {
+                sourceDetail
             }
             detail?.let {
                 Text(
