@@ -43,7 +43,10 @@ internal data class LichessTvPlayer(
     val name: String = "Waiting for player",
     val title: String? = null,
     val rating: Int? = null,
-    val seconds: Int? = null
+    val seconds: Int? = null,
+    val fideId: Long? = null,
+    val federation: String? = null,
+    val lichessUsername: String? = null
 ) {
     val displayName: String
         get() = listOfNotNull(title?.takeIf { it.isNotBlank() }, name.takeIf { it.isNotBlank() })
@@ -689,7 +692,9 @@ internal class LichessTvClient {
             name = user?.optString("name").orEmpty().ifBlank { fallbackName },
             title = user?.optString("title")?.trim()?.takeIf { it.isNotBlank() },
             rating = item?.optIntOrNull("rating"),
-            seconds = item?.optIntOrNull("seconds")
+            seconds = item?.optIntOrNull("seconds"),
+            lichessUsername = user?.optString("id")?.trim()?.takeIf { it.isNotBlank() }
+                ?: user?.optString("name")?.trim()?.takeIf { it.isNotBlank() }
         )
     }
 
@@ -811,7 +816,9 @@ internal class LichessTvClient {
             name = rawName,
             title = user?.optString("title")?.trim()?.takeIf { it.isNotBlank() },
             rating = item.optIntOrNull("rating"),
-            seconds = item.optIntOrNull("seconds")
+            seconds = item.optIntOrNull("seconds"),
+            lichessUsername = user?.optString("id")?.trim()?.takeIf { it.isNotBlank() }
+                ?: user?.optString("name")?.trim()?.takeIf { it.isNotBlank() }
         )
     }
 

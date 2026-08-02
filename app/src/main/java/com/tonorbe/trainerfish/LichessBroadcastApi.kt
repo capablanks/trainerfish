@@ -135,7 +135,10 @@ internal class LichessBroadcastApi {
             title = item?.optString("title")?.trim()?.takeIf { it.isNotBlank() },
             rating = item.optIntOrNull("rating"),
             // Broadcast clocks are represented in centiseconds.
-            seconds = item.optIntOrNull("clock")?.div(100)
+            seconds = item.optIntOrNull("clock")?.div(100),
+            fideId = item.optLongOrNull("fideId"),
+            federation = item?.optString("fed")?.trim()?.uppercase()?.takeIf { it.isNotBlank() },
+            lichessUsername = item?.optString("username")?.trim()?.takeIf { it.isNotBlank() }
         )
 
     private fun getJson(url: String): JSONObject {
@@ -162,6 +165,9 @@ internal class LichessBroadcastApi {
 
     private fun JSONObject?.optIntOrNull(name: String): Int? =
         this?.takeIf { it.has(name) && !it.isNull(name) }?.optInt(name)
+
+    private fun JSONObject?.optLongOrNull(name: String): Long? =
+        this?.takeIf { it.has(name) && !it.isNull(name) }?.optLong(name)
 
     private companion object {
         const val TOP_BROADCASTS_URL = "https://lichess.org/api/broadcast/top"

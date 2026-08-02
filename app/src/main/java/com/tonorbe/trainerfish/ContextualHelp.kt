@@ -71,7 +71,7 @@ private fun helpIntro(topic: TrainerHelpTopic): String = when (topic) {
     TrainerHelpTopic.GAME_RECORDER ->
         "Record an over-the-board game move by move, then review, annotate, save, or analyze it after play."
     TrainerHelpTopic.CHESS_TV ->
-        "Follow the current Lichess TV game, a player, or up to eight boards chosen from any combination of live tournament broadcasts."
+        "Follow the current Lichess TV game, your countrymen, favorite players, or up to eight boards chosen from any combination of live tournament broadcasts."
     TrainerHelpTopic.CHESS_CLOCK ->
         "A full-screen two-player chess clock with increments, independent starting times, presets, themes, and optional Do Not Disturb."
     TrainerHelpTopic.VISUAL_STUDIO ->
@@ -165,7 +165,11 @@ private fun helpSections(topic: TrainerHelpTopic): List<TrainerHelpSection> = wh
     TrainerHelpTopic.CHESS_TV -> listOf(
         TrainerHelpSection(
             "Choose what to watch",
-            "Use the Home and Help icons in the header. Open the blue hamburger beside PGN moves to watch the TV top game, follow a Lichess player, or open Live broadcasts. In the broadcast chooser, select up to eight games across any number of tournaments, then tap Done."
+            "Use the Home and Help icons in the header. Open the blue hamburger beside PGN moves to watch the TV top game, follow a Lichess player, or open Live broadcasts. On first use, choose your country and up to five favorite players. The chooser then begins with Players from your country and Favorite players before the full tournament list."
+        ),
+        TrainerHelpSection(
+            "Country and favorites",
+            "Official broadcasts are matched by federation and FIDE ID. Custom Lichess usernames are also supported when a broadcast identifies the player by that handle. Use Choose country & favorites in the blue hamburger, or Edit country & favorite players in the broadcast chooser, whenever you want to change your selections."
         ),
         TrainerHelpSection(
             "Switch broadcast boards",

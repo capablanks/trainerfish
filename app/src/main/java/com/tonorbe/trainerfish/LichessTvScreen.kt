@@ -76,17 +76,27 @@ import com.github.bhlangonijr.chesslib.PieceType as LibPieceType
 import com.github.bhlangonijr.chesslib.Side
 import com.github.bhlangonijr.chesslib.move.Move as LibMove
 import com.tonorbe.trainerfish.engine.ProcEngine
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlin.coroutines.coroutineContext
 
 private const val MAX_BROADCAST_GAMES = 8
+
+private enum class LichessBroadcastBrowserMode {
+    TOURNAMENTS,
+    COUNTRY,
+    FAVORITES
+}
 
 @Composable
 internal fun LichessTvScreen(onHome: () -> Unit) {
     val context = LocalContext.current
     val client = remember { LichessTvClient() }
     val broadcastApi = remember { LichessBroadcastApi() }
+    val followStore = remember(context) { ChessTvFollowStore(context) }
     val screenScope = rememberCoroutineScope()
     val tv by client.state.collectAsState()
     val engineCpRaw by ProcEngine.scoreCp.collectAsState()
@@ -111,6 +121,18 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         mutableStateOf<List<LichessBroadcastSelection>>(emptyList())
     }
     var broadcastSelectionMessage by remember { mutableStateOf<String?>(null) }
+    var followProfile by remember { mutableStateOf(followStore.load()) }
+    var showFollowSetupDialog by rememberSaveable { mutableStateOf(false) }
+    var followSetupReturnsToBroadcast by rememberSaveable { mutableStateOf(false) }
+    var followSetupOpenedFromChooser by rememberSaveable { mutableStateOf(false) }
+    var resumeLiveAfterFollowSetup by rememberSaveable { mutableStateOf(false) }
+    var broadcastBrowserMode by remember { mutableStateOf(LichessBroadcastBrowserMode.TOURNAMENTS) }
+    var personalizedBroadcastGames by remember {
+        mutableStateOf<List<LichessBroadcastSelection>>(emptyList())
+    }
+    var personalizedScanProgress by remember { mutableStateOf(0 to 0) }
+    var personalizedScanJob by remember { mutableStateOf<Job?>(null) }
+    val broadcastRoundCache = remember { mutableMapOf<String, LichessBroadcastRound>() }
     var showHelpDialog by rememberSaveable { mutableStateOf(false) }
     var resumeLiveAfterHelpDialog by rememberSaveable { mutableStateOf(false) }
     var analysisStartFen by remember { mutableStateOf(LICHESS_TV_START_FEN) }
@@ -137,6 +159,12 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
             board.doMove(move)
         }
         return board.fen
+    }
+
+    fun cancelPersonalizedScan() {
+        personalizedScanJob?.cancel()
+        personalizedScanJob = null
+        broadcastLoading = false
     }
 
     fun enterAnalysis(targetPly: Int = tv.uciMoves.size) {
@@ -190,7 +218,12 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     }
 
     fun refreshBroadcasts() {
+        cancelPersonalizedScan()
         selectedBroadcastRound = null
+        broadcastBrowserMode = LichessBroadcastBrowserMode.TOURNAMENTS
+        personalizedBroadcastGames = emptyList()
+        personalizedScanProgress = 0 to 0
+        broadcastRoundCache.clear()
         broadcastSelectionMessage = null
         broadcastLoading = true
         broadcastError = null
@@ -212,15 +245,73 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         // before clearing output. No live position can change behind the dialog.
         ProcEngine.send("stop")
         pendingBroadcastGames = selectedBroadcastGames
-        showBroadcastDialog = true
-        refreshBroadcasts()
+        if (followProfile.setupComplete) {
+            showBroadcastDialog = true
+            refreshBroadcasts()
+        } else {
+            followSetupReturnsToBroadcast = true
+            followSetupOpenedFromChooser = false
+            showFollowSetupDialog = true
+        }
     }
 
     fun closeBroadcasts() {
+        cancelPersonalizedScan()
         showBroadcastDialog = false
         val shouldResumeLive = resumeLiveAfterBroadcastDialog
         resumeLiveAfterBroadcastDialog = false
         if (shouldResumeLive) client.reconnect()
+    }
+
+    fun editBroadcastFollows() {
+        showBroadcastDialog = false
+        followSetupReturnsToBroadcast = true
+        followSetupOpenedFromChooser = true
+        showFollowSetupDialog = true
+    }
+
+    fun openFollowSettings() {
+        resumeLiveAfterFollowSetup = !detached
+        if (resumeLiveAfterFollowSetup) client.pauseForDialog()
+        ProcEngine.send("stop")
+        followSetupReturnsToBroadcast = false
+        followSetupOpenedFromChooser = false
+        showFollowSetupDialog = true
+    }
+
+    fun closeFollowSetup() {
+        showFollowSetupDialog = false
+        if (followSetupReturnsToBroadcast) {
+            followSetupReturnsToBroadcast = false
+            if (followSetupOpenedFromChooser) {
+                followSetupOpenedFromChooser = false
+                showBroadcastDialog = true
+            } else {
+                val shouldResumeLive = resumeLiveAfterBroadcastDialog
+                resumeLiveAfterBroadcastDialog = false
+                if (shouldResumeLive) client.reconnect()
+            }
+        } else {
+            val shouldResumeLive = resumeLiveAfterFollowSetup
+            resumeLiveAfterFollowSetup = false
+            if (shouldResumeLive) client.reconnect()
+        }
+    }
+
+    fun saveFollowSetup(profile: ChessTvFollowProfile) {
+        followStore.save(profile)
+        followProfile = profile.copy(setupComplete = true)
+        showFollowSetupDialog = false
+        if (followSetupReturnsToBroadcast) {
+            followSetupReturnsToBroadcast = false
+            followSetupOpenedFromChooser = false
+            showBroadcastDialog = true
+            refreshBroadcasts()
+        } else {
+            val shouldResumeLive = resumeLiveAfterFollowSetup
+            resumeLiveAfterFollowSetup = false
+            if (shouldResumeLive) client.reconnect()
+        }
     }
 
     fun openHelp() {
@@ -238,12 +329,15 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     }
 
     fun openBroadcastRound(preview: LichessBroadcastPreview) {
+        cancelPersonalizedScan()
         broadcastLoading = true
         broadcastError = null
         screenScope.launch {
             runCatching { broadcastApi.loadRound(preview) }
                 .onSuccess { round ->
                     selectedBroadcastRound = round
+                    broadcastRoundCache[preview.roundId] = round
+                    broadcastBrowserMode = LichessBroadcastBrowserMode.TOURNAMENTS
                     broadcastSelectionMessage = null
                 }
                 .onFailure {
@@ -253,10 +347,9 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         }
     }
 
-    fun toggleBroadcastBoard(board: LichessBroadcastBoard) {
-        val round = selectedBroadcastRound ?: return
+    fun toggleBroadcastSelection(selection: LichessBroadcastSelection) {
         val existingIndex = pendingBroadcastGames.indexOfFirst {
-            it.roundId == round.preview.roundId && it.gameId == board.gameId
+            it.roundId == selection.roundId && it.gameId == selection.gameId
         }
         pendingBroadcastGames = when {
             existingIndex >= 0 -> {
@@ -265,7 +358,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
             }
             pendingBroadcastGames.size < MAX_BROADCAST_GAMES -> {
                 broadcastSelectionMessage = null
-                pendingBroadcastGames + round.selectionFor(board)
+                pendingBroadcastGames + selection
             }
             else -> {
                 broadcastSelectionMessage = "You can choose up to $MAX_BROADCAST_GAMES games."
@@ -274,7 +367,81 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         }
     }
 
+    fun toggleBroadcastBoard(board: LichessBroadcastBoard) {
+        val round = selectedBroadcastRound ?: return
+        toggleBroadcastSelection(round.selectionFor(board))
+    }
+
+    fun openPersonalizedBroadcasts(mode: LichessBroadcastBrowserMode) {
+        val country = followProfile.country
+        val favorites = followProfile.favorites
+        if (mode == LichessBroadcastBrowserMode.COUNTRY && country == null) {
+            editBroadcastFollows()
+            return
+        }
+        if (mode == LichessBroadcastBrowserMode.FAVORITES && favorites.isEmpty()) {
+            editBroadcastFollows()
+            return
+        }
+
+        selectedBroadcastRound = null
+        broadcastBrowserMode = mode
+        broadcastSelectionMessage = null
+        broadcastError = null
+        personalizedBroadcastGames = emptyList()
+        personalizedScanProgress = 0 to liveBroadcasts.size
+        broadcastLoading = true
+        personalizedScanJob?.cancel()
+        personalizedScanJob = screenScope.launch {
+            val runningJob = coroutineContext[Job]
+            try {
+                val matches = mutableListOf<LichessBroadcastSelection>()
+                var failedRounds = 0
+                liveBroadcasts.forEachIndexed { index, preview ->
+                    val round = broadcastRoundCache[preview.roundId] ?: runCatching {
+                        broadcastApi.loadRound(preview)
+                    }.onSuccess { loaded ->
+                        broadcastRoundCache[preview.roundId] = loaded
+                    }.getOrElse { error ->
+                        if (error is CancellationException) throw error
+                        failedRounds += 1
+                        null
+                    }
+                    round?.let { loadedRound ->
+                        loadedRound.boards
+                            .asSequence()
+                            .filter { it.isOngoing }
+                            .map { loadedRound.selectionFor(it) }
+                            .filter { selection ->
+                                when (mode) {
+                                    LichessBroadcastBrowserMode.COUNTRY ->
+                                        country != null && selection.matchesCountry(country)
+                                    LichessBroadcastBrowserMode.FAVORITES ->
+                                        selection.matchesFavorites(favorites)
+                                    LichessBroadcastBrowserMode.TOURNAMENTS -> false
+                                }
+                            }
+                            .forEach(matches::add)
+                    }
+                    personalizedBroadcastGames = matches.distinctBy { it.roundId to it.gameId }
+                    personalizedScanProgress = (index + 1) to liveBroadcasts.size
+                }
+                if (failedRounds == liveBroadcasts.size && liveBroadcasts.isNotEmpty()) {
+                    broadcastError = "Could not scan the live tournament boards. Please try again."
+                } else if (failedRounds > 0) {
+                    broadcastError = "$failedRounds tournament${if (failedRounds == 1) "" else "s"} could not be checked."
+                }
+            } finally {
+                if (personalizedScanJob === runningJob) {
+                    broadcastLoading = false
+                    personalizedScanJob = null
+                }
+            }
+        }
+    }
+
     fun watchSelectedBroadcasts() {
+        cancelPersonalizedScan()
         val selections = pendingBroadcastGames
         if (selections.isEmpty()) return
 
@@ -387,7 +554,8 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     val watchedPlayerEngineLocked =
         tv.source == LichessTvSource.WATCHED_PLAYER && tv.watchedGameOngoing
     val effectiveEngineEnabled =
-        engineEnabled && !watchedPlayerEngineLocked && !showBroadcastDialog && !showHelpDialog
+        engineEnabled && !watchedPlayerEngineLocked && !showBroadcastDialog &&
+            !showFollowSetupDialog && !showHelpDialog
     val useDeepBroadcastAnalysis = tv.source == LichessTvSource.BROADCAST_BOARD
     val displayedFen = if (detached) analysisFen else tv.fen
     LaunchedEffect(effectiveEngineEnabled, useDeepBroadcastAnalysis, displayedFen) {
@@ -535,6 +703,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                         showWatchPlayerDialog = true
                     },
                     onBrowseBroadcasts = ::openBroadcasts,
+                    onChooseFavorites = ::openFollowSettings,
                     onTopGame = ::showTopGame,
                     onFlip = { whiteBottom = !whiteBottom },
                     onHelp = ::openHelp,
@@ -656,22 +825,42 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
             errorMessage = broadcastError,
             broadcasts = liveBroadcasts,
             selectedRound = selectedBroadcastRound,
+            browserMode = broadcastBrowserMode,
+            followProfile = followProfile,
+            personalizedGames = personalizedBroadcastGames,
+            personalizedScanProgress = personalizedScanProgress,
             onDismiss = ::closeBroadcasts,
             onRefresh = ::refreshBroadcasts,
             onBack = {
+                cancelPersonalizedScan()
                 selectedBroadcastRound = null
+                broadcastBrowserMode = LichessBroadcastBrowserMode.TOURNAMENTS
+                personalizedBroadcastGames = emptyList()
+                personalizedScanProgress = 0 to 0
                 broadcastSelectionMessage = null
                 broadcastError = null
             },
             onSelectBroadcast = ::openBroadcastRound,
+            onOpenCountry = { openPersonalizedBroadcasts(LichessBroadcastBrowserMode.COUNTRY) },
+            onOpenFavorites = { openPersonalizedBroadcasts(LichessBroadcastBrowserMode.FAVORITES) },
+            onEditFollows = ::editBroadcastFollows,
             selectedGames = pendingBroadcastGames,
             selectionMessage = broadcastSelectionMessage,
             onToggleBoard = ::toggleBroadcastBoard,
+            onToggleSelection = ::toggleBroadcastSelection,
             onClear = {
                 pendingBroadcastGames = emptyList()
                 broadcastSelectionMessage = null
             },
             onDone = ::watchSelectedBroadcasts
+        )
+    }
+
+    if (showFollowSetupDialog) {
+        ChessTvFollowSetupDialog(
+            initialProfile = followProfile,
+            onDismiss = ::closeFollowSetup,
+            onSave = ::saveFollowSetup
         )
     }
 
@@ -716,25 +905,39 @@ private fun LichessBroadcastDialog(
     errorMessage: String?,
     broadcasts: List<LichessBroadcastPreview>,
     selectedRound: LichessBroadcastRound?,
+    browserMode: LichessBroadcastBrowserMode,
+    followProfile: ChessTvFollowProfile,
+    personalizedGames: List<LichessBroadcastSelection>,
+    personalizedScanProgress: Pair<Int, Int>,
     onDismiss: () -> Unit,
     onRefresh: () -> Unit,
     onBack: () -> Unit,
     onSelectBroadcast: (LichessBroadcastPreview) -> Unit,
+    onOpenCountry: () -> Unit,
+    onOpenFavorites: () -> Unit,
+    onEditFollows: () -> Unit,
     selectedGames: List<LichessBroadcastSelection>,
     selectionMessage: String?,
     onToggleBoard: (LichessBroadcastBoard) -> Unit,
+    onToggleSelection: (LichessBroadcastSelection) -> Unit,
     onClear: () -> Unit,
     onDone: () -> Unit
 ) {
     val instructionScrollState = rememberScrollState()
     val selectedTournamentCount = selectedGames.map { it.tournamentName }.distinct().size
+    val country = followProfile.country
+    val personalizedMode = selectedRound == null && browserMode != LichessBroadcastBrowserMode.TOURNAMENTS
+    val title = when {
+        selectedRound != null -> selectedRound.preview.tournamentName
+        browserMode == LichessBroadcastBrowserMode.COUNTRY ->
+            "Players from ${country?.name ?: "your country"}"
+        browserMode == LichessBroadcastBrowserMode.FAVORITES -> "Favorite players"
+        else -> "Live Tournament Broadcasts"
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                selectedRound?.preview?.tournamentName ?: "Live Tournament Broadcasts",
-                fontWeight = FontWeight.Black
-            )
+            Text(title, fontWeight = FontWeight.Black)
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -763,9 +966,13 @@ private fun LichessBroadcastDialog(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                } ?: Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                } ?: Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
-                        "Choose up to $MAX_BROADCAST_GAMES games from one or several tournaments.",
+                        if (personalizedMode) {
+                            "Choose any matching games, then tap Done. The same $MAX_BROADCAST_GAMES-game limit applies across every list."
+                        } else {
+                            "Choose up to $MAX_BROADCAST_GAMES games from one or several tournaments."
+                        },
                         color = Color(0xFF5D4632),
                         fontSize = 12.sp
                     )
@@ -777,9 +984,28 @@ private fun LichessBroadcastDialog(
                             fontWeight = FontWeight.Bold
                         )
                     }
+                    if (!personalizedMode) {
+                        TextButton(onClick = onEditFollows) {
+                            Text("Edit country & favorite players", fontSize = 11.sp)
+                        }
+                    }
                 }
 
-                if (loading) {
+                errorMessage?.let {
+                    Surface(
+                        shape = RoundedCornerShape(9.dp),
+                        color = Color(0xFFFFE4E6)
+                    ) {
+                        Text(
+                            it,
+                            color = Color(0xFF9F1239),
+                            fontSize = 12.sp,
+                            modifier = Modifier.fillMaxWidth().padding(9.dp)
+                        )
+                    }
+                }
+
+                if (loading && !personalizedMode) {
                     Box(
                         modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp),
                         contentAlignment = Alignment.Center
@@ -787,20 +1013,6 @@ private fun LichessBroadcastDialog(
                         CircularProgressIndicator(color = Color(0xFF2F6B1F))
                     }
                 } else {
-                    errorMessage?.let {
-                        Surface(
-                            shape = RoundedCornerShape(9.dp),
-                            color = Color(0xFFFFE4E6)
-                        ) {
-                            Text(
-                                it,
-                                color = Color(0xFF9F1239),
-                                fontSize = 12.sp,
-                                modifier = Modifier.fillMaxWidth().padding(9.dp)
-                            )
-                        }
-                    }
-
                     if (selectedRound != null) {
                         if (selectedRound.boards.isEmpty() && errorMessage == null) {
                             Text(
@@ -828,6 +1040,57 @@ private fun LichessBroadcastDialog(
                                 }
                             }
                         }
+                    } else if (personalizedMode) {
+                        val (checked, total) = personalizedScanProgress
+                        if (loading) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    color = Color(0xFF2F6B1F),
+                                    modifier = Modifier.size(22.dp),
+                                    strokeWidth = 3.dp
+                                )
+                                Text(
+                                    "Checking tournament $checked of $total… ${personalizedGames.size} game${if (personalizedGames.size == 1) "" else "s"} found",
+                                    color = Color(0xFF5D4632),
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+                        if (personalizedGames.isEmpty() && !loading && errorMessage == null) {
+                            Text(
+                                when (browserMode) {
+                                    LichessBroadcastBrowserMode.COUNTRY ->
+                                        "No live boards featuring players from ${country?.name ?: "your country"} were found."
+                                    LichessBroadcastBrowserMode.FAVORITES ->
+                                        "None of your favorite players has a live broadcast board right now."
+                                    LichessBroadcastBrowserMode.TOURNAMENTS -> "No matching games were found."
+                                },
+                                color = Color(0xFF5D4632),
+                                modifier = Modifier.padding(vertical = 24.dp)
+                            )
+                        } else if (personalizedGames.isNotEmpty()) {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp, max = 430.dp),
+                                verticalArrangement = Arrangement.spacedBy(7.dp)
+                            ) {
+                                items(
+                                    items = personalizedGames,
+                                    key = { "${it.roundId}:${it.gameId}" }
+                                ) { selection ->
+                                    LichessBroadcastSelectionRow(
+                                        selection = selection,
+                                        selected = selectedGames.any {
+                                            it.roundId == selection.roundId && it.gameId == selection.gameId
+                                        },
+                                        onClick = { onToggleSelection(selection) }
+                                    )
+                                }
+                            }
+                        }
                     } else {
                         if (broadcasts.isEmpty() && errorMessage == null) {
                             Text(
@@ -840,6 +1103,46 @@ private fun LichessBroadcastDialog(
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp, max = 430.dp),
                                 verticalArrangement = Arrangement.spacedBy(7.dp)
                             ) {
+                                item(key = "country-category") {
+                                    val countrySelectedCount = country?.let { selectedCountry ->
+                                        selectedGames.count { it.matchesCountry(selectedCountry) }
+                                    } ?: 0
+                                    LichessBroadcastCategoryRow(
+                                        number = 1,
+                                        title = country?.let { "Players from ${it.name}" }
+                                            ?: "Players from your country",
+                                        subtitle = country?.let {
+                                            "Find every live board featuring ${it.label} players"
+                                        } ?: "Choose a country to enable this list",
+                                        selectedCount = countrySelectedCount,
+                                        onClick = if (country == null) onEditFollows else onOpenCountry
+                                    )
+                                }
+                                item(key = "favorites-category") {
+                                    val favoriteSelectedCount = selectedGames.count {
+                                        it.matchesFavorites(followProfile.favorites)
+                                    }
+                                    LichessBroadcastCategoryRow(
+                                        number = 2,
+                                        title = "Favorite players",
+                                        subtitle = if (followProfile.favorites.isEmpty()) {
+                                            "Choose up to $MAX_CHESS_TV_FAVORITES players to enable this list"
+                                        } else {
+                                            followProfile.favorites.joinToString { it.displayName }
+                                        },
+                                        selectedCount = favoriteSelectedCount,
+                                        onClick = if (followProfile.favorites.isEmpty()) onEditFollows else onOpenFavorites
+                                    )
+                                }
+                                item(key = "tournament-heading") {
+                                    Text(
+                                        "3. Live tournaments",
+                                        color = Color(0xFF4E3B2A),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Black,
+                                        modifier = Modifier.padding(top = 5.dp, bottom = 2.dp)
+                                    )
+                                }
                                 items(broadcasts, key = { it.roundId }) { broadcast ->
                                     LichessBroadcastTournamentRow(
                                         broadcast = broadcast,
@@ -865,20 +1168,143 @@ private fun LichessBroadcastDialog(
                     Text("Clear list", color = if (selectedGames.isNotEmpty()) Color(0xFFB91C1C) else Color.Gray)
                 }
                 Spacer(Modifier.weight(1f))
-                if (selectedRound != null) {
+                if (selectedRound != null || personalizedMode) {
                     TextButton(onClick = onBack) { Text("← Tournaments") }
                 } else {
                     TextButton(enabled = !loading, onClick = onRefresh) { Text("Refresh") }
                 }
                 if (selectedGames.isNotEmpty()) {
                     TextButton(onClick = onDone) { Text("Done (${selectedGames.size})") }
-                } else if (selectedRound == null) {
+                } else if (selectedRound == null && !personalizedMode) {
                     TextButton(onClick = onDismiss) { Text("Close") }
                 }
             }
         },
         dismissButton = {}
     )
+}
+
+@Composable
+private fun LichessBroadcastCategoryRow(
+    number: Int,
+    title: String,
+    subtitle: String,
+    selectedCount: Int,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(11.dp),
+        color = if (number == 1) Color(0xFFEFF6FF) else Color(0xFFFFF7ED),
+        border = BorderStroke(1.dp, if (number == 1) Color(0xFF60A5FA) else Color(0xFFFB923C)),
+        shadowElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(9.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = if (number == 1) Color(0xFF1D4ED8) else Color(0xFFC2410C)
+            ) {
+                Text(
+                    number.toString(),
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    title,
+                    color = Color(0xFF142117),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 13.sp,
+                    maxLines = 1
+                )
+                Text(
+                    subtitle,
+                    color = Color(0xFF52606D),
+                    fontSize = 10.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (selectedCount > 0) {
+                Text(
+                    "$selectedCount selected",
+                    color = Color(0xFF166534),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Text("›", color = Color(0xFF166534), fontSize = 26.sp, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
+private fun LichessBroadcastSelectionRow(
+    selection: LichessBroadcastSelection,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        shape = RoundedCornerShape(11.dp),
+        color = if (selected) Color(0xFFDCFCE7) else Color(0xFFFFF7ED),
+        border = if (selected) BorderStroke(2.dp, Color(0xFF15803D)) else null,
+        shadowElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    selection.tournamentName,
+                    color = Color(0xFF52606D),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    "Board ${selection.boardNumber}",
+                    color = Color(0xFF64748B),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "${selection.white.displayName}  ${selection.white.rating ?: "—"}",
+                        color = Color(0xFF111827),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        maxLines = 1
+                    )
+                    Text(
+                        "${selection.black.displayName}  ${selection.black.rating ?: "—"}",
+                        color = Color(0xFF111827),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        maxLines = 1
+                    )
+                }
+                Text(
+                    if (selected) "✓ SELECTED" else "LIVE",
+                    color = if (selected) Color(0xFF15803D) else Color(0xFFB91C1C),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -1294,6 +1720,7 @@ private fun LichessTvStudyPanel(
     onReconnect: () -> Unit,
     onWatchPlayer: () -> Unit,
     onBrowseBroadcasts: () -> Unit,
+    onChooseFavorites: () -> Unit,
     onTopGame: () -> Unit,
     onFlip: () -> Unit,
     onHelp: () -> Unit,
@@ -1373,6 +1800,13 @@ private fun LichessTvStudyPanel(
                             onClick = {
                                 controlsMenuExpanded = false
                                 onBrowseBroadcasts()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Choose country & favorites") },
+                            onClick = {
+                                controlsMenuExpanded = false
+                                onChooseFavorites()
                             }
                         )
                         if (watchingAlternateGame) {
