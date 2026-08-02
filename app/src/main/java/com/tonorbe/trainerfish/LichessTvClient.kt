@@ -238,7 +238,7 @@ internal class LichessTvClient {
                 activeConnection = connection
                 val code = connection.responseCode
                 if (code != HttpURLConnection.HTTP_OK) {
-                    throw IllegalStateException("Grandmaster Chess TV returned HTTP $code")
+                    throw IllegalStateException("Chess TV returned HTTP $code")
                 }
 
                 retryDelayMs = 2_000L
@@ -258,14 +258,14 @@ internal class LichessTvClient {
                 }
 
                 if (isCurrent(serial)) {
-                    throw IllegalStateException("The Grandmaster Chess TV stream ended")
+                    throw IllegalStateException("The Chess TV stream ended")
                 }
             } catch (error: Throwable) {
                 if (!isCurrent(serial) || !scope.isActive) break
                 _state.update {
                     it.copy(
                         status = LichessTvConnectionStatus.RECONNECTING,
-                        errorMessage = error.message ?: "Grandmaster Chess TV connection lost"
+                        errorMessage = error.message ?: "Chess TV connection lost"
                     )
                 }
                 delay(retryDelayMs)

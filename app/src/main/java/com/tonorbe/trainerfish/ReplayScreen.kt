@@ -5517,6 +5517,9 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                 ) {
                     // Top-right Exit (back to ReplayScreen welcome)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(onClick = { showHelpDialog = true }) {
+                            Text("? Help")
+                        }
                         TextButton(onClick = {
                             endgameMoves.clear()
                             showWelcome = true  // stay in ReplayScreen; just leave Endgame mode
@@ -7279,11 +7282,21 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                             )
                         }
 
-                        TextButton(
-                            onClick = { showExitConfirm = true },
-                            contentPadding = btnPad2,
-                            colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFBAE6FD))
-                        ) { Text("Exit") }
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(0.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(
+                                onClick = { showHelpDialog = true },
+                                contentPadding = btnPad2,
+                                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFBAE6FD))
+                            ) { Text("? Help") }
+                            TextButton(
+                                onClick = { showExitConfirm = true },
+                                contentPadding = btnPad2,
+                                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFBAE6FD))
+                            ) { Text("Exit") }
+                        }
                     }
                 }
             },
@@ -9749,6 +9762,13 @@ private fun ReplayTopBar(
             )
 
             PushButton(
+                text = if (iconOnlyTopBar) "" else "Help",
+                leading = { Text("?") },
+                onClick = onHelp,
+                compact = true
+            )
+
+            PushButton(
                 text = if (iconOnlyTopBar) "" else "Exit",
                 leading = { Text("\uD83D\uDEAA") },
                 onClick = onExitRequested,
@@ -9801,6 +9821,13 @@ private fun ReplayTopBar(
                         compact = true
                     )
                 }
+
+                PushButton(
+                    text = if (iconOnlyTopBar) "" else "Help",
+                    leading = { Text("?") },
+                    onClick = onHelp,
+                    compact = true
+                )
 
                 if (isEndgame) {
                     PushButton(

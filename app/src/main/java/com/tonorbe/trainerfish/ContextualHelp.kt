@@ -41,7 +41,7 @@ internal enum class TrainerHelpTopic(
     ENDGAME("Endgame", "Endgame training", "🏁"),
     BEAT_FISH("Beat Fish", "Beat the Fish", "🐠"),
     GAME_RECORDER("Recorder", "Game Recorder", "✍️"),
-    CHESS_TV("Chess TV", "Grandmaster Chess TV", "📺"),
+    CHESS_TV("Chess TV", "Live games and broadcasts", "📺"),
     CHESS_CLOCK("Clock", "Chess Clock", "⏱️"),
     VISUAL_STUDIO("Visuals", "Visual Studio", "🎨")
 }
@@ -165,11 +165,11 @@ private fun helpSections(topic: TrainerHelpTopic): List<TrainerHelpSection> = wh
     TrainerHelpTopic.CHESS_TV -> listOf(
         TrainerHelpSection(
             "Choose what to watch",
-            "Open the blue hamburger beside PGN moves. Watch the TV top game, follow a Lichess player, or open Live broadcasts. In the broadcast chooser, select up to eight games across any number of tournaments, then tap Done."
+            "Use the Home and Help icons in the header. Open the blue hamburger beside PGN moves to watch the TV top game, follow a Lichess player, or open Live broadcasts. In the broadcast chooser, select up to eight games across any number of tournaments, then tap Done."
         ),
         TrainerHelpSection(
             "Switch broadcast boards",
-            "Swipe the board left for the next selected game or right for the previous one. Only the displayed game is streamed, so an eight-game list remains lightweight. Use Clear list in the chooser to start a new selection."
+            "Swipe the board left for the next selected game or right for the previous one, or use ⏮ and ⏭ below the PGN. Only the displayed game is streamed, so an eight-game list remains lightweight. Use Clear list in the chooser to start a new selection."
         ),
         TrainerHelpSection(
             "Live and analysis",
@@ -177,7 +177,7 @@ private fun helpSections(topic: TrainerHelpTopic): List<TrainerHelpSection> = wh
         ),
         TrainerHelpSection(
             "Moves and engine",
-            "Tap a move or use the navigation controls to detach and review. Tap the large power button beside the evaluation to turn Stockfish on or off; green means on and red means off. Broadcast analysis searches to depth 50. Engine analysis is locked only while following a specific player's game."
+            "Tap a move or use the four inner navigation controls to detach and review. The flip icon to the right of PGN moves reverses the board. Tap the large power button beside the evaluation to turn Stockfish on or off; green means on and red means off. Broadcast analysis searches to depth 50. Engine analysis is locked only while following a specific player's game."
         )
     )
 

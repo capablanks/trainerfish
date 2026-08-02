@@ -27,6 +27,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FlipCameraAndroid
+import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material3.AlertDialog
@@ -57,6 +60,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -442,6 +447,10 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     } else {
         null
     }
+    val showBroadcastGameControls =
+        !detached &&
+            tv.source == LichessTvSource.BROADCAST_BOARD &&
+            selectedBroadcastGames.size > 1
 
     BackHandler(onBack = onHome)
 
@@ -517,7 +526,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     uciMoves = shownUciMoves,
                     sanMoves = shownSanMoves,
                     currentPly = shownPly,
-                    pgnLoaded = tv.pgnLoaded,
+                    showBroadcastGameControls = showBroadcastGameControls,
                     onEngineToggle = { engineEnabled = !engineEnabled },
                     onAnalyze = { enterAnalysis(tv.uciMoves.size) },
                     onReconnect = ::reconnect,
@@ -529,6 +538,8 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     onTopGame = ::showTopGame,
                     onFlip = { whiteBottom = !whiteBottom },
                     onHelp = ::openHelp,
+                    onPreviousGame = { switchBroadcastGame(-1) },
+                    onNextGame = { switchBroadcastGame(1) },
                     onNavigate = ::navigateToPly,
                     modifier = modifier
                 )
@@ -554,6 +565,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                             detached = detached,
                             broadcastPositionLabel = broadcastPositionLabel,
                             onHome = onHome,
+                            onHelp = ::openHelp,
                             onLiveToggle = {
                                 if (detached) reconnect() else enterAnalysis(tv.uciMoves.size)
                             }
@@ -576,6 +588,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                             detached = detached,
                             broadcastPositionLabel = broadcastPositionLabel,
                             onHome = onHome,
+                            onHelp = ::openHelp,
                             onLiveToggle = {
                                 if (detached) reconnect() else enterAnalysis(tv.uciMoves.size)
                             }
@@ -993,6 +1006,7 @@ private fun LichessTvHeader(
     detached: Boolean,
     broadcastPositionLabel: String?,
     onHome: () -> Unit,
+    onHelp: () -> Unit,
     onLiveToggle: () -> Unit
 ) {
     val (statusText, statusColor) = when {
@@ -1013,15 +1027,27 @@ private fun LichessTvHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        TextButton(onClick = onHome) {
-            Text("← Home", color = Color.White, fontWeight = FontWeight.Bold)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            LichessTvHeaderIcon(
+                imageVector = Icons.Default.Home,
+                contentDescription = "Home",
+                onClick = onHome
+            )
+            LichessTvHeaderIcon(
+                imageVector = Icons.Default.HelpOutline,
+                contentDescription = "Help for Chess TV",
+                onClick = onHelp
+            )
         }
         Column(
             modifier = Modifier.weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Grandmaster Chess TV",
+                "Chess TV",
                 color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Black,
@@ -1056,6 +1082,28 @@ private fun LichessTvHeader(
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Black,
                 modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun LichessTvHeaderIcon(
+    imageVector: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.size(34.dp),
+        shape = RoundedCornerShape(9.dp),
+        color = Color.White.copy(alpha = 0.10f)
+    ) {
+        IconButton(onClick = onClick, modifier = Modifier.fillMaxSize()) {
+            Icon(
+                imageVector = imageVector,
+                contentDescription = contentDescription,
+                tint = Color.White,
+                modifier = Modifier.size(21.dp)
             )
         }
     }
@@ -1240,7 +1288,7 @@ private fun LichessTvStudyPanel(
     uciMoves: List<String>,
     sanMoves: List<String>,
     currentPly: Int,
-    pgnLoaded: Boolean,
+    showBroadcastGameControls: Boolean,
     onEngineToggle: () -> Unit,
     onAnalyze: () -> Unit,
     onReconnect: () -> Unit,
@@ -1249,6 +1297,8 @@ private fun LichessTvStudyPanel(
     onTopGame: () -> Unit,
     onFlip: () -> Unit,
     onHelp: () -> Unit,
+    onPreviousGame: () -> Unit,
+    onNextGame: () -> Unit,
     onNavigate: (Int) -> Unit,
     modifier: Modifier
 ) {
@@ -1278,7 +1328,7 @@ private fun LichessTvStudyPanel(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Menu,
-                                contentDescription = "Grandmaster Chess TV controls",
+                                contentDescription = "Chess TV controls",
                                 tint = Color.White,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -1335,13 +1385,6 @@ private fun LichessTvStudyPanel(
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text("Flip board") },
-                            onClick = {
-                                controlsMenuExpanded = false
-                                onFlip()
-                            }
-                        )
-                        DropdownMenuItem(
                             text = { Text("Help for Chess TV") },
                             onClick = {
                                 controlsMenuExpanded = false
@@ -1357,12 +1400,19 @@ private fun LichessTvStudyPanel(
                     fontSize = 16.sp,
                     modifier = Modifier.align(Alignment.Center)
                 )
-                Text(
-                    if (pgnLoaded || detached) "$currentPly / ${uciMoves.size}" else "Loading…",
-                    color = Color(0xFF7C5A3A),
-                    fontSize = 11.sp,
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                )
+                IconButton(
+                    onClick = onFlip,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FlipCameraAndroid,
+                        contentDescription = "Flip board",
+                        tint = Color(0xFF084E9E),
+                        modifier = Modifier.size(23.dp)
+                    )
+                }
             }
 
             Spacer(Modifier.height(4.dp))
@@ -1378,10 +1428,20 @@ private fun LichessTvStudyPanel(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (showBroadcastGameControls) {
+                    LichessTvNavButton("⏮", enabled = true, contentDescription = "Previous broadcast game") {
+                        onPreviousGame()
+                    }
+                }
                 LichessTvNavButton("|◀", enabled = currentPly > 0) { onNavigate(0) }
                 LichessTvNavButton("◀", enabled = currentPly > 0) { onNavigate(currentPly - 1) }
                 LichessTvNavButton("▶", enabled = currentPly < uciMoves.size) { onNavigate(currentPly + 1) }
                 LichessTvNavButton("▶|", enabled = currentPly < uciMoves.size) { onNavigate(uciMoves.size) }
+                if (showBroadcastGameControls) {
+                    LichessTvNavButton("⏭", enabled = true, contentDescription = "Next broadcast game") {
+                        onNextGame()
+                    }
+                }
             }
 
             Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF2C2118)) {
@@ -1512,10 +1572,21 @@ private fun LichessTvMoveList(
 }
 
 @Composable
-private fun LichessTvNavButton(text: String, enabled: Boolean, onClick: () -> Unit) {
+private fun LichessTvNavButton(
+    text: String,
+    enabled: Boolean,
+    contentDescription: String? = null,
+    onClick: () -> Unit
+) {
+    val accessibilityLabel = contentDescription
     TextButton(
         onClick = onClick,
         enabled = enabled,
+        modifier = if (accessibilityLabel != null) {
+            Modifier.semantics { this.contentDescription = accessibilityLabel }
+        } else {
+            Modifier
+        },
         colors = ButtonDefaults.textButtonColors(
             contentColor = Color(0xFF084E9E),
             disabledContentColor = Color(0xFF776C60)
