@@ -3,6 +3,7 @@ package com.tonorbe.trainerfish
 import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -279,6 +281,8 @@ internal fun ChessTvFollowSetupDialog(
     var selectedFavorites by remember(initialProfile) { mutableStateOf(initialProfile.favorites) }
     var countryQuery by remember { mutableStateOf("") }
     var customUsername by remember { mutableStateOf("") }
+    val countryScrollState = rememberScrollState()
+    val favoritesScrollState = rememberScrollState()
     val selectedCountry = ChessTvCountries.byId(selectedCountryId)
     val filteredCountries = remember(countryQuery) {
         val query = countryQuery.trim().lowercase(Locale.ROOT)
@@ -299,7 +303,10 @@ internal fun ChessTvFollowSetupDialog(
         },
         text = {
             if (step == ChessTvSetupStep.COUNTRY) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    modifier = Modifier.verticalScroll(countryScrollState),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text(
                         "Would you like Chess TV to find live broadcast games featuring players from your country? Choose a country below.",
                         color = Color(0xFF4E3B2A),
@@ -343,7 +350,10 @@ internal fun ChessTvFollowSetupDialog(
                     }
                 }
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    modifier = Modifier.verticalScroll(favoritesScrollState),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text(
                         "Choose up to $MAX_CHESS_TV_FAVORITES players. Chess TV will put any live broadcast boards featuring them above the tournament list.",
                         color = Color(0xFF4E3B2A),
