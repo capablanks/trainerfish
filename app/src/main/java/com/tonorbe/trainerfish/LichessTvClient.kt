@@ -372,7 +372,10 @@ internal class LichessTvClient {
                 }
 
                 if (!isCurrent(serial)) break
-                if (!_state.value.watchedGameOngoing) break
+                fetchCurrentPgn(activeGameId)?.let { loaded ->
+                    if (isCurrent(serial)) applyFetchedPgn(activeGameId, loaded)
+                }
+                if (!_state.value.watchedGameOngoing || _state.value.result != null) break
                 throw IllegalStateException("Player game stream ended")
             } catch (error: Throwable) {
                 if (!isCurrent(serial) || !scope.isActive) break
@@ -623,18 +626,23 @@ internal class LichessTvClient {
         if (!isCurrent(serial)) return
         val id = data.optString("id").trim().ifBlank { expectedGameId }
         if (id != expectedGameId) return
-
         val players = data.optJSONObject("players")
         val white = parseStreamPlayer(players?.optJSONObject("white"), "White")
         val black = parseStreamPlayer(players?.optJSONObject("black"), "Black")
         val statusName = data.optJSONObject("status")?.optString("name").orEmpty()
-            .ifBlank { data.optString("status") }
-            .lowercase()
+            .ifBlank { data.optString("status") }.lowercase()
         val ongoing = statusName.isBlank() || statusName == "created" || statusName == "started"
         val startFen = data.optString("initialFen").trim().ifBlank { LICHESS_TV_START_FEN }
         val fen = normalizeStreamFen(data.optString("fen"), startFen)
         val lastMove = data.optString("lastMove").trim().takeIf { it.isNotBlank() }
         val existing = _state.value.takeIf { it.gameId == id }
+        val result = lichessTvResultOrNull(data.optString("result"))
+            ?: when (data.optString("winner").trim().lowercase()) {
+                "white" -> "1-0"; "black" -> "0-1"; else -> null
+            }
+            ?: if (!ongoing && statusName in setOf(
+                "draw", "stalemate", "repetition", "insufficientmaterial", "fiftymoves"
+            )) "1/2-1/2" else existing?.result
 
         _state.value = LichessTvState(
             status = if (ongoing) LichessTvConnectionStatus.LIVE else LichessTvConnectionStatus.FINISHED,
@@ -651,16 +659,17 @@ internal class LichessTvClient {
             uciMoves = existing?.uciMoves.orEmpty(),
             sanMoves = existing?.sanMoves.orEmpty(),
             pgnLoaded = existing?.pgnLoaded ?: false,
+            result = result,
             noticeMessage = if (ongoing) {
                 "Watching @$username • 3-move delay • engine off"
             } else {
                 "@$username finished • engine analysis available"
             }
         )
-
         pgnJob?.cancel()
         pgnJob = scope.launch {
-            fetchPlayerCurrentPgn(username)?.let { loaded -> applyFetchedPgn(id, loaded) }
+            val loaded = if (ongoing) fetchPlayerCurrentPgn(username) else fetchCurrentPgn(id)
+            loaded?.let { applyFetchedPgn(id, it) }
         }
     }
 
@@ -669,38 +678,31 @@ internal class LichessTvClient {
         val moveUci = data.optString("lm").trim().takeIf { it.isNotBlank() }
         _state.update { current ->
             if (current.source != LichessTvSource.WATCHED_PLAYER) return@update current
-
             val before = runCatching {
                 com.github.bhlangonijr.chesslib.Board().apply { loadFromFen(current.fen) }
             }.getOrNull()
             val move = if (before != null && moveUci != null) bfUciToMoveOnBoard(before, moveUci) else null
-            val san = if (before != null && move != null) {
-                runCatching {
-                    bfPrettySan(
-                        board = before,
-                        mv = move,
-                        isWhiteMove = before.sideToMove == com.github.bhlangonijr.chesslib.Side.WHITE
-                    )
-                }.getOrNull()
-            } else null
-            val computedFen = if (before != null && move != null && before.doMove(move)) {
-                before.fen
-            } else {
-                normalizeStreamFen(data.optString("fen"), current.fen)
+            val san = if (before != null && move != null) runCatching {
+                bfPrettySan(before, move, before.sideToMove == com.github.bhlangonijr.chesslib.Side.WHITE)
+            }.getOrNull() else null
+            val applied = before != null && move != null && runCatching { before.doMove(move) }.getOrDefault(false)
+            val fen = when {
+                applied -> before!!.fen
+                moveUci == null -> normalizeStreamFen(data.optString("fen"), current.fen)
+                else -> current.fen
             }
-            val appendMove = moveUci != null &&
-                current.lastMoveUci != moveUci &&
+            val append = applied && moveUci != null && current.lastMoveUci != moveUci &&
                 current.uciMoves.lastOrNull() != moveUci
-
+            val finished = current.status == LichessTvConnectionStatus.FINISHED || current.result != null
             current.copy(
-                status = LichessTvConnectionStatus.LIVE,
-                watchedGameOngoing = true,
-                fen = computedFen,
+                status = if (finished) LichessTvConnectionStatus.FINISHED else LichessTvConnectionStatus.LIVE,
+                watchedGameOngoing = !finished,
+                fen = fen,
                 white = current.white.copy(seconds = data.optIntOrNull("wc") ?: current.white.seconds),
                 black = current.black.copy(seconds = data.optIntOrNull("bc") ?: current.black.seconds),
-                lastMoveUci = moveUci ?: current.lastMoveUci,
-                uciMoves = if (appendMove) current.uciMoves + moveUci else current.uciMoves,
-                sanMoves = if (appendMove) current.sanMoves + (san ?: moveUci) else current.sanMoves,
+                lastMoveUci = if (applied) moveUci else current.lastMoveUci,
+                uciMoves = if (append) current.uciMoves + moveUci else current.uciMoves,
+                sanMoves = if (append) current.sanMoves + (san ?: moveUci) else current.sanMoves,
                 errorMessage = null
             )
         }
@@ -911,7 +913,8 @@ internal class LichessTvClient {
             uciMoves = uci,
             sanMoves = san,
             whiteSeconds = whiteSeconds,
-            blackSeconds = blackSeconds
+            blackSeconds = blackSeconds,
+            result = lichessTvResultOrNull(pgnTag(pgn, "Result"))
         )
     }
 
@@ -929,29 +932,32 @@ internal class LichessTvClient {
     private fun applyFetchedPgn(gameId: String, fetched: LoadedTvPgn) {
         _state.update { current ->
             if (current.gameId != gameId) return@update current
-
-            val fetchedIsPrefix = current.uciMoves.size >= fetched.uciMoves.size &&
+            val currentFen = positionAfter(fetched.startFen, current.uciMoves)
+            val extend = currentFen != null && current.uciMoves.size >= fetched.uciMoves.size &&
                 current.uciMoves.take(fetched.uciMoves.size) == fetched.uciMoves
-            val currentIsPrefix = fetched.uciMoves.size >= current.uciMoves.size &&
-                fetched.uciMoves.take(current.uciMoves.size) == current.uciMoves
-
-            when {
-                fetchedIsPrefix -> current.copy(
-                    startFen = fetched.startFen,
-                    white = current.white.copy(seconds = fetched.whiteSeconds ?: current.white.seconds),
-                    black = current.black.copy(seconds = fetched.blackSeconds ?: current.black.seconds),
-                    pgnLoaded = true
-                )
-                currentIsPrefix || current.uciMoves.isEmpty() -> current.copy(
-                    startFen = fetched.startFen,
-                    uciMoves = fetched.uciMoves,
-                    sanMoves = fetched.sanMoves,
-                    white = current.white.copy(seconds = fetched.whiteSeconds ?: current.white.seconds),
-                    black = current.black.copy(seconds = fetched.blackSeconds ?: current.black.seconds),
-                    pgnLoaded = true
-                )
-                else -> current.copy(pgnLoaded = true)
-            }
+            val uci = if (extend) current.uciMoves else fetched.uciMoves
+            val san = if (extend && current.sanMoves.size == current.uciMoves.size) current.sanMoves else fetched.sanMoves
+            val finalFen = (if (extend) currentFen else positionAfter(fetched.startFen, fetched.uciMoves)) ?: current.fen
+            val result = fetched.result ?: current.result
+            val finished = result != null
+            val watchedFinished = current.source == LichessTvSource.WATCHED_PLAYER && finished
+            current.copy(
+                status = if (finished) LichessTvConnectionStatus.FINISHED else current.status,
+                watchedGameOngoing = if (watchedFinished) false else current.watchedGameOngoing,
+                fen = finalFen,
+                startFen = fetched.startFen,
+                lastMoveUci = uci.lastOrNull() ?: current.lastMoveUci,
+                uciMoves = uci,
+                sanMoves = san,
+                white = current.white.copy(seconds = fetched.whiteSeconds ?: current.white.seconds),
+                black = current.black.copy(seconds = fetched.blackSeconds ?: current.black.seconds),
+                pgnLoaded = true,
+                result = result,
+                errorMessage = null,
+                noticeMessage = if (watchedFinished) {
+                    current.watchedUsername?.let { "@$it finished • engine analysis available" } ?: current.noticeMessage
+                } else current.noticeMessage
+            )
         }
     }
 
@@ -968,7 +974,8 @@ internal class LichessTvClient {
         val uciMoves: List<String>,
         val sanMoves: List<String>,
         val whiteSeconds: Int?,
-        val blackSeconds: Int?
+        val blackSeconds: Int?,
+        val result: String?
     )
 
     private fun JSONObject.optIntOrNull(name: String): Int? =

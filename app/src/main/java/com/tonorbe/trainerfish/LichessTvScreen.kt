@@ -1,6 +1,9 @@
 package com.tonorbe.trainerfish
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -77,9 +80,13 @@ import com.github.bhlangonijr.chesslib.Side
 import com.github.bhlangonijr.chesslib.move.Move as LibMove
 import com.tonorbe.trainerfish.engine.ProcEngine
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import kotlin.coroutines.coroutineContext
 
@@ -89,6 +96,34 @@ private enum class LichessBroadcastBrowserMode {
     TOURNAMENTS,
     COUNTRY,
     FAVORITES
+}
+
+private fun tvTag(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"")
+    .replace(Regex("[\r\n]+"), " ").trim()
+private fun tvPgn(s: LichessTvState): String {
+    val r=lichessTvResultOrNull(s.result) ?: "*"
+    val d=SimpleDateFormat("yyyy.MM.dd",Locale.US).format(Date())
+    val e=when(s.source){
+        LichessTvSource.WATCHED_PLAYER->"TrainerFish Watch Player"
+        LichessTvSource.BROADCAST_BOARD->s.noticeMessage?.substringBefore(" • ")?.takeIf{it.isNotBlank()} ?: "TrainerFish Broadcast"
+        LichessTvSource.TOP_GAME->"TrainerFish Chess TV"
+    }
+    val site=s.gameId?.takeIf{it.isNotBlank()}?.let{"https://lichess.org/$it"} ?: "Lichess"
+    return buildString {
+        appendLine("[Event \"${tvTag(e)}\"]"); appendLine("[Site \"${tvTag(site)}\"]")
+        appendLine("[Date \"$d\"]"); appendLine("[Round \"-\"]")
+        appendLine("[White \"${tvTag(s.white.name)}\"]"); appendLine("[Black \"${tvTag(s.black.name)}\"]")
+        s.white.rating?.let{appendLine("[WhiteElo \"$it\"]")}; s.black.rating?.let{appendLine("[BlackElo \"$it\"]")}
+        appendLine("[Result \"$r\"]")
+        if(s.startFen.isNotBlank() && s.startFen!=LICHESS_TV_START_FEN){appendLine("[SetUp \"1\"]");appendLine("[FEN \"${tvTag(s.startFen)}\"]")}
+        appendLine(); s.sanMoves.forEachIndexed{i,m->if(i>0)append(' ');if(i%2==0)append("${i/2+1}. ");append(m.trim())}
+        if(s.sanMoves.isNotEmpty())append(' '); appendLine(r)
+    }
+}
+private fun tvPgnName(s:LichessTvState):String{
+    fun safe(x:String)=x.trim().replace(Regex("[^A-Za-z0-9._-]+"),"_").trim('_').take(32).ifBlank{"player"}
+    val d=SimpleDateFormat("yyyyMMdd",Locale.US).format(Date())
+    return "TrainerFish_${safe(s.white.name)}_vs_${safe(s.black.name)}_$d.pgn"
 }
 
 @Composable
@@ -101,6 +136,20 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     val tv by client.state.collectAsState()
     val engineCpRaw by ProcEngine.scoreCp.collectAsState()
     val engineLines by ProcEngine.lines.collectAsState()
+
+    var pendingPgn by remember { mutableStateOf<String?>(null) }
+    val pgnLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/x-chess-pgn")
+    ) { uri ->
+        val text=pendingPgn; pendingPgn=null
+        if(uri!=null && !text.isNullOrBlank()) screenScope.launch {
+            val ok=withContext(Dispatchers.IO){runCatching{
+                context.contentResolver.openOutputStream(uri,"wt")?.bufferedWriter(Charsets.UTF_8)?.use{it.write(text)}
+                    ?: error("Unable to open file")
+            }}
+            Toast.makeText(context,if(ok.isSuccess)"PGN saved" else "PGN save failed",Toast.LENGTH_SHORT).show()
+        }
+    }
 
     var detached by rememberSaveable { mutableStateOf(false) }
     var engineEnabled by rememberSaveable { mutableStateOf(true) }
@@ -215,6 +264,11 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         selectedSquare = null
         promotionChoices = emptyList()
         client.connectTopGame()
+    }
+
+    fun savePgn() {
+        if(tv.sanMoves.isEmpty()) { Toast.makeText(context,"No moves to save yet.",Toast.LENGTH_SHORT).show(); return }
+        pendingPgn=tvPgn(tv); pgnLauncher.launch(tvPgnName(tv))
     }
 
     fun refreshBroadcasts() {
@@ -556,9 +610,11 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     val effectiveEngineEnabled =
         engineEnabled && !watchedPlayerEngineLocked && !showBroadcastDialog &&
             !showFollowSetupDialog && !showHelpDialog
-    val useDeepBroadcastAnalysis = tv.source == LichessTvSource.BROADCAST_BOARD
+    val useDepth50Analysis = tv.source == LichessTvSource.BROADCAST_BOARD ||
+        (tv.source == LichessTvSource.WATCHED_PLAYER && !tv.watchedGameOngoing &&
+            tv.status == LichessTvConnectionStatus.FINISHED)
     val displayedFen = if (detached) analysisFen else tv.fen
-    LaunchedEffect(effectiveEngineEnabled, useDeepBroadcastAnalysis, displayedFen) {
+    LaunchedEffect(effectiveEngineEnabled, useDepth50Analysis, displayedFen) {
         if (!effectiveEngineEnabled) {
             ProcEngine.stopSearchAndWait()
             ProcEngine.clearOutput()
@@ -566,7 +622,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         }
         runCatching { ProcEngine.start("lichess-tv") }
         delay(80L)
-        if (useDeepBroadcastAnalysis) {
+        if (useDepth50Analysis) {
             ProcEngine.evaluateFenDepthSafely(displayedFen, 50, multiPv = 1)
         } else {
             ProcEngine.evaluateFenSafely(displayedFen, 1_200, multiPv = 1)
@@ -695,6 +751,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     sanMoves = shownSanMoves,
                     currentPly = shownPly,
                     showBroadcastGameControls = showBroadcastGameControls,
+                    canSavePgn = tv.sanMoves.isNotEmpty(),
                     onEngineToggle = { engineEnabled = !engineEnabled },
                     onAnalyze = { enterAnalysis(tv.uciMoves.size) },
                     onReconnect = ::reconnect,
@@ -705,6 +762,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     onBrowseBroadcasts = ::openBroadcasts,
                     onChooseFavorites = ::openFollowSettings,
                     onTopGame = ::showTopGame,
+                    onSavePgn = ::savePgn,
                     onFlip = { whiteBottom = !whiteBottom },
                     onHelp = ::openHelp,
                     onPreviousGame = { switchBroadcastGame(-1) },
@@ -1732,6 +1790,7 @@ private fun LichessTvStudyPanel(
     sanMoves: List<String>,
     currentPly: Int,
     showBroadcastGameControls: Boolean,
+    canSavePgn: Boolean,
     onEngineToggle: () -> Unit,
     onAnalyze: () -> Unit,
     onReconnect: () -> Unit,
@@ -1739,6 +1798,7 @@ private fun LichessTvStudyPanel(
     onBrowseBroadcasts: () -> Unit,
     onChooseFavorites: () -> Unit,
     onTopGame: () -> Unit,
+    onSavePgn: () -> Unit,
     onFlip: () -> Unit,
     onHelp: () -> Unit,
     onPreviousGame: () -> Unit,
@@ -1788,6 +1848,10 @@ private fun LichessTvStudyPanel(
                                 controlsMenuExpanded = false
                                 if (detached) onReconnect() else onAnalyze()
                             }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Save game to PGN") }, enabled = canSavePgn,
+                            onClick = { controlsMenuExpanded = false; onSavePgn() }
                         )
                         DropdownMenuItem(
                             text = {
