@@ -522,7 +522,10 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                             state = tv,
                             detached = detached,
                             broadcastPositionLabel = broadcastPositionLabel,
-                            onHome = onHome
+                            onHome = onHome,
+                            onLiveToggle = {
+                                if (detached) reconnect() else enterAnalysis(tv.uciMoves.size)
+                            }
                         )
                         Spacer(Modifier.height(5.dp))
                         LichessTvPlayers(white = tv.white, black = tv.black)
@@ -541,7 +544,10 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                             state = tv,
                             detached = detached,
                             broadcastPositionLabel = broadcastPositionLabel,
-                            onHome = onHome
+                            onHome = onHome,
+                            onLiveToggle = {
+                                if (detached) reconnect() else enterAnalysis(tv.uciMoves.size)
+                            }
                         )
                         Spacer(Modifier.height(4.dp))
                         LichessTvPlayers(white = tv.white, black = tv.black)
@@ -906,7 +912,8 @@ private fun LichessTvHeader(
     state: LichessTvState,
     detached: Boolean,
     broadcastPositionLabel: String?,
-    onHome: () -> Unit
+    onHome: () -> Unit,
+    onLiveToggle: () -> Unit
 ) {
     val (statusText, statusColor) = when {
         detached -> "ANALYSIS • STREAM PAUSED" to Color(0xFFF59E0B)
@@ -957,7 +964,12 @@ private fun LichessTvHeader(
                 )
             }
         }
-        Surface(shape = RoundedCornerShape(10.dp), color = statusColor.copy(alpha = 0.18f)) {
+        Surface(
+            modifier = Modifier.clickable(onClick = onLiveToggle),
+            shape = RoundedCornerShape(10.dp),
+            color = statusColor.copy(alpha = 0.18f),
+            border = BorderStroke(1.dp, statusColor.copy(alpha = 0.55f))
+        ) {
             Text(
                 statusText,
                 color = statusColor,
