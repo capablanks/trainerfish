@@ -5054,6 +5054,7 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                     showSettings = true
                     status = "Settings"
                 },
+                onHelp = { showHelpDialog = true },
                 onExitRequested = {
                     showExitConfirm = true
                 },
@@ -7689,8 +7690,9 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
         }
     )
 
-    ReplayHelpDialog(
+    TrainerFishHelpDialog(
         show = showHelpDialog,
+        initialTopic = trainerHelpTopicFor(mode),
         onDismiss = { showHelpDialog = false }
     )
 
@@ -8047,7 +8049,7 @@ private fun ReplaySettingsDialog(
                 Spacer(Modifier.height(4.dp))
                 TextButton(onClick = onSoundPack) { Text("Sound pack") }
                 Spacer(Modifier.height(8.dp))
-                TextButton(onClick = onHelp) { Text("Help / FAQ") }
+                TextButton(onClick = onHelp) { Text("Contextual Help") }
                 TextButton(onClick = onAbout) { Text("About / Legal") }
                 Spacer(Modifier.height(4.dp))
                 TextButton(onClick = onClock) { Text("Chess clock") }
@@ -9514,6 +9516,7 @@ private fun ReplayTopBar(
     onToggleSound: () -> Unit,
     onToggleEngine: () -> Unit,
     onOpenSettings: () -> Unit,
+    onHelp: () -> Unit,
     onExitRequested: () -> Unit,
     currentPuzzleBookmarked: Boolean = false,
     onToggleBookmarkCurrent: () -> Unit = {},
@@ -9718,6 +9721,13 @@ private fun ReplayTopBar(
                     description = "Sound, visual style, engine options, and trainer setup.",
                     color = Color(0xFF334155),
                     onClick = onOpenSettings
+                )
+                ColorMenuItem(
+                    icon = "?",
+                    title = "Help for this mode",
+                    description = "Open instructions for the feature currently on screen.",
+                    color = Color(0xFF1565C0),
+                    onClick = onHelp
                 )
             }
         }
@@ -9981,92 +9991,6 @@ private fun ReplayProfileDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Close")
-            }
-        }
-    )
-}
-
-@Composable
-private fun ReplayHelpDialog(
-    show: Boolean,
-    onDismiss: () -> Unit
-) {
-    if (!show) return
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Help / FAQ", fontWeight = FontWeight.Bold) },
-        text = {
-            val scroll = rememberScrollState()
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 0.dp, max = 420.dp)
-                    .verticalScroll(scroll)
-            ) {
-                Text(
-                    "Welcome to TrainerFish! This quick guide explains the main training modes.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                Spacer(Modifier.height(12.dp))
-                Text("Woodpecker Cycle Manager", fontWeight = FontWeight.Bold)
-                Text(
-                    """
-                    - TrainerFish groups puzzles into "cycles" of games.
-                    - Solve each puzzle once; when a cycle is done, you repeat it from the start.
-                    - Each repetition should be faster and more accurate - this is the Woodpecker Method.
-                    - Use "Define cycle" in the Welcome screen to choose rating range, themes, and size.
-                    """.trimIndent(),
-                    style = MaterialTheme.typography.bodySmall
-                )
-
-                Spacer(Modifier.height(12.dp))
-                Text("Beat the Fish", fontWeight = FontWeight.Bold)
-                Text(
-                    """
-                    - A free-play mode vs Stockfish with your chosen time control.
-                    - Use the buttons under the board to change side, take back moves, or start a new game.
-                    - Your last game is automatically saved so you can resume later.
-                    """.trimIndent(),
-                    style = MaterialTheme.typography.bodySmall
-                )
-
-                Spacer(Modifier.height(12.dp))
-                Text("Opening Explorer", fontWeight = FontWeight.Bold)
-                Text(
-                    """
-                    - Start from the initial position and play moves on the board.
-                    - The move list and bar chart show how often strong players choose each reply.
-                    - Tap a move in the list to follow that line; use < and > to step through the moveline.
-                    - From the ECO list you can load a full variation; the moves will auto-play once,
-                      then you can navigate them with the arrows.
-                    """.trimIndent(),
-                    style = MaterialTheme.typography.bodySmall
-                )
-
-                Spacer(Modifier.height(12.dp))
-                Text("Endgame Trainer", fontWeight = FontWeight.Bold)
-                Text(
-                    """
-                    - Each position comes with a short note explaining the key idea and evaluation.
-                    - Play the winning or drawing technique against Stockfish.
-                    - Use Back / Next above the list to browse positions, and the Play button to let the engine
-                      defend while you try to convert or hold the draw.
-                    """.trimIndent(),
-                    style = MaterialTheme.typography.bodySmall
-                )
-
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    "Tip: You can change themes, sounds, and other options anytime from Settings.",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Done")
             }
         }
     )

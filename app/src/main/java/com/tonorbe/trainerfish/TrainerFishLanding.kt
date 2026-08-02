@@ -125,6 +125,7 @@ fun TrainerFishLandingScreen(
     val cosSp = remember { ctx.getSharedPreferences("gm_cosmetics", android.content.Context.MODE_PRIVATE) }
 
     var showVisualStudio by remember { mutableStateOf(false) }
+    var showHelp by rememberSaveable { mutableStateOf(false) }
     var selectedPieceSet by rememberSaveable {
         mutableStateOf(cosSp.getString("piece_set", "original") ?: "original")
     }
@@ -276,7 +277,8 @@ fun TrainerFishLandingScreen(
                     onToggleTheme = {
                         onChangeAppThemeKey(if (isDark) AppThemeKeys.LIGHT else AppThemeKeys.DARK)
                     },
-                    onClock = onClock
+                    onClock = onClock,
+                    onHelp = { showHelp = true }
                 )
 
                 Spacer(Modifier.height(14.dp))
@@ -389,6 +391,12 @@ fun TrainerFishLandingScreen(
             onClose = { showVisualStudio = false }
         )
     }
+
+    TrainerFishHelpDialog(
+        show = showHelp,
+        initialTopic = TrainerHelpTopic.HOME,
+        onDismiss = { showHelp = false }
+    )
 
 }
 
@@ -505,7 +513,8 @@ private fun TrainerFishLeaderboardCard(
 private fun LandingHeader(
     isDark: Boolean,
     onToggleTheme: () -> Unit,
-    onClock: () -> Unit
+    onClock: () -> Unit,
+    onHelp: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -513,19 +522,38 @@ private fun LandingHeader(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                shape = CircleShape,
-                tonalElevation = 6.dp,
-                shadowElevation = 8.dp,
-                color = Color.White.copy(alpha = if (isDark) 0.10f else 0.90f),
-                modifier = Modifier.size(62.dp)
+            Box(
+                modifier = Modifier
+                    .size(62.dp)
+                    .clickable(onClick = onHelp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_fish),
-                    contentDescription = "TrainerFish",
-                    modifier = Modifier.padding(8.dp),
-                    contentScale = ContentScale.Fit
-                )
+                Surface(
+                    shape = CircleShape,
+                    tonalElevation = 6.dp,
+                    shadowElevation = 8.dp,
+                    color = Color.White.copy(alpha = if (isDark) 0.10f else 0.90f),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_fish),
+                        contentDescription = "TrainerFish",
+                        modifier = Modifier.padding(8.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF1565C0),
+                    shadowElevation = 5.dp,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(25.dp)
+                        .clickable(onClick = onHelp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text("?", color = Color.White, fontWeight = FontWeight.Black, fontSize = 15.sp)
+                    }
+                }
             }
 
             Spacer(Modifier.width(12.dp))
@@ -745,6 +773,16 @@ private fun VisualStudioDialog(
     onClose: () -> Unit
 ) {
     val ctx = LocalContext.current
+    var showHelp by remember { mutableStateOf(false) }
+
+    if (showHelp) {
+        TrainerFishHelpDialog(
+            show = true,
+            initialTopic = TrainerHelpTopic.VISUAL_STUDIO,
+            onDismiss = { showHelp = false }
+        )
+        return
+    }
 
     AlertDialog(
         onDismissRequest = onClose,
@@ -859,6 +897,9 @@ private fun VisualStudioDialog(
         },
         confirmButton = {
             TextButton(onClick = onClose) { Text("Done") }
+        },
+        dismissButton = {
+            TextButton(onClick = { showHelp = true }) { Text("Help") }
         }
     )
 }
