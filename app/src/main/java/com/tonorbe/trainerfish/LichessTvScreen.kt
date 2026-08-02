@@ -287,8 +287,9 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     val watchedPlayerEngineLocked =
         tv.source == LichessTvSource.WATCHED_PLAYER && tv.watchedGameOngoing
     val effectiveEngineEnabled = engineEnabled && !watchedPlayerEngineLocked
+    val useDeepBroadcastAnalysis = tv.source == LichessTvSource.BROADCAST_BOARD
     val displayedFen = if (detached) analysisFen else tv.fen
-    LaunchedEffect(effectiveEngineEnabled, displayedFen) {
+    LaunchedEffect(effectiveEngineEnabled, useDeepBroadcastAnalysis, displayedFen) {
         if (!effectiveEngineEnabled) {
             ProcEngine.send("stop")
             ProcEngine.clearOutput()
@@ -297,7 +298,11 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         runCatching { ProcEngine.start("lichess-tv") }
         runCatching { ProcEngine.setMultiPv(1) }
         delay(80L)
-        ProcEngine.evaluateFen(displayedFen, 1_200)
+        if (useDeepBroadcastAnalysis) {
+            ProcEngine.evaluateFenDepth(displayedFen, 50)
+        } else {
+            ProcEngine.evaluateFen(displayedFen, 1_200)
+        }
     }
 
     val whiteToMove = displayedFen.split(' ').getOrNull(1) != "b"
