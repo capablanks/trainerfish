@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -68,6 +69,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -79,6 +81,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
 import com.github.bhlangonijr.chesslib.Board
 import com.github.bhlangonijr.chesslib.move.MoveGenerator
@@ -1118,7 +1121,9 @@ private fun LichessBroadcastDialog(
     onClear: () -> Unit,
     onDone: () -> Unit
 ) {
-    val instructionScrollState = rememberScrollState()
+    val dialogScrollState = rememberScrollState()
+    val configuration = LocalConfiguration.current
+    val landscape = configuration.screenWidthDp > configuration.screenHeightDp
     val selectedTournamentCount = selectedGames.map { it.tournamentName }.distinct().size
     val country = followProfile.country
     val personalizedMode = selectedRound == null && browserMode != LichessBroadcastBrowserMode.TOURNAMENTS
@@ -1129,47 +1134,66 @@ private fun LichessBroadcastDialog(
         browserMode == LichessBroadcastBrowserMode.FAVORITES -> "Favorite players"
         else -> "Live Tournament Broadcasts"
     }
+    val dialogModifier = if (landscape) {
+        Modifier.fillMaxWidth(0.74f).fillMaxHeight(0.94f)
+    } else {
+        Modifier.fillMaxWidth(0.94f).fillMaxHeight(0.90f)
+    }
+
     AlertDialog(
+        modifier = dialogModifier,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         title = {
-            Text(title, fontWeight = FontWeight.Black)
+            Text(
+                title,
+                fontWeight = FontWeight.Black,
+                fontSize = if (landscape) 20.sp else 22.sp,
+                lineHeight = if (landscape) 23.sp else 26.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                selectedRound?.let {
+            // One scroll container owns the complete dialog body. This avoids the
+            // near-zero-height nested list that occurred on landscape screens.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(dialogScrollState),
+                verticalArrangement = Arrangement.spacedBy(if (landscape) 5.dp else 7.dp)
+            ) {
+                if (selectedRound != null) {
                     Text(
-                        "${it.preview.roundName} • ${selectedGames.size}/$MAX_BROADCAST_GAMES selected total",
+                        "${selectedRound.preview.roundName} • ${selectedGames.size}/$MAX_BROADCAST_GAMES selected",
                         color = Color(0xFF5D4632),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "Select boards here, return to Tournaments to add games from another event, then tap Done. Swipe the live board left or right to switch games.",
+                        "Tap boards, then Done. Use Tournaments to add another event; swipe the live board to switch games.",
                         color = Color(0xFF5D4632),
                         fontSize = 11.sp,
-                        lineHeight = 14.sp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(43.dp)
-                            .verticalScroll(instructionScrollState)
+                        lineHeight = 13.sp
                     )
                     selectionMessage?.let { message ->
                         Text(
                             message,
                             color = Color(0xFFB91C1C),
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
-                } ?: Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                } else {
                     Text(
                         if (personalizedMode) {
-                            "Choose any matching games, then tap Done. The same $MAX_BROADCAST_GAMES-game limit applies across every list."
+                            "Choose matching games, then Done. The $MAX_BROADCAST_GAMES-game limit covers all lists."
                         } else {
-                            "Choose up to $MAX_BROADCAST_GAMES games from one or several tournaments."
+                            "Choose up to $MAX_BROADCAST_GAMES games across broadcasts."
                         },
                         color = Color(0xFF5D4632),
-                        fontSize = 12.sp
+                        fontSize = 11.sp,
+                        lineHeight = 13.sp
                     )
                     if (selectedGames.isNotEmpty()) {
                         Text(
@@ -1180,8 +1204,11 @@ private fun LichessBroadcastDialog(
                         )
                     }
                     if (!personalizedMode) {
-                        TextButton(onClick = onEditFollows) {
-                            Text("Edit country & favorite players", fontSize = 11.sp)
+                        TextButton(
+                            onClick = onEditFollows,
+                            modifier = Modifier.heightIn(min = 32.dp)
+                        ) {
+                            Text("Edit country & favorites", fontSize = 11.sp)
                         }
                     }
                 }
@@ -1194,48 +1221,45 @@ private fun LichessBroadcastDialog(
                         Text(
                             it,
                             color = Color(0xFF9F1239),
-                            fontSize = 12.sp,
-                            modifier = Modifier.fillMaxWidth().padding(9.dp)
+                            fontSize = 11.sp,
+                            modifier = Modifier.fillMaxWidth().padding(7.dp)
                         )
                     }
                 }
 
-                if (loading && !personalizedMode) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = Color(0xFF2F6B1F))
+                when {
+                    loading && !personalizedMode -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 110.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color(0xFF2F6B1F))
+                        }
                     }
-                } else {
-                    if (selectedRound != null) {
+
+                    selectedRound != null -> {
                         if (selectedRound.boards.isEmpty() && errorMessage == null) {
                             Text(
                                 "No boards are available in this round yet.",
                                 color = Color(0xFF5D4632),
-                                modifier = Modifier.padding(vertical = 24.dp)
+                                modifier = Modifier.padding(vertical = 16.dp)
                             )
                         } else {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp, max = 430.dp),
-                                verticalArrangement = Arrangement.spacedBy(7.dp)
-                            ) {
-                                itemsIndexed(
-                                    items = selectedRound.boards,
-                                    key = { _, board -> board.gameId }
-                                ) { _, board ->
-                                    LichessBroadcastBoardRow(
-                                        board = board,
-                                        selected = selectedGames.any {
-                                            it.roundId == selectedRound.preview.roundId &&
-                                                it.gameId == board.gameId
-                                        },
-                                        onClick = { onToggleBoard(board) }
-                                    )
-                                }
+                            selectedRound.boards.forEach { board ->
+                                LichessBroadcastBoardRow(
+                                    board = board,
+                                    selected = selectedGames.any {
+                                        it.roundId == selectedRound.preview.roundId &&
+                                            it.gameId == board.gameId
+                                    },
+                                    onClick = { onToggleBoard(board) }
+                                )
+                                Spacer(Modifier.height(4.dp))
                             }
                         }
-                    } else if (personalizedMode) {
+                    }
+
+                    personalizedMode -> {
                         val (checked, total) = personalizedScanProgress
                         if (loading) {
                             Row(
@@ -1249,7 +1273,7 @@ private fun LichessBroadcastDialog(
                                     strokeWidth = 3.dp
                                 )
                                 Text(
-                                    "Checking tournament $checked of $total… ${personalizedGames.size} game${if (personalizedGames.size == 1) "" else "s"} found",
+                                    "Checking $checked/$total • ${personalizedGames.size} found",
                                     color = Color(0xFF5D4632),
                                     fontSize = 11.sp
                                 )
@@ -1265,87 +1289,75 @@ private fun LichessBroadcastDialog(
                                     LichessBroadcastBrowserMode.TOURNAMENTS -> "No matching games were found."
                                 },
                                 color = Color(0xFF5D4632),
-                                modifier = Modifier.padding(vertical = 24.dp)
-                            )
-                        } else if (personalizedGames.isNotEmpty()) {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp, max = 430.dp),
-                                verticalArrangement = Arrangement.spacedBy(7.dp)
-                            ) {
-                                items(
-                                    items = personalizedGames,
-                                    key = { "${it.roundId}:${it.gameId}" }
-                                ) { selection ->
-                                    LichessBroadcastSelectionRow(
-                                        selection = selection,
-                                        selected = selectedGames.any {
-                                            it.roundId == selection.roundId && it.gameId == selection.gameId
-                                        },
-                                        onClick = { onToggleSelection(selection) }
-                                    )
-                                }
-                            }
-                        }
-                    } else {
-                        if (broadcasts.isEmpty() && errorMessage == null) {
-                            Text(
-                                "No tournament rounds are being broadcast live right now.",
-                                color = Color(0xFF5D4632),
-                                modifier = Modifier.padding(vertical = 24.dp)
+                                modifier = Modifier.padding(vertical = 16.dp)
                             )
                         } else {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp, max = 430.dp),
-                                verticalArrangement = Arrangement.spacedBy(7.dp)
-                            ) {
-                                item(key = "country-category") {
-                                    val countrySelectedCount = country?.let { selectedCountry ->
-                                        selectedGames.count { it.matchesCountry(selectedCountry) }
-                                    } ?: 0
-                                    LichessBroadcastCategoryRow(
-                                        number = 1,
-                                        title = country?.let { "Players from ${it.name}" }
-                                            ?: "Players from your country",
-                                        subtitle = country?.let {
-                                            "Find every live board featuring ${it.label} players"
-                                        } ?: "Choose a country to enable this list",
-                                        selectedCount = countrySelectedCount,
-                                        onClick = if (country == null) onEditFollows else onOpenCountry
-                                    )
-                                }
-                                item(key = "favorites-category") {
-                                    val favoriteSelectedCount = selectedGames.count {
-                                        it.matchesFavorites(followProfile.favorites)
-                                    }
-                                    LichessBroadcastCategoryRow(
-                                        number = 2,
-                                        title = "Favorite players",
-                                        subtitle = if (followProfile.favorites.isEmpty()) {
-                                            "Choose up to $MAX_CHESS_TV_FAVORITES players to enable this list"
-                                        } else {
-                                            followProfile.favorites.joinToString { it.displayName }
-                                        },
-                                        selectedCount = favoriteSelectedCount,
-                                        onClick = if (followProfile.favorites.isEmpty()) onEditFollows else onOpenFavorites
-                                    )
-                                }
-                                item(key = "tournament-heading") {
-                                    Text(
-                                        "3. Live tournaments",
-                                        color = Color(0xFF4E3B2A),
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Black,
-                                        modifier = Modifier.padding(top = 5.dp, bottom = 2.dp)
-                                    )
-                                }
-                                items(broadcasts, key = { it.roundId }) { broadcast ->
-                                    LichessBroadcastTournamentRow(
-                                        broadcast = broadcast,
-                                        selectedCount = selectedGames.count { it.roundId == broadcast.roundId },
-                                        onClick = { onSelectBroadcast(broadcast) }
-                                    )
-                                }
+                            personalizedGames.forEach { selection ->
+                                LichessBroadcastSelectionRow(
+                                    selection = selection,
+                                    selected = selectedGames.any {
+                                        it.roundId == selection.roundId && it.gameId == selection.gameId
+                                    },
+                                    onClick = { onToggleSelection(selection) }
+                                )
+                                Spacer(Modifier.height(4.dp))
                             }
+                        }
+                    }
+
+                    broadcasts.isEmpty() && errorMessage == null -> {
+                        Text(
+                            "No tournament rounds are being broadcast live right now.",
+                            color = Color(0xFF5D4632),
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
+                    }
+
+                    else -> {
+                        val countrySelectedCount = country?.let { selectedCountry ->
+                            selectedGames.count { it.matchesCountry(selectedCountry) }
+                        } ?: 0
+                        LichessBroadcastCategoryRow(
+                            number = 1,
+                            title = country?.let { "Players from ${it.name}" }
+                                ?: "Players from your country",
+                            subtitle = country?.let {
+                                "Live boards featuring ${it.label} players"
+                            } ?: "Choose a country to enable this list",
+                            selectedCount = countrySelectedCount,
+                            onClick = if (country == null) onEditFollows else onOpenCountry
+                        )
+                        Spacer(Modifier.height(4.dp))
+
+                        val favoriteSelectedCount = selectedGames.count {
+                            it.matchesFavorites(followProfile.favorites)
+                        }
+                        LichessBroadcastCategoryRow(
+                            number = 2,
+                            title = "Favorite players",
+                            subtitle = if (followProfile.favorites.isEmpty()) {
+                                "Choose up to $MAX_CHESS_TV_FAVORITES players to enable this list"
+                            } else {
+                                followProfile.favorites.joinToString { it.displayName }
+                            },
+                            selectedCount = favoriteSelectedCount,
+                            onClick = if (followProfile.favorites.isEmpty()) onEditFollows else onOpenFavorites
+                        )
+                        Spacer(Modifier.height(5.dp))
+
+                        Text(
+                            "3. Live tournaments",
+                            color = Color(0xFF4E3B2A),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        broadcasts.forEach { broadcast ->
+                            Spacer(Modifier.height(4.dp))
+                            LichessBroadcastTournamentRow(
+                                broadcast = broadcast,
+                                selectedCount = selectedGames.count { it.roundId == broadcast.roundId },
+                                onClick = { onSelectBroadcast(broadcast) }
+                            )
                         }
                     }
                 }
@@ -1360,7 +1372,7 @@ private fun LichessBroadcastDialog(
                     enabled = selectedGames.isNotEmpty(),
                     onClick = onClear
                 ) {
-                    Text("Clear list", color = if (selectedGames.isNotEmpty()) Color(0xFFB91C1C) else Color.Gray)
+                    Text("Clear", color = if (selectedGames.isNotEmpty()) Color(0xFFB91C1C) else Color.Gray)
                 }
                 Spacer(Modifier.weight(1f))
                 if (selectedRound != null || personalizedMode) {
@@ -2062,18 +2074,34 @@ private fun LichessTvStudyPanel(
                     fontSize = 16.sp,
                     modifier = Modifier.align(Alignment.Center)
                 )
-                IconButton(
-                    onClick = onFlip,
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .size(36.dp)
+                Row(
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.FlipCameraAndroid,
-                        contentDescription = "Flip board",
-                        tint = Color(0xFF084E9E),
-                        modifier = Modifier.size(23.dp)
-                    )
+                    IconButton(
+                        onClick = onSavePgn,
+                        enabled = canSavePgn,
+                        modifier = Modifier.size(34.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Save,
+                            contentDescription = "Save game to PGN",
+                            tint = if (canSavePgn) Color(0xFF084E9E) else Color.Gray,
+                            modifier = Modifier.size(21.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = onFlip,
+                        modifier = Modifier.size(34.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FlipCameraAndroid,
+                            contentDescription = "Flip board",
+                            tint = Color(0xFF084E9E),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
             }
 
