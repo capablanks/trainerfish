@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val PUZZLE_DATASET_VERSION = 4
@@ -21,9 +22,12 @@ fun ChessScreen() {
             runCatching { migratePuzzleDatasetIfNeeded(context) }
                 .onFailure { t -> Log.e("ChessScreen", "Dataset migration failed", t) }
 
-            // Do NOT warm decoded starter puzzles here.
-            // Start New Cycle now reads one prebuilt PGN from train_starter_puzzles.json,
-            // so background binary loading would only compete with the user's first click.
+            // Let the Cycle Manager draw first, then decode the active cycle's next
+            // real puzzles in the background. Continue normally becomes a memory-cache
+            // hit, without changing the saved cycle, its order, or its full puzzle pool.
+            delay(250)
+            runCatching { prefetchActiveTacticsCycle(context) }
+                .onFailure { t -> Log.w("ChessScreen", "Tactics resume prefetch failed", t) }
         }
 
         // Do NOT preload the opening book here.
@@ -34,6 +38,26 @@ fun ChessScreen() {
     ReplayScreen(
         context = context,
         autoStart = true
+    )
+}
+
+private fun prefetchActiveTacticsCycle(context: Context) {
+    val bank = CycleBank(context, Series.TACTICS.id)
+    val activeId = bank.activeId.takeIf { it > 0 } ?: return
+    val prefs = bank.prefs(activeId)
+    val ids = tfReadCycleIds(prefs)
+    if (ids.isEmpty()) return
+
+    val solvedSlots = prefs.solvedCsv
+        .split(',')
+        .mapNotNull { it.trim().toIntOrNull() }
+        .toHashSet()
+    val nextSlot = ids.indices.firstOrNull { it !in solvedSlots } ?: return
+
+    TacticsBinaryBank.prefetchGames(
+        context = context.applicationContext,
+        encodedIds = ids.drop(nextSlot).take(4),
+        limit = 4
     )
 }
 
