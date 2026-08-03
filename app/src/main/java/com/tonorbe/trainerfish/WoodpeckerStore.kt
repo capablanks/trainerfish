@@ -14,6 +14,14 @@ import kotlin.math.min
  */
 class WoodpeckerStore(context: Context) {
 
+    data class LeaderboardHistory(
+        val totalRecordedSolves: Long,
+        val differentPuzzlesSolved: Int,
+        val perfectPuzzleMasteries: Map<TacticsShard, Int>,
+        val highestPerfectPuzzleRating: Int,
+        val highestPerfectPuzzleId: String?
+    )
+
     private val prefs: SharedPreferences =
         context.getSharedPreferences("woodpecker", Context.MODE_PRIVATE)
 
@@ -82,7 +90,13 @@ class WoodpeckerStore(context: Context) {
      * @param puzzleId Stable identifier, e.g. Lichess puzzle ID,
      *                 taken from the PGN [Event "..."] tag in Woodpecker mode.
      */
-    fun markSolved(puzzleId: String, ms: Long, earnedPoints: Int, totalPoints: Int) {
+    fun markSolved(
+        puzzleId: String,
+        ms: Long,
+        earnedPoints: Int,
+        totalPoints: Int,
+        puzzleRating: Int? = null
+    ) {
         if (puzzleId.isBlank()) return
 
         val key = "p_id_$puzzleId"
@@ -102,7 +116,7 @@ class WoodpeckerStore(context: Context) {
                 bestPts to bestTot
             }
 
-        prefs.edit()
+        val editor = prefs.edit()
             .putInt("${key}_attempts", prefs.getInt("${key}_attempts", 0) + 1)
             .putInt("${key}_solved", prefs.getInt("${key}_solved", 0) + 1)
             .putLong("${key}_best_ms", newBestTime)
@@ -114,7 +128,12 @@ class WoodpeckerStore(context: Context) {
             // global counters
             .putInt(KEY_SOLVED, prefs.getInt(KEY_SOLVED, 0) + 1)
             .putLong(KEY_ELAPSED_MS, prefs.getLong(KEY_ELAPSED_MS, 0L) + ms)
-            .apply()
+
+        puzzleRating
+            ?.takeIf { it > 0 }
+            ?.let { editor.putInt("${key}_rating", it) }
+
+        editor.apply()
     }
 
     fun puzzleBestMs(puzzleId: String): Long {
@@ -160,6 +179,57 @@ class WoodpeckerStore(context: Context) {
             }
         }
         return result
+    }
+
+    /**
+     * Recover leaderboard-compatible lifetime progress in one SharedPreferences pass.
+     * Older installs have solve/time/accuracy records but may not have puzzle ratings;
+     * those records still carry forward to the total and different-puzzle boards.
+     */
+    fun leaderboardHistory(): LeaderboardHistory {
+        val all = prefs.all
+        val puzzleIds = mutableSetOf<String>()
+        var totalRecordedSolves = 0L
+
+        all.forEach { (key, value) ->
+            when {
+                key.startsWith("p_id_") && key.endsWith("_best_ms") -> {
+                    val puzzleId = key.removePrefix("p_id_").removeSuffix("_best_ms")
+                    if (puzzleId.isNotBlank()) puzzleIds += puzzleId
+                }
+                key.startsWith("p_id_") && key.endsWith("_solved") -> {
+                    totalRecordedSolves += (value as? Int)?.toLong() ?: 0L
+                }
+            }
+        }
+
+        val perfectMasteries = TacticsShard.values().associateWith { 0 }.toMutableMap()
+        var highestPerfectRating = 0
+        var highestPerfectPuzzleId: String? = null
+
+        puzzleIds.forEach { puzzleId ->
+            val key = "p_id_$puzzleId"
+            val bestPoints = all["${key}_best_pts"] as? Int ?: 0
+            val bestTotal = all["${key}_best_tot"] as? Int ?: 0
+            val rating = all["${key}_rating"] as? Int ?: 0
+
+            if (rating > 0 && bestTotal > 0 && bestPoints >= bestTotal) {
+                val difficulty = TacticsShard.forRating(rating)
+                perfectMasteries[difficulty] = perfectMasteries.getValue(difficulty) + 1
+                if (rating > highestPerfectRating) {
+                    highestPerfectRating = rating
+                    highestPerfectPuzzleId = puzzleId
+                }
+            }
+        }
+
+        return LeaderboardHistory(
+            totalRecordedSolves = totalRecordedSolves,
+            differentPuzzlesSolved = puzzleIds.size,
+            perfectPuzzleMasteries = perfectMasteries,
+            highestPerfectPuzzleRating = highestPerfectRating,
+            highestPerfectPuzzleId = highestPerfectPuzzleId
+        )
     }
 
     // ----- Helpers -----

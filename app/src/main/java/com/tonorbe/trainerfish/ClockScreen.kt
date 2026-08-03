@@ -381,6 +381,7 @@ fun ClockScreen(onExit: () -> Unit = {}) {
 
     var showTips by rememberSaveable { mutableStateOf(!getTipsSeen(ctx)) }
     var showSettings by remember { mutableStateOf(false) }
+    var showContextHelp by rememberSaveable { mutableStateOf(false) }
 
     val palette = remember(config.theme) { paletteFor(config.theme) }
     val fontSpec = remember(config.font) { fontSpecFor(config.font) }           // NEW
@@ -529,6 +530,13 @@ fun ClockScreen(onExit: () -> Unit = {}) {
                     }
                 )
                 DropdownMenuItem(
+                    text = { Text("Help / Quick guide") },
+                    onClick = {
+                        menuOpen = false
+                        showContextHelp = true
+                    }
+                )
+                DropdownMenuItem(
                     text = { Text("Exit") },
                     onClick = {
                         menuOpen = false
@@ -575,6 +583,12 @@ fun ClockScreen(onExit: () -> Unit = {}) {
             }
         )
     }
+
+    TrainerFishHelpDialog(
+        show = showContextHelp,
+        initialTopic = TrainerHelpTopic.CHESS_CLOCK,
+        onDismiss = { showContextHelp = false }
+    )
 
 
 }
@@ -1100,4 +1114,3 @@ private fun CopyrightLine(
         color = color
     )
 }
-

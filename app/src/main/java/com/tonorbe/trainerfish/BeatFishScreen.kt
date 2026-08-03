@@ -1637,7 +1637,11 @@ fun BeatFishScreen(
     var autosaveJob by remember { mutableStateOf<Job?>(null) }
 
     fun isUnfinishedGame(): Boolean {
-        return isSession && sessionStartFen != null && moves.isNotEmpty() && gameResultTag == null
+        return !recordGameMode &&
+                isSession &&
+                sessionStartFen != null &&
+                moves.isNotEmpty() &&
+                gameResultTag == null
     }
 
     fun requestAutosave(reason: String) {
@@ -2383,14 +2387,17 @@ fun BeatFishScreen(
     }
 
     fun setGameOver(end: GameEnd) {
+        autosaveJob?.cancel()
+        autosaveJob = null
         gameOverMessage = end.message
         gameResultTag = end.resultTag
         statusText = "Game over."
         isFishTurn = false
         showGameOverDialog = true
 
-        // Completed games should NOT be resumable.
-        runCatching { clearBeatFishResumeGame(ctx) }
+        // Completed Beat-the-Fish games should not be resumable. Recorder mode
+        // never owns this file, so it must not erase a separate unfinished game.
+        if (!recordGameMode) runCatching { clearBeatFishResumeGame(ctx) }
     }
 
 
@@ -2802,11 +2809,6 @@ fun BeatFishScreen(
         }
         moves += BFMove(moveCounter, uci, san, isWhite = isWhiteMove)
         if (!isWhiteMove) moveCounter++
-        // Auto-save unfinished game after every ply (so it can be resumed even after app exit).
-        if (gameResultTag == null) {
-            val start = sessionStartFen ?: START_FEN
-            runCatching { saveBeatFishResumeGame(ctx, start, moves.toList()) }
-        }
 
 
     }
@@ -3393,6 +3395,8 @@ fun BeatFishScreen(
     }
 
     fun resetSessionState() {
+        autosaveJob?.cancel()
+        autosaveJob = null
         isSession = false
         sessionBoard = null
         sessionStartFen = null
@@ -3662,6 +3666,8 @@ fun BeatFishScreen(
 
     fun startRecordGameNow() {
         // Fresh OTB recorder session from start position.
+        autosaveJob?.cancel()
+        autosaveJob = null
         runCatching { ProcEngine.send("stop") }
         runCatching { ProcEngine.clearOutput() }
 
@@ -3740,7 +3746,6 @@ fun BeatFishScreen(
         // TrainerFish mid-game, because another app could provide engine help.
         autosaveJob?.cancel()
         autosaveJob = null
-        runCatching { clearBeatFishResumeGame(ctx) }
         runCatching { ProcEngine.send("stop") }
         runCatching { ProcEngine.clearOutput() }
         fishSearchActive = false
@@ -4585,8 +4590,14 @@ fun BeatFishScreen(
                                             navMode = false
 
                                             moveCounter = bb.fen.split(' ').getOrNull(5)?.toIntOrNull() ?: 1
-                                            whiteBottomSession = !playAsBlack
-                                            playingAsWhite = !playAsBlack
+
+                                            // Continue as the side that was actually to move in
+                                            // the imported trainer position. Otherwise a black-to-
+                                            // move position immediately triggers an unwanted Fish move.
+                                            val userIsBlack = bb.sideToMove == Side.BLACK
+                                            playAsBlack = userIsBlack
+                                            playingAsWhite = !userIsBlack
+                                            whiteBottomSession = !userIsBlack
 
                                             stage = BeatFishStage.READY
                                             mode = BeatFishMode.PLAY
@@ -4617,6 +4628,13 @@ fun BeatFishScreen(
                                     if (loaded == null) {
                                         statusText = "No unfinished game to resume."
                                     } else {
+                                        val resumedPlayAsBlack = loaded.playAsBlack ?: playAsBlack
+                                        playAsBlack = resumedPlayAsBlack
+                                        loaded.playLevel?.let { playLevel = it.coerceIn(1, 3) }
+                                        loaded.thinkSec?.let {
+                                            fishThinkSecondsText = it.coerceIn(2, 60).toString()
+                                        }
+
                                         sessionStartFen = loaded.startFen
 
                                         moves.clear()
@@ -4638,7 +4656,8 @@ fun BeatFishScreen(
                                             else -> last.moveNumber + 1
                                         }
 
-                                        whiteBottomSession = !playAsBlack
+                                        playingAsWhite = !resumedPlayAsBlack
+                                        whiteBottomSession = !resumedPlayAsBlack
 
                                         lastFromIdx = null
                                         lastToIdx = null
@@ -4656,7 +4675,7 @@ fun BeatFishScreen(
                                         playPhase = PlayPhase.Playing
                                         showLevelChooser = false
 
-                                        val fishSide = if (playAsBlack) Side.WHITE else Side.BLACK
+                                        val fishSide = if (resumedPlayAsBlack) Side.WHITE else Side.BLACK
                                         isFishTurn = (bb.sideToMove == fishSide)
                                         statusText = if (isFishTurn) "Fish thinking..." else "Your move."
 
@@ -4914,7 +4933,7 @@ fun BeatFishScreen(
                         compact = true
                     )
 
-                    if (mode != BeatFishMode.ANALYZE) {
+                    if (mode != BeatFishMode.ANALYZE && !recordGameMode) {
                         TextButton(
                             onClick = {
                                 val startFen = sessionStartFen
@@ -5487,7 +5506,7 @@ fun BeatFishScreen(
 
         if (isLandscape) {
             val minFrac = 0.30f
-            val maxFrac = 0.78f
+            val maxFrac = 0.97f
             val defaultLandscapeFrac = if (rootSize.width > 0 && rootSize.height > 0) {
                 val neededPx = rootSize.height.toFloat() + with(splitterDensity) { 6.dp.toPx() + 4.dp.toPx() }
                 (neededPx / rootSize.width.toFloat()).coerceIn(minFrac, maxFrac)
@@ -5502,7 +5521,6 @@ fun BeatFishScreen(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 8.dp)
                     .onSizeChanged { rootSize = it },
                 horizontalArrangement = Arrangement.spacedBy(0.dp),
                 verticalAlignment = Alignment.Top
@@ -5534,7 +5552,7 @@ fun BeatFishScreen(
             }
         } else {
             val minFrac = 0.30f
-            val maxFrac = 0.78f
+            val maxFrac = 0.97f
             val defaultPortraitFrac = if (rootSize.width > 0 && rootSize.height > 0) {
                 val neededPx = rootSize.width.toFloat() + with(splitterDensity) { 6.dp.toPx() + 4.dp.toPx() }
                 (neededPx / rootSize.height.toFloat()).coerceIn(minFrac, maxFrac)
@@ -7279,7 +7297,7 @@ private fun fenAfterUciPlies(startFen: String, uciMoves: List<String>, plies: In
 
 // =================== Core helpers ===================
 
-private fun bfPrettySan(board: LibBoard, mv: LibMove, isWhiteMove: Boolean): String {
+internal fun bfPrettySan(board: LibBoard, mv: LibMove, isWhiteMove: Boolean): String {
     val from = mv.from
     val to = mv.to
     val piece = board.getPiece(from)
@@ -7457,7 +7475,7 @@ private fun buildFenFromEditable(
     return "$sb $side $castling - 0 1"
 }
 
-private fun bfUciToMoveOnBoard(board: LibBoard, uci: String): LibMove? {
+internal fun bfUciToMoveOnBoard(board: LibBoard, uci: String): LibMove? {
     if (uci.length < 4) return null
 
     val fromSq = Square.fromValue(uci.substring(0, 2).uppercase())
@@ -7514,7 +7532,8 @@ private fun beatFishValidatePosition(board: List<Piece?>): String? {
 
 // ====== PGN saving + loading helpers ======
 
-private const val RESUME_PGN_FILE = "beatfish_resume.pgn"
+private const val BEATFISH_RESUME_FILE = "beat_the_fish_resume.pgn"
+private const val LEGACY_BEATFISH_RESUME_FILE = "beatfish_resume.pgn"
 
 private fun saveBeatFishResumePgn(
     ctx: Context,
@@ -7551,22 +7570,13 @@ private fun saveBeatFishResumePgn(
 
         val docsDir = ctx.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS) ?: return false
         if (!docsDir.exists()) docsDir.mkdirs()
-        val file = File(docsDir, RESUME_PGN_FILE)
+        val file = File(docsDir, BEATFISH_RESUME_FILE)
         file.writeText(injected.trim() + "\n\n")
         true
     } catch (_: Throwable) {
         false
     }
 }
-
-private fun clearBeatFishResumePgn(ctx: Context) {
-    runCatching {
-        val docsDir = ctx.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS) ?: return
-        val file = File(docsDir, RESUME_PGN_FILE)
-        if (file.exists()) file.delete()
-    }
-}
-
 
 private fun buildBeatFishPgn(startFen: String, moves: List<BFMove>): String {
     val sb = StringBuilder()
@@ -7622,40 +7632,34 @@ private fun saveBeatFishPgn(ctx: Context, startFen: String, moves: List<BFMove>)
 
 
 // --- Unfinished game (resume) save/load ---
-// We keep ONE single "resume" PGN (overwritten). The "beat_the_fish.pgn" file remains your archive.
-private const val BEATFISH_RESUME_FILE = "beat_the_fish_resume.pgn"
-
-private fun saveBeatFishResumeGame(ctx: Context, startFen: String, moves: List<BFMove>): Boolean {
-    return try {
-        val pgnText = buildBeatFishPgn(startFen, moves)
-        val docsDir = ctx.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS) ?: return false
-        if (!docsDir.exists()) docsDir.mkdirs()
-        val file = File(docsDir, BEATFISH_RESUME_FILE)
-        file.writeText(pgnText.trim() + "\n\n")
-        true
-    } catch (_: Throwable) {
-        false
-    }
-}
-
+// Manual Save, autosave, and Load last played all use the same metadata-rich file.
 private fun clearBeatFishResumeGame(ctx: Context) {
     runCatching {
         val docsDir = ctx.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS) ?: return
-        val file = File(docsDir, BEATFISH_RESUME_FILE)
-        if (file.exists()) file.delete()
+        listOf(BEATFISH_RESUME_FILE, LEGACY_BEATFISH_RESUME_FILE).forEach { name ->
+            val file = File(docsDir, name)
+            if (file.exists()) file.delete()
+        }
     }
 }
 
 private fun loadBeatFishResumeGame(ctx: Context): LoadedGameData? {
     val docsDir = ctx.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS) ?: return null
-    val file = File(docsDir, BEATFISH_RESUME_FILE)
-    if (!file.exists()) return null
-    val text = runCatching { file.readText() }.getOrNull() ?: return null
-    val chunks = text.split(Regex("\n\\s*\n+"))
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-    if (chunks.isEmpty()) return null
-    return parseBeatFishChunk(chunks.last())
+    val candidates = listOf(BEATFISH_RESUME_FILE, LEGACY_BEATFISH_RESUME_FILE)
+        .map { File(docsDir, it) }
+        .filter { it.exists() }
+        .sortedByDescending { it.lastModified() }
+
+    for (file in candidates) {
+        val text = runCatching { file.readText() }.getOrNull().orEmpty()
+        if (text.isBlank()) continue
+
+        // Each resume file contains one overwritten game. Parse it whole: the
+        // normal blank line between PGN headers and movetext must not separate
+        // FEN/metadata from moves. Checking both names preserves existing saves.
+        parseBeatFishChunk(text.trim())?.let { return it }
+    }
+    return null
 }
 
 
@@ -7692,9 +7696,7 @@ private fun loadLastBeatFishGame(ctx: Context): LoadedGameData? {
 
     val text = file.readText()
 
-    val chunks = text.split(Regex("\n\\s*\n+"))
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
+    val chunks = splitMasterPgnIntoChunks(text)
 
     if (chunks.isEmpty()) return null
 
@@ -7710,6 +7712,9 @@ private fun parseBeatFishChunk(chunk: String): LoadedGameData? {
 
     var startFen: String? = null
     var uciHeader: String? = null
+    var savedPlayAsBlack: Boolean? = null
+    var savedPlayLevel: Int? = null
+    var savedThinkSec: Int? = null
     val moveLines = mutableListOf<String>()
 
     for (raw in lines) {
@@ -7722,6 +7727,19 @@ private fun parseBeatFishChunk(chunk: String): LoadedGameData? {
 
             val uciMatch = Regex("""\[TrainerFishUCI\s+"([^"]*)"""").find(line)
             if (uciMatch != null) uciHeader = uciMatch.groupValues[1]
+
+            Regex("""\[TrainerFishPlayAsBlack\s+"([01])"""")
+                .find(line)?.groupValues?.getOrNull(1)?.let {
+                    savedPlayAsBlack = it == "1"
+                }
+            Regex("""\[TrainerFishLevel\s+"(\d+)"""")
+                .find(line)?.groupValues?.getOrNull(1)?.toIntOrNull()?.let {
+                    savedPlayLevel = it.coerceIn(1, 3)
+                }
+            Regex("""\[TrainerFishThinkSec\s+"(\d+)"""")
+                .find(line)?.groupValues?.getOrNull(1)?.toIntOrNull()?.let {
+                    savedThinkSec = it.coerceIn(2, 60)
+                }
         } else {
             moveLines += line
         }
@@ -7775,7 +7793,10 @@ private fun parseBeatFishChunk(chunk: String): LoadedGameData? {
         startFen = fen,
         positions = positions,
         moves = bfMoves,
-        rawMoveText = rawMoveText
+        rawMoveText = rawMoveText,
+        playAsBlack = savedPlayAsBlack,
+        playLevel = savedPlayLevel,
+        thinkSec = savedThinkSec
     )
 }
 
@@ -7940,7 +7961,10 @@ private data class LoadedGameData(
     val positions: List<String>,
     val moves: List<BFMove>,
     // Raw movetext (including comments and variations) as read from the PGN chunk.
-    val rawMoveText: String
+    val rawMoveText: String,
+    val playAsBlack: Boolean? = null,
+    val playLevel: Int? = null,
+    val thinkSec: Int? = null
 )
 
 

@@ -60,6 +60,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.tonorbe.trainerfish.billing.BillingManager
+import com.tonorbe.trainerfish.playgames.TrainerFishLeaderboardUpdate
+import com.tonorbe.trainerfish.playgames.TrainerFishPlayGamesController
+import com.tonorbe.trainerfish.playgames.TrainerFishPlayGamesUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -71,6 +74,7 @@ class MainActivity : ComponentActivity() {
 
     private var pendingOpenPgnUri by mutableStateOf<Uri?>(null)
     private var pendingOpenTacticsFromNotification by mutableStateOf(false)
+    private lateinit var playGamesController: TrainerFishPlayGamesController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,6 +98,8 @@ class MainActivity : ComponentActivity() {
             finish()
             return
         }
+
+        playGamesController = TrainerFishPlayGamesController(this)
 
         // \uD83D\uDD13 Initialise Billing (reads any existing Pro purchase)
         BillingManager.init(applicationContext)
@@ -146,7 +152,11 @@ class MainActivity : ComponentActivity() {
                         externalPgnUri = pendingOpenPgnUri,
                         onExternalPgnUriConsumed = { pendingOpenPgnUri = null },
                         openTacticsFromNotification = pendingOpenTacticsFromNotification,
-                        onOpenTacticsFromNotificationConsumed = { pendingOpenTacticsFromNotification = false }
+                        onOpenTacticsFromNotificationConsumed = { pendingOpenTacticsFromNotification = false },
+                        playGamesState = playGamesController.uiState,
+                        onOpenLeaderboards = playGamesController::showLeaderboards,
+                        onLeaderboardScoreUpdate = playGamesController::recordAndSubmit,
+                        onProEntitlementChanged = playGamesController::setProEntitlement
                     )
                 }
             }
@@ -219,14 +229,24 @@ class MainActivity : ComponentActivity() {
         pendingOpenTacticsFromNotification = intent.getBooleanExtra("tf_open_tactics", false)
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (::playGamesController.isInitialized) {
+            playGamesController.refreshAuthentication()
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        if (::playGamesController.isInitialized) {
+            playGamesController.shutdown()
+        }
         BillingManager.shutdown()
     }
 }
 
 /** Simple root nav: landing -> trainer module / clock. */
-private enum class RootScreen { Home, Trainer, Clock }
+private enum class RootScreen { Home, Trainer, Clock, LichessTv }
 
 private const val ROOT_INITIAL_TACTICS_ELO = 1200
 
@@ -237,7 +257,11 @@ private fun TLAGMApp(
     externalPgnUri: Uri? = null,
     onExternalPgnUriConsumed: () -> Unit = {},
     openTacticsFromNotification: Boolean = false,
-    onOpenTacticsFromNotificationConsumed: () -> Unit = {}
+    onOpenTacticsFromNotificationConsumed: () -> Unit = {},
+    playGamesState: TrainerFishPlayGamesUiState = TrainerFishPlayGamesUiState(),
+    onOpenLeaderboards: () -> Unit = {},
+    onLeaderboardScoreUpdate: (TrainerFishLeaderboardUpdate) -> Unit = {},
+    onProEntitlementChanged: (Boolean) -> Unit = {}
 ) {
     val ctx = LocalContext.current
 
@@ -268,9 +292,28 @@ private fun TLAGMApp(
     var selectedModeName by rememberSaveable { mutableStateOf(TrainerMode.WOODPECKER.name) }
     var autoContinueCycleRequest by rememberSaveable { mutableStateOf(false) }
     var showRootExitSupportDialog by rememberSaveable { mutableStateOf(false) }
+    var showChessTvSupportDialog by rememberSaveable { mutableStateOf(false) }
+    var showLeaderboardViewDialog by rememberSaveable { mutableStateOf(false) }
     val rootProUnlocked by BillingManager.isPro.collectAsState(
         initial = BillingManager.isProUnlocked(ctx)
     )
+
+    LaunchedEffect(rootProUnlocked) {
+        onProEntitlementChanged(rootProUnlocked)
+    }
+
+    val managedPlayGamesName = playGamesState.playerName
+        ?.trim()
+        ?.takeIf { rootProUnlocked && playGamesState.isAuthenticated && it.isNotBlank() }
+
+    LaunchedEffect(managedPlayGamesName) {
+        val googleName = managedPlayGamesName ?: return@LaunchedEffect
+        if (startupProfile.nickname != googleName) {
+            startupProfile.nickname = googleName
+        }
+        startupNickname = googleName
+        showFirstUseProfileDialog = false
+    }
 
     LaunchedEffect(openTacticsFromNotification) {
         if (openTacticsFromNotification) {
@@ -286,6 +329,7 @@ private fun TLAGMApp(
             RootScreen.Home -> showRootExitSupportDialog = true
             RootScreen.Trainer -> screen = RootScreen.Home
             RootScreen.Clock -> screen = RootScreen.Home
+            RootScreen.LichessTv -> screen = RootScreen.Home
         }
     }
 
@@ -304,6 +348,39 @@ private fun TLAGMApp(
                 runCatching { activity.finish() }
             }
             android.os.Process.killProcess(android.os.Process.myPid())
+        }
+    )
+
+    TrainerFishFeatureProDialog(
+        show = showChessTvSupportDialog && !rootProUnlocked,
+        title = "Support TrainerFish Chess TV",
+        message = "Chess TV is fully available to Free users. Before entering, please consider the lifetime Pro unlock to support live viewing, engine analysis, broadcasts, and continued TrainerFish development.",
+        confirmLabel = "Buy Pro",
+        dismissLabel = "Maybe later",
+        onConfirm = {
+            showChessTvSupportDialog = false
+            screen = RootScreen.LichessTv
+            (ctx as? Activity)?.let { BillingManager.launchPurchase(it) }
+        },
+        onDismiss = {
+            showChessTvSupportDialog = false
+            screen = RootScreen.LichessTv
+        }
+    )
+
+    TrainerFishFeatureProDialog(
+        show = showLeaderboardViewDialog && !rootProUnlocked,
+        title = "View free. Compete with Pro.",
+        message = "Everyone can view the TrainerFish rankings for free. Free users' training records continue to be saved locally, but they are not published to Google Play Games and will not appear on the leaderboards. Unlock Pro to publish your current and future statistics; your retained local records will be submitted after Pro is activated.",
+        confirmLabel = "Buy Pro",
+        dismissLabel = "View free",
+        onConfirm = {
+            showLeaderboardViewDialog = false
+            (ctx as? Activity)?.let { BillingManager.launchPurchase(it) }
+        },
+        onDismiss = {
+            showLeaderboardViewDialog = false
+            onOpenLeaderboards()
         }
     )
 
@@ -381,7 +458,17 @@ private fun TLAGMApp(
                         }
                     }
                 },
-                onClock = { screen = RootScreen.Clock }
+                onClock = { screen = RootScreen.Clock },
+                playGamesState = playGamesState,
+                proUnlocked = rootProUnlocked,
+                onOpenLeaderboards = {
+                    if (rootProUnlocked) onOpenLeaderboards()
+                    else showLeaderboardViewDialog = true
+                },
+                onWatchLichessTv = {
+                    if (rootProUnlocked) screen = RootScreen.LichessTv
+                    else showChessTvSupportDialog = true
+                }
             )
         }
 
@@ -399,7 +486,8 @@ private fun TLAGMApp(
                     onChangeAppThemeKey = onChangeAppThemeKey,
                     externalPgnUri = null,
                     onExternalPgnUriConsumed = onExternalPgnUriConsumed,
-                    autoContinueCycle = autoContinueCycleRequest
+                    autoContinueCycle = autoContinueCycleRequest,
+                    onLeaderboardScoreUpdate = onLeaderboardScoreUpdate
                 )
             }
         }
@@ -409,10 +497,41 @@ private fun TLAGMApp(
                 onExit = { screen = RootScreen.Home }
             )
         }
+
+        RootScreen.LichessTv -> {
+            LichessTvScreen(onHome = { screen = RootScreen.Home })
+        }
     }
 }
 
 
+
+@Composable
+private fun TrainerFishFeatureProDialog(
+    show: Boolean,
+    title: String,
+    message: String,
+    confirmLabel: String,
+    dismissLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    if (!show) return
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title, fontWeight = FontWeight.Bold) },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(confirmLabel, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(dismissLabel) }
+        }
+    )
+}
 
 @Composable
 private fun TrainerFishExitSupportDialog(

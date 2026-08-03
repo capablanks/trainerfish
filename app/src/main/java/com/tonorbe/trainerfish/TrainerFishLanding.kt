@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.tonorbe.trainerfish.playgames.TrainerFishPlayGamesUiState
 
 private data class LandingTile(
     val title: String,
@@ -114,12 +115,17 @@ fun TrainerFishLandingScreen(
     appThemeKey: String,
     onChangeAppThemeKey: (String) -> Unit,
     onSelectMode: (TrainerMode) -> Unit,
-    onClock: () -> Unit = {}
+    onClock: () -> Unit = {},
+    playGamesState: TrainerFishPlayGamesUiState = TrainerFishPlayGamesUiState(),
+    proUnlocked: Boolean = false,
+    onOpenLeaderboards: () -> Unit = {},
+    onWatchLichessTv: () -> Unit = {}
 ) {
     val ctx = LocalContext.current
     val cosSp = remember { ctx.getSharedPreferences("gm_cosmetics", android.content.Context.MODE_PRIVATE) }
 
     var showVisualStudio by remember { mutableStateOf(false) }
+    var showHelp by rememberSaveable { mutableStateOf(false) }
     var selectedPieceSet by rememberSaveable {
         mutableStateOf(cosSp.getString("piece_set", "original") ?: "original")
     }
@@ -185,6 +191,14 @@ fun TrainerFishLandingScreen(
                 emoji = "\uD83D\uDC1F",
                 mode = TrainerMode.BEAT_FISH,
                 colors = listOf(Color(0xFF06B6D4), Color(0xFF0F766E))
+            ),
+            LandingTile(
+                title = "Chess TV",
+                subtitle = "Live elite games with engine analysis",
+                emoji = "📺",
+                mode = null,
+                colors = listOf(Color(0xFF629924), Color(0xFF2D5F16), Color(0xFF111827)),
+                actionLabel = "Watch"
             ),
             LandingTile(
                 title = "Game Recorder",
@@ -263,8 +277,29 @@ fun TrainerFishLandingScreen(
                     onToggleTheme = {
                         onChangeAppThemeKey(if (isDark) AppThemeKeys.LIGHT else AppThemeKeys.DARK)
                     },
-                    onClock = onClock
+                    onClock = onClock,
+                    onHelp = { showHelp = true }
                 )
+
+                Spacer(Modifier.height(14.dp))
+
+                TrainerFishLeaderboardCard(
+                    state = playGamesState,
+                    proUnlocked = proUnlocked,
+                    onClick = onOpenLeaderboards,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                playGamesState.statusMessage?.let { message ->
+                    Spacer(Modifier.height(7.dp))
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.78f),
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
 
                 Spacer(Modifier.height(18.dp))
 
@@ -283,6 +318,7 @@ fun TrainerFishLandingScreen(
                                         when (tile.title) {
                                             "Chess Clock" -> onClock()
                                             "Visual Studio" -> showVisualStudio = true
+                                            "Chess TV" -> onWatchLichessTv()
                                             else -> tile.mode?.let(onSelectMode)
                                         }
                                     }
@@ -302,6 +338,7 @@ fun TrainerFishLandingScreen(
                                 when (tile.title) {
                                     "Chess Clock" -> onClock()
                                     "Visual Studio" -> showVisualStudio = true
+                                    "Chess TV" -> onWatchLichessTv()
                                     else -> tile.mode?.let(onSelectMode)
                                 }
                             }
@@ -354,13 +391,128 @@ fun TrainerFishLandingScreen(
             onClose = { showVisualStudio = false }
         )
     }
+
+    TrainerFishHelpDialog(
+        show = showHelp,
+        initialTopic = TrainerHelpTopic.HOME,
+        onDismiss = { showHelp = false }
+    )
+
+}
+
+@Composable
+private fun TrainerFishLeaderboardCard(
+    state: TrainerFishPlayGamesUiState,
+    proUnlocked: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val subtitle = when {
+        !state.isConfigured -> "Play Console IDs are not configured yet"
+        !proUnlocked && state.isChecking ->
+            "Connecting • Viewing is free; Pro publishes your statistics"
+        !proUnlocked && state.isAuthenticated -> {
+            val player = state.playerName?.takeIf { it.isNotBlank() } ?: "Play Games player"
+            "Signed in as $player • View-only for Free — unlock Pro to publish your statistics"
+        }
+        !proUnlocked ->
+            "View every ranking free • Unlock Pro to publish your statistics and appear on the boards"
+        state.isChecking -> "Connecting to Google Play Games..."
+        state.isAuthenticated -> {
+            val player = state.playerName?.takeIf { it.isNotBlank() } ?: "Play Games player"
+            "Signed in as $player • Your TrainerFish records are published with Pro"
+        }
+        else -> "Sign in to compare ELO, puzzle records, streaks, and cycles"
+    }
+    val action = when {
+        !state.isConfigured -> "Setup"
+        state.isChecking -> "Wait"
+        state.isAuthenticated -> "View"
+        else -> "Sign in"
+    }
+
+    Surface(
+        modifier = modifier
+            .shadow(10.dp, RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(22.dp))
+            .clickable(enabled = !state.isChecking, onClick = onClick),
+        color = Color.Transparent
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        listOf(Color(0xFF0F172A), Color(0xFF1D4ED8), Color(0xFFF59E0B))
+                    )
+                )
+                .padding(horizontal = 16.dp, vertical = 15.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    modifier = Modifier.size(52.dp),
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.16f)
+                ) {
+                    if (state.playerIconUri != null) {
+                        AsyncImage(
+                            model = state.playerIconUri,
+                            contentDescription = "Google Play Games player",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(text = "🏆", fontSize = 28.sp)
+                        }
+                    }
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "TrainerFish Leaderboards",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = subtitle,
+                        color = Color.White.copy(alpha = 0.84f),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
+                    )
+                }
+
+                Spacer(Modifier.width(10.dp))
+
+                Text(
+                    text = action,
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 11.dp, vertical = 8.dp)
+                )
+            }
+        }
+    }
 }
 
 @Composable
 private fun LandingHeader(
     isDark: Boolean,
     onToggleTheme: () -> Unit,
-    onClock: () -> Unit
+    onClock: () -> Unit,
+    onHelp: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -368,19 +520,38 @@ private fun LandingHeader(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                shape = CircleShape,
-                tonalElevation = 6.dp,
-                shadowElevation = 8.dp,
-                color = Color.White.copy(alpha = if (isDark) 0.10f else 0.90f),
-                modifier = Modifier.size(62.dp)
+            Box(
+                modifier = Modifier
+                    .size(62.dp)
+                    .clickable(onClick = onHelp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_fish),
-                    contentDescription = "TrainerFish",
-                    modifier = Modifier.padding(8.dp),
-                    contentScale = ContentScale.Fit
-                )
+                Surface(
+                    shape = CircleShape,
+                    tonalElevation = 6.dp,
+                    shadowElevation = 8.dp,
+                    color = Color.White.copy(alpha = if (isDark) 0.10f else 0.90f),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_fish),
+                        contentDescription = "TrainerFish",
+                        modifier = Modifier.padding(8.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF1565C0),
+                    shadowElevation = 5.dp,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(25.dp)
+                        .clickable(onClick = onHelp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text("?", color = Color.White, fontWeight = FontWeight.Black, fontSize = 15.sp)
+                    }
+                }
             }
 
             Spacer(Modifier.width(12.dp))
@@ -600,6 +771,16 @@ private fun VisualStudioDialog(
     onClose: () -> Unit
 ) {
     val ctx = LocalContext.current
+    var showHelp by remember { mutableStateOf(false) }
+
+    if (showHelp) {
+        TrainerFishHelpDialog(
+            show = true,
+            initialTopic = TrainerHelpTopic.VISUAL_STUDIO,
+            onDismiss = { showHelp = false }
+        )
+        return
+    }
 
     AlertDialog(
         onDismissRequest = onClose,
@@ -714,6 +895,9 @@ private fun VisualStudioDialog(
         },
         confirmButton = {
             TextButton(onClick = onClose) { Text("Done") }
+        },
+        dismissButton = {
+            TextButton(onClick = { showHelp = true }) { Text("Help") }
         }
     )
 }

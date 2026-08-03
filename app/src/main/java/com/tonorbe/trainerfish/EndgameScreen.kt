@@ -816,6 +816,7 @@ fun EndgameScreen(
     pieceStyle: PieceStyle,
     pieceSetKey: String,
     onBackToTactics: () -> Unit,
+    onPositionChanged: (String) -> Unit = {},
     headerContent: @Composable () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -1406,6 +1407,15 @@ fun EndgameScreen(
         showRoomDialog = true
     }
 
+    // Endgame owns its PgnSession internally, so publish every displayed board
+    // position for Beat the Fish's cross-mode handoff.
+    val liveEndgameFen = session?.board?.fen.orEmpty()
+    LaunchedEffect(liveEndgameFen, plyTick) {
+        if (liveEndgameFen.isNotBlank() && liveEndgameFen != EG_EMPTY_FEN) {
+            onPositionChanged(liveEndgameFen)
+        }
+    }
+
     val reviewFenKey = session?.board?.fen.orEmpty()
     LaunchedEffect(reviewMode, reviewFenKey, plyTick) {
         if (!reviewMode || session == null) return@LaunchedEffect
@@ -1546,21 +1556,22 @@ fun EndgameScreen(
         val compactScreen = compactPortrait || compactLandscape || maxWidth < 700.dp
 
         val boardSide = if (isLandscape) {
+            val infoPaneReserve = if (compactScreen) 220.dp else 360.dp
             minOf(
                 maxHeight - if (compactScreen) 0.dp else 28.dp,
-                maxWidth - 450.dp
+                maxWidth - infoPaneReserve
             ).coerceAtLeast(260.dp)
         } else {
             maxWidth.coerceAtMost(560.dp)
         }
         val splitterDensity = LocalDensity.current
         val defaultLandscapeBoardFraction = if (parentMaxWidthPx > 0f) {
-            with(splitterDensity) { (boardSide.toPx() / parentMaxWidthPx).coerceIn(0.45f, 0.78f) }
+            with(splitterDensity) { (boardSide.toPx() / parentMaxWidthPx).coerceIn(0.45f, 0.97f) }
         } else 0.68f
         val defaultPortraitBoardFraction = if (parentMaxHeightPx > 0f) {
             val titlePx = with(splitterDensity) { if (compactScreen) 0.dp.toPx() else 40.dp.toPx() }
             val neededPx = with(splitterDensity) { boardSide.toPx() } + titlePx
-            (neededPx / parentMaxHeightPx).coerceIn(0.42f, 0.74f)
+            (neededPx / parentMaxHeightPx).coerceIn(0.42f, 0.97f)
         } else 0.58f
         LaunchedEffect(parentMaxWidthPx, parentMaxHeightPx, defaultLandscapeBoardFraction, defaultPortraitBoardFraction) {
             if (landscapeBoardFractionState < 0f && parentMaxWidthPx > 0f) {
@@ -1930,7 +1941,7 @@ fun EndgameScreen(
         }
 
         if (isLandscape) {
-            val boardFrac = (landscapeBoardFractionState.takeIf { it > 0f } ?: defaultLandscapeBoardFraction).coerceIn(0.45f, 0.78f)
+            val boardFrac = (landscapeBoardFractionState.takeIf { it > 0f } ?: defaultLandscapeBoardFraction).coerceIn(0.45f, 0.97f)
             Row(
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.Top
@@ -1949,8 +1960,8 @@ fun EndgameScreen(
                     totalPx = parentMaxWidthPx,
                     color = Color(0xFFEF4444),
                     onDeltaFraction = { delta ->
-                        val current = (landscapeBoardFractionState.takeIf { it > 0f } ?: boardFrac).coerceIn(0.45f, 0.78f)
-                        landscapeBoardFractionState = (current + delta).coerceIn(0.45f, 0.78f)
+                        val current = (landscapeBoardFractionState.takeIf { it > 0f } ?: boardFrac).coerceIn(0.45f, 0.97f)
+                        landscapeBoardFractionState = (current + delta).coerceIn(0.45f, 0.97f)
                     }
                 )
                 InfoPane(
@@ -1962,7 +1973,7 @@ fun EndgameScreen(
                 )
             }
         } else {
-            val boardFrac = (portraitBoardFractionState.takeIf { it > 0f } ?: defaultPortraitBoardFraction).coerceIn(0.42f, 0.74f)
+            val boardFrac = (portraitBoardFractionState.takeIf { it > 0f } ?: defaultPortraitBoardFraction).coerceIn(0.42f, 0.97f)
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -1981,8 +1992,8 @@ fun EndgameScreen(
                     totalPx = parentMaxHeightPx,
                     color = Color(0xFFEF4444),
                     onDeltaFraction = { delta ->
-                        val current = (portraitBoardFractionState.takeIf { it > 0f } ?: boardFrac).coerceIn(0.42f, 0.74f)
-                        portraitBoardFractionState = (current + delta).coerceIn(0.42f, 0.74f)
+                        val current = (portraitBoardFractionState.takeIf { it > 0f } ?: boardFrac).coerceIn(0.42f, 0.97f)
+                        portraitBoardFractionState = (current + delta).coerceIn(0.42f, 0.97f)
                     }
                 )
                 InfoPane(

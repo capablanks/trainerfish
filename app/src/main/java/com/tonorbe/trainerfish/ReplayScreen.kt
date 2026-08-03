@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.net.Uri
+import com.tonorbe.trainerfish.playgames.TrainerFishLeaderboardUpdate
 import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
@@ -37,12 +38,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -242,6 +241,35 @@ private fun computeTrainerElo(
         .coerceIn(100, 4000)
 }
 
+private fun createTrainerFishLeaderboardUpdate(
+    currentElo: Int,
+    puzzleId: String,
+    puzzleRating: Int,
+    earnedPoints: Int,
+    totalPoints: Int,
+    previousBestTimeMs: Long,
+    previousBestPoints: Int,
+    previousBestTotal: Int,
+    cycleCompleted: Boolean
+): TrainerFishLeaderboardUpdate? {
+    if (puzzleId.isBlank() || totalPoints <= 0) return null
+
+    val isPerfect = earnedPoints == totalPoints
+    val wasPreviouslyRecorded = previousBestTimeMs > 0L || previousBestTotal > 0
+    val wasPreviouslyPerfect =
+        previousBestTotal > 0 && previousBestPoints >= previousBestTotal
+
+    return TrainerFishLeaderboardUpdate(
+        currentElo = currentElo,
+        puzzleId = puzzleId,
+        puzzleRating = puzzleRating,
+        isPerfect = isPerfect,
+        isFirstCompletion = !wasPreviouslyRecorded,
+        isFirstPerfectMastery = isPerfect && !wasPreviouslyPerfect,
+        cycleCompleted = cycleCompleted
+    )
+}
+
 private fun formatEloDelta(delta: Int): String = if (delta >= 0) "+$delta" else delta.toString()
 
 private const val CYCLE_MAX = 500
@@ -307,6 +335,98 @@ private fun fenWhiteToMove(fen: String?): Boolean {
 
 private fun squareFromAlgebra(algebra: String): com.github.bhlangonijr.chesslib.Square =
     com.github.bhlangonijr.chesslib.Square.valueOf(algebra.uppercase())
+
+private fun normalizedPlayableFenOrNull(rawFen: String?): String? {
+    val fen = rawFen?.trim().orEmpty()
+    if (fen.isBlank()) return null
+    return runCatching {
+        com.github.bhlangonijr.chesslib.Board().apply { loadFromFen(fen) }.fen
+    }.getOrNull()
+}
+
+private fun legacyOpeningFenOrNull(lastSession: LastSessionPrefs): String? {
+    val rawMoves = lastSession.openingMovesUci.trim()
+    val hasSavedOpening = lastSession.openingStartFen.isNotBlank() ||
+            rawMoves.isNotBlank() ||
+            lastSession.openingCursorPly > 0 ||
+            lastSession.openingPly > 0
+    if (!hasSavedOpening) return null
+
+    val startFen = lastSession.openingStartFen
+        .takeIf { it.isNotBlank() }
+        ?: START_FEN
+
+    return runCatching {
+        val board = com.github.bhlangonijr.chesslib.Board().apply { loadFromFen(startFen) }
+        val moves = rawMoves
+            .split(Regex("[\\s,;]+"))
+            .map { it.trim().lowercase() }
+            .filter { it.isNotBlank() }
+        val savedPly = lastSession.openingCursorPly
+            .takeIf { it > 0 }
+            ?: lastSession.openingPly.takeIf { it > 0 }
+            ?: moves.size
+
+        for (uci in moves.take(savedPly.coerceIn(0, moves.size))) {
+            val move = uciToMoveOnBoard(board, uci)
+                ?: error("Invalid saved opening move: $uci")
+            board.doMove(move)
+        }
+        board.fen
+    }.getOrNull()
+}
+
+private fun lastOtherModeFenOrNull(lastSession: LastSessionPrefs): String? {
+    normalizedPlayableFenOrNull(lastSession.otherModeFen)?.let { return it }
+
+    val preferredLegacy = when (lastSession.modeName) {
+        TrainerMode.OPENING.name -> legacyOpeningFenOrNull(lastSession)
+        TrainerMode.ENDGAME.name -> normalizedPlayableFenOrNull(lastSession.endgameFen)
+        else -> null
+    }
+    if (preferredLegacy != null) return preferredLegacy
+
+    return normalizedPlayableFenOrNull(lastSession.endgameFen)
+        ?: legacyOpeningFenOrNull(lastSession)
+}
+
+private fun persistOtherModePosition(
+    lastSession: LastSessionPrefs,
+    mode: TrainerMode,
+    rawFen: String?
+): String? {
+    if (mode !in setOf(TrainerMode.WOODPECKER, TrainerMode.ENDGAME, TrainerMode.OPENING)) {
+        return null
+    }
+    val fen = normalizedPlayableFenOrNull(rawFen) ?: return null
+    lastSession.otherModeFen = fen
+    lastSession.otherModeName = mode.name
+    if (mode == TrainerMode.ENDGAME) lastSession.endgameFen = fen
+    return fen
+}
+
+private fun captureOtherModePosition(
+    lastSession: LastSessionPrefs,
+    mode: TrainerMode,
+    session: PgnSession?,
+    current: PgnGameInfo?
+): String? {
+    val liveFen = when (mode) {
+        TrainerMode.WOODPECKER -> session?.board?.fen ?: current?.startFen
+        // EndgameScreen owns a separate session. Its live-position callback has
+        // already persisted that FEN, so never replace it with ReplayScreen's
+        // stale Tactics session while switching modes.
+        TrainerMode.ENDGAME -> lastSession.otherModeFen
+            .takeIf { lastSession.otherModeName == TrainerMode.ENDGAME.name }
+            ?: lastSession.endgameFen
+        TrainerMode.OPENING -> legacyOpeningFenOrNull(lastSession)
+        else -> null
+    }
+    normalizedPlayableFenOrNull(liveFen)?.let { live ->
+        return persistOtherModePosition(lastSession, mode, live) ?: live
+    }
+    return lastOtherModeFenOrNull(lastSession)
+}
 
 
 // The user always plays the *second* mover from the FEN.
@@ -1718,7 +1838,8 @@ fun ReplayScreen(
     onChangeAppThemeKey: (String) -> Unit = {},
     externalPgnUri: Uri? = null,
     onExternalPgnUriConsumed: () -> Unit = {},
-    autoContinueCycle: Boolean = false
+    autoContinueCycle: Boolean = false,
+    onLeaderboardScoreUpdate: (TrainerFishLeaderboardUpdate) -> Unit = {}
 
 ) {
 
@@ -2314,7 +2435,9 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
 
     // ===== Beat the Fish state =====
     var beatFishFen by rememberSaveable { mutableStateOf(START_FEN) }
-    var beatFishLastFen by rememberSaveable { mutableStateOf<String?>(null) }
+    var beatFishLastFen by rememberSaveable {
+        mutableStateOf(lastOtherModeFenOrNull(lastSession))
+    }
     var showBeatFishIntro by remember { mutableStateOf(false) }
     var beatFishStartRecorder by rememberSaveable { mutableStateOf(false) }
     // Pending PGN import into BeatFish analysis board (set by PGN mode export)
@@ -2465,6 +2588,17 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
             beatFishFen
         else ->
             session?.board?.fen ?: current?.startFen.orEmpty()
+    }
+
+    // Keep the exact live Tactics position available even when ReplayScreen is
+    // later destroyed by returning Home. Endgame reports its own internal board
+    // through EndgameScreen's callback below.
+    LaunchedEffect(mode, currentFen, plyTick) {
+        if (mode == TrainerMode.WOODPECKER) {
+            persistOtherModePosition(lastSession, mode, currentFen)?.let {
+                beatFishLastFen = it
+            }
+        }
     }
 
     // Warm-up nudge so the *first* Engine ON actually produces an eval
@@ -2929,7 +3063,7 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
         return pool.firstOrNull { it !in solved }
     }
 
-    fun markSolvedForCycle(idx: Int, spentMs: Long, earnedForRecord: Int) {
+    fun markSolvedForCycle(idx: Int, spentMs: Long, earnedForRecord: Int): Boolean {
         if (scoringEnabled) {
             prefs.ptsEarned += earnedForRecord
             prefs.ptsTotal  += puzzleTotalPoints
@@ -2937,6 +3071,7 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
             prefs.solvedCount += 1
         }
         val solved = solvedSet()
+        val wasAlreadySolved = idx in solved
         solved += idx
         prefs.solvedCsv = setToCsv(solved)
         val pool = currentPool()
@@ -2950,6 +3085,7 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
         } else if (solved.size >= committedCount) {
             status = "Preparing fresh puzzles..."
         }
+        return !wasAlreadySolved && solved.size >= targetSize
     }
 
 
@@ -3105,10 +3241,20 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
             val (prevBestPts, prevBestTot) =
                 if (currentId.isNotBlank()) wp.puzzleBestPoints(currentId) else (0 to 0)
 
+            val puzzleRatingForLeaderboard = current?.rating
+                ?: games.getOrNull(currentIndex)?.rating
+                ?: TRAINER_ELO_INITIAL
+
             if (currentId.isNotBlank()) {
-                wp.markSolved(currentId, spent, baseEarn, puzzleTotalPoints)
+                wp.markSolved(
+                    puzzleId = currentId,
+                    ms = spent,
+                    earnedPoints = baseEarn,
+                    totalPoints = puzzleTotalPoints,
+                    puzzleRating = puzzleRatingForLeaderboard
+                )
             }
-            markSolvedForCycle(currentIndex, spent, baseEarn)
+            val cycleCompletedNow = markSolvedForCycle(currentIndex, spent, baseEarn)
             lastPuzzleEarned = baseEarn
             lastPuzzleTotal = puzzleTotalPoints
             lastPuzzleElapsedMs = spent
@@ -3119,13 +3265,10 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
             if (scoringEnabled && puzzleTotalPoints > 0) {
                 val eloBefore = userElo
                 val unlockedBefore = profile.maxUnlockedTacticsFloor
-                val puzzleRatingForElo = current?.rating
-                    ?: games.getOrNull(currentIndex)?.rating
-                    ?: TRAINER_ELO_INITIAL
                 val eloResult = if (baseEarn == puzzleTotalPoints) 1.0 else 0.0
                 val eloAfter = computeTrainerElo(
                     playerRating = eloBefore,
-                    opponentRatingRaw = puzzleRatingForElo,
+                    opponentRatingRaw = puzzleRatingForLeaderboard,
                     result = eloResult
                 )
                 val eloAfterFinal = if (eloResult == 0.0 && eloAfter >= eloBefore) {
@@ -3153,6 +3296,20 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                 lastRatingBefore = null
                 lastRatingAfter = null
                 lastRatingDelta = null
+            }
+
+            if (scoringEnabled) {
+                createTrainerFishLeaderboardUpdate(
+                    currentElo = userElo,
+                    puzzleId = currentId,
+                    puzzleRating = puzzleRatingForLeaderboard,
+                    earnedPoints = baseEarn,
+                    totalPoints = puzzleTotalPoints,
+                    previousBestTimeMs = prevBestTime,
+                    previousBestPoints = prevBestPts,
+                    previousBestTotal = prevBestTot,
+                    cycleCompleted = cycleCompletedNow
+                )?.let(onLeaderboardScoreUpdate)
             }
 
             // Check if this run set a new record for this puzzle
@@ -4537,10 +4694,7 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
     // ----------------- UI SECTION -----------------
     Column(
         Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(16.dp),
+            .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Show loading dialog (overlay) when preparing cycle
@@ -4730,12 +4884,12 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                 }
 
                 // 1) Capture the *last position* from the mode we are LEAVING
-                val lastFen = when (mode) {
-                    TrainerMode.OPENING -> START_FEN
-                    else ->
-                        session?.board?.fen ?: current?.startFen.orEmpty()
-                }.ifBlank { START_FEN }
-                beatFishLastFen = lastFen
+                beatFishLastFen = captureOtherModePosition(
+                    lastSession = lastSession,
+                    mode = mode,
+                    session = session,
+                    current = current
+                )
 
                 // 2) Leaving Tactics? Save its state first.
                 if (mode == TrainerMode.WOODPECKER) {
@@ -4792,11 +4946,12 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                     endgameNewRecordTime = false
                 }
 
-                val lastFen = when (mode) {
-                    TrainerMode.OPENING -> START_FEN
-                    else -> session?.board?.fen ?: current?.startFen.orEmpty()
-                }.ifBlank { START_FEN }
-                beatFishLastFen = lastFen
+                beatFishLastFen = captureOtherModePosition(
+                    lastSession = lastSession,
+                    mode = mode,
+                    session = session,
+                    current = current
+                )
 
                 if (mode == TrainerMode.WOODPECKER) {
                     saveTacticsSnapshot(
@@ -4899,6 +5054,7 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                     showSettings = true
                     status = "Settings"
                 },
+                onHelp = { showHelpDialog = true },
                 onExitRequested = {
                     showExitConfirm = true
                 },
@@ -4927,6 +5083,11 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                 pieceStyle = pieceStyle,
                 pieceSetKey = pieceSetPref,
                 onBackToTactics = { selectTactics() },
+                onPositionChanged = { fen ->
+                    persistOtherModePosition(lastSession, TrainerMode.ENDGAME, fen)?.let {
+                        beatFishLastFen = it
+                    }
+                },
                 headerContent = headerContent
             )
             return@Column
@@ -5356,6 +5517,9 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                 ) {
                     // Top-right Exit (back to ReplayScreen welcome)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(onClick = { showHelpDialog = true }) {
+                            Text("? Help")
+                        }
                         TextButton(onClick = {
                             endgameMoves.clear()
                             showWelcome = true  // stay in ReplayScreen; just leave Endgame mode
@@ -7118,11 +7282,21 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
                             )
                         }
 
-                        TextButton(
-                            onClick = { showExitConfirm = true },
-                            contentPadding = btnPad2,
-                            colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFBAE6FD))
-                        ) { Text("Exit") }
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(0.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(
+                                onClick = { showHelpDialog = true },
+                                contentPadding = btnPad2,
+                                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFBAE6FD))
+                            ) { Text("? Help") }
+                            TextButton(
+                                onClick = { showExitConfirm = true },
+                                contentPadding = btnPad2,
+                                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFBAE6FD))
+                            ) { Text("Exit") }
+                        }
                     }
                 }
             },
@@ -7529,8 +7703,9 @@ fun saveSeries(s: Series) { seriesSp.edit().putString("selected", Series.TACTICS
         }
     )
 
-    ReplayHelpDialog(
+    TrainerFishHelpDialog(
         show = showHelpDialog,
+        initialTopic = trainerHelpTopicFor(mode),
         onDismiss = { showHelpDialog = false }
     )
 
@@ -7887,7 +8062,7 @@ private fun ReplaySettingsDialog(
                 Spacer(Modifier.height(4.dp))
                 TextButton(onClick = onSoundPack) { Text("Sound pack") }
                 Spacer(Modifier.height(8.dp))
-                TextButton(onClick = onHelp) { Text("Help / FAQ") }
+                TextButton(onClick = onHelp) { Text("Contextual Help") }
                 TextButton(onClick = onAbout) { Text("About / Legal") }
                 Spacer(Modifier.height(4.dp))
                 TextButton(onClick = onClock) { Text("Chess clock") }
@@ -8489,7 +8664,7 @@ private fun TacticsControlCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
                     ) {
                         PushButton(
-                            text = "◀",
+                            text = "◀ Back",
                             onClick = onReviewBack,
                             enabled = canReview && !isAnimating,
                             compact = true,
@@ -8497,7 +8672,7 @@ private fun TacticsControlCard(
                             textColor = Color(0xFF111827),
                         )
                         PushButton(
-                            text = "▶",
+                            text = "Next ▶",
                             onClick = onReviewForward,
                             enabled = canReview && !isAnimating,
                             compact = true,
@@ -8571,7 +8746,7 @@ private fun ReplayLandscapePuzzleBody(
     var splitFracState by rememberSaveable { mutableStateOf(-1f) }
     var rootSize by remember { mutableStateOf(IntSize.Zero) }
     val minFrac = 0.34f
-    val maxFrac = 0.82f
+    val maxFrac = 0.97f
     val splitterDensity = LocalDensity.current
     val defaultSplitFrac = if (rootSize.width > 0 && rootSize.height > 0) {
         val neededPx = rootSize.height.toFloat() + with(splitterDensity) { 6.dp.toPx() + 8.dp.toPx() }
@@ -8754,7 +8929,7 @@ private fun ReplayPortraitPuzzleBody(
     var splitFracState by rememberSaveable { mutableStateOf(-1f) }
     var rootSize by remember { mutableStateOf(IntSize.Zero) }
     val minFrac = 0.34f
-    val maxFrac = 0.82f
+    val maxFrac = 0.97f
     val splitterDensity = LocalDensity.current
     val defaultSplitFrac = if (rootSize.width > 0 && rootSize.height > 0) {
         val neededPx = rootSize.width.toFloat() + with(splitterDensity) { 6.dp.toPx() + 4.dp.toPx() }
@@ -9354,6 +9529,7 @@ private fun ReplayTopBar(
     onToggleSound: () -> Unit,
     onToggleEngine: () -> Unit,
     onOpenSettings: () -> Unit,
+    onHelp: () -> Unit,
     onExitRequested: () -> Unit,
     currentPuzzleBookmarked: Boolean = false,
     onToggleBookmarkCurrent: () -> Unit = {},
@@ -9559,6 +9735,13 @@ private fun ReplayTopBar(
                     color = Color(0xFF334155),
                     onClick = onOpenSettings
                 )
+                ColorMenuItem(
+                    icon = "?",
+                    title = "Help for this mode",
+                    description = "Open instructions for the feature currently on screen.",
+                    color = Color(0xFF1565C0),
+                    onClick = onHelp
+                )
             }
         }
 
@@ -9576,6 +9759,13 @@ private fun ReplayTopBar(
                 overflow = TextOverflow.Ellipsis,
                 softWrap = true,
                 lineHeight = 14.sp
+            )
+
+            PushButton(
+                text = if (iconOnlyTopBar) "" else "Help",
+                leading = { Text("?") },
+                onClick = onHelp,
+                compact = true
             )
 
             PushButton(
@@ -9631,6 +9821,13 @@ private fun ReplayTopBar(
                         compact = true
                     )
                 }
+
+                PushButton(
+                    text = if (iconOnlyTopBar) "" else "Help",
+                    leading = { Text("?") },
+                    onClick = onHelp,
+                    compact = true
+                )
 
                 if (isEndgame) {
                     PushButton(
@@ -9821,92 +10018,6 @@ private fun ReplayProfileDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Close")
-            }
-        }
-    )
-}
-
-@Composable
-private fun ReplayHelpDialog(
-    show: Boolean,
-    onDismiss: () -> Unit
-) {
-    if (!show) return
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Help / FAQ", fontWeight = FontWeight.Bold) },
-        text = {
-            val scroll = rememberScrollState()
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 0.dp, max = 420.dp)
-                    .verticalScroll(scroll)
-            ) {
-                Text(
-                    "Welcome to TrainerFish! This quick guide explains the main training modes.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                Spacer(Modifier.height(12.dp))
-                Text("Woodpecker Cycle Manager", fontWeight = FontWeight.Bold)
-                Text(
-                    """
-                    - TrainerFish groups puzzles into "cycles" of games.
-                    - Solve each puzzle once; when a cycle is done, you repeat it from the start.
-                    - Each repetition should be faster and more accurate - this is the Woodpecker Method.
-                    - Use "Define cycle" in the Welcome screen to choose rating range, themes, and size.
-                    """.trimIndent(),
-                    style = MaterialTheme.typography.bodySmall
-                )
-
-                Spacer(Modifier.height(12.dp))
-                Text("Beat the Fish", fontWeight = FontWeight.Bold)
-                Text(
-                    """
-                    - A free-play mode vs Stockfish with your chosen time control.
-                    - Use the buttons under the board to change side, take back moves, or start a new game.
-                    - Your last game is automatically saved so you can resume later.
-                    """.trimIndent(),
-                    style = MaterialTheme.typography.bodySmall
-                )
-
-                Spacer(Modifier.height(12.dp))
-                Text("Opening Explorer", fontWeight = FontWeight.Bold)
-                Text(
-                    """
-                    - Start from the initial position and play moves on the board.
-                    - The move list and bar chart show how often strong players choose each reply.
-                    - Tap a move in the list to follow that line; use < and > to step through the moveline.
-                    - From the ECO list you can load a full variation; the moves will auto-play once,
-                      then you can navigate them with the arrows.
-                    """.trimIndent(),
-                    style = MaterialTheme.typography.bodySmall
-                )
-
-                Spacer(Modifier.height(12.dp))
-                Text("Endgame Trainer", fontWeight = FontWeight.Bold)
-                Text(
-                    """
-                    - Each position comes with a short note explaining the key idea and evaluation.
-                    - Play the winning or drawing technique against Stockfish.
-                    - Use Back / Next above the list to browse positions, and the Play button to let the engine
-                      defend while you try to convert or hold the draw.
-                    """.trimIndent(),
-                    style = MaterialTheme.typography.bodySmall
-                )
-
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    "Tip: You can change themes, sounds, and other options anytime from Settings.",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Done")
             }
         }
     )
@@ -10279,4 +10390,3 @@ fun posToIdx(pos: Offset, sidePx: Float): Int {
 
     return rank * 8 + file
 }
-

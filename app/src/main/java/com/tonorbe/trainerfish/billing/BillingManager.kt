@@ -15,7 +15,9 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
 
     private var appContext: Context? = null
     private var billingClient: BillingClient? = null
+    private var isConnecting = false
     private var pendingPurchaseActivity: java.lang.ref.WeakReference<Activity>? = null
+    private var pendingRestoreCallback: ((Boolean) -> Unit)? = null
 
     private val _isPro = MutableStateFlow(false)
     val isPro: StateFlow<Boolean> = _isPro.asStateFlow()
@@ -23,25 +25,41 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
     fun init(context: Context) {
         appContext = context.applicationContext
 
+        // Keep the already-verified entitlement when UI code calls init again
+        // (for example before Restore Purchases).
+        if (billingClient != null) return
+
         // Release policy: only Google Play Billing may unlock Pro.
         // Clear any legacy/local testing flag from older builds before the Play query returns.
         PremiumPrefs(appContext!!).isPro = false
         _isPro.value = false
 
-        if (billingClient != null) return   // already initialised / connecting
-
         val client = BillingClient.newBuilder(appContext!!)
-            .enablePendingPurchases()
             .setListener(this)
+            .enablePendingPurchases(
+                PendingPurchasesParams.newBuilder()
+                    .enableOneTimeProducts()
+                    .build()
+            )
+            .enableAutoServiceReconnection()
             .build()
 
         billingClient = client
+        startConnection(client)
+    }
+
+    private fun startConnection(client: BillingClient) {
+        if (isConnecting) return
+        isConnecting = true
         client.startConnection(this)
     }
 
     fun shutdown() {
         billingClient?.endConnection()
         billingClient = null
+        isConnecting = false
+        pendingPurchaseActivity = null
+        pendingRestoreCallback = null
     }
 
     // Sole production Pro gate: this value is true only after Play Billing reports
@@ -59,19 +77,30 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
     // --- BillingClientStateListener ---
 
     override fun onBillingSetupFinished(result: BillingResult) {
+        isConnecting = false
         if (result.responseCode == BillingClient.BillingResponseCode.OK) {
             queryExistingPurchases()
             pendingPurchaseActivity?.get()?.let { activity ->
                 pendingPurchaseActivity = null
                 launchPurchase(activity)
             }
+
+            pendingRestoreCallback?.let { callback ->
+                pendingRestoreCallback = null
+                restorePurchases(appContext ?: return@let, callback)
+            }
+        } else {
+            pendingRestoreCallback?.let { callback ->
+                pendingRestoreCallback = null
+                callback(false)
+            }
         }
     }
 
     override fun onBillingServiceDisconnected() {
-        // Google recommends reconnecting lazily next time we need billing.
-        // We'll just let init() be called again as needed.
-        billingClient = null
+        isConnecting = false
+        // Billing 9's automatic service reconnection keeps this client usable and
+        // reconnects before the next billing request. Do not discard the instance.
     }
 
     // Check if user already owns Pro
@@ -84,14 +113,14 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
         ) { result, purchases ->
             if (result.responseCode != BillingClient.BillingResponseCode.OK) return@queryPurchasesAsync
 
-            val hasPro = purchases.any { p ->
+            val proPurchases = purchases.filter { p ->
                 p.products.contains(PRODUCT_PRO) &&
                         p.purchaseState == Purchase.PurchaseState.PURCHASED
             }
 
-             // [OK] Minimal but important: always update entitlement (handles refund/revoke correctly)
-            if (hasPro) purchases.forEach { maybeAcknowledge(it) }
-            updatePro(hasPro)
+            // Always update entitlement so refunds and revocations are honored.
+            proPurchases.forEach { maybeAcknowledge(it) }
+            updatePro(proPurchases.isNotEmpty())
         }
     }
 
@@ -109,9 +138,14 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
 
     fun launchPurchase(activity: Activity) {
         val client = billingClient
-        if (client == null || !client.isReady) {
+        if (client == null) {
             pendingPurchaseActivity = java.lang.ref.WeakReference(activity)
             init(activity.applicationContext)
+            return
+        }
+        if (!client.isReady) {
+            pendingPurchaseActivity = java.lang.ref.WeakReference(activity)
+            startConnection(client)
             return
         }
 
@@ -126,10 +160,11 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
             .setProductList(productList)
             .build()
 
-        client.queryProductDetailsAsync(params) { result, productDetailsList ->
+        client.queryProductDetailsAsync(params) { result, queryResult ->
             if (result.responseCode != BillingClient.BillingResponseCode.OK) return@queryProductDetailsAsync
 
-            val details = productDetailsList.firstOrNull() ?: return@queryProductDetailsAsync
+            val details = queryResult.productDetailsList.firstOrNull()
+                ?: return@queryProductDetailsAsync
 
             val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
                 .setProductDetails(details)
@@ -148,8 +183,15 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
         context: Context,
         onDone: (Boolean) -> Unit
     ) {
+        appContext = context.applicationContext
         val client = billingClient ?: run {
-            onDone(false)
+            pendingRestoreCallback = onDone
+            init(context)
+            return
+        }
+        if (!client.isReady) {
+            pendingRestoreCallback = onDone
+            startConnection(client)
             return
         }
 
@@ -164,13 +206,14 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
                 return@queryPurchasesAsync
             }
 
-            val hasPro = purchases.any { p ->
+            val proPurchases = purchases.filter { p ->
                 p.products.contains(PRODUCT_PRO) &&
                         p.purchaseState == Purchase.PurchaseState.PURCHASED
             }
 
-             // [OK] Minimal but important: always update entitlement (handles refund/revoke correctly)
-            if (hasPro) purchases.forEach { maybeAcknowledge(it) }
+            // Always update entitlement so refunds and revocations are honored.
+            proPurchases.forEach { maybeAcknowledge(it) }
+            val hasPro = proPurchases.isNotEmpty()
             updatePro(hasPro)
             onDone(hasPro)
         }
@@ -181,7 +224,7 @@ object BillingManager : PurchasesUpdatedListener, BillingClientStateListener {
 
     override fun onPurchasesUpdated(
         result: BillingResult,
-        purchases: MutableList<Purchase>?
+        purchases: List<Purchase>?
     ) {
         if (result.responseCode != BillingClient.BillingResponseCode.OK || purchases == null) return
 
