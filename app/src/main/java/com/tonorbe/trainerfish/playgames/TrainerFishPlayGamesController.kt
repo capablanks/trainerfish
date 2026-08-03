@@ -100,17 +100,8 @@ class TrainerFishPlayGamesController(
     }
 
     fun refreshAuthentication(onAuthenticated: (() -> Unit)? = null) {
-        if (!proEntitled || !BillingManager.isPro.value) {
-            uiState = uiState.copy(
-                isChecking = false,
-                isAuthenticated = false,
-                playerName = null,
-                playerTitle = null,
-                playerIconUri = null,
-                statusMessage = null
-            )
-            return
-        }
+        // Authentication and leaderboard browsing are available to Free users.
+        // Entitlement is checked separately at every score-submission boundary.
         if (!configured) {
             uiState = uiState.copy(
                 isChecking = false,
@@ -154,7 +145,7 @@ class TrainerFishPlayGamesController(
 
     fun setProEntitlement(isPro: Boolean) {
         proEntitled = isPro
-        // Leaderboard browsing and score publication are the app's full Pro gate.
+        // Everyone may browse. Pro controls only publication of locally retained stats.
         refreshAuthentication()
     }
 
@@ -163,10 +154,7 @@ class TrainerFishPlayGamesController(
     }
 
     fun showLeaderboards() {
-        if (!proEntitled || !BillingManager.isPro.value) {
-            uiState = uiState.copy(statusMessage = "TrainerFish Leaderboards require Pro")
-            return
-        }
+        // Viewing is free. flushBestScores() is intentionally a no-op for Free users.
         if (!configured) {
             uiState = uiState.copy(statusMessage = CONFIGURATION_MESSAGE)
             return

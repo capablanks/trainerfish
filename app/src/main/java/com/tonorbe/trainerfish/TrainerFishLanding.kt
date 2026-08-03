@@ -409,19 +409,23 @@ private fun TrainerFishLeaderboardCard(
 ) {
     val subtitle = when {
         !state.isConfigured -> "Play Console IDs are not configured yet"
-        !proUnlocked && state.isChecking -> "Checking Pro access..."
-        !proUnlocked -> "Pro feature • Unlock Pro to view and publish TrainerFish rankings"
+        !proUnlocked && state.isChecking ->
+            "Connecting • Viewing is free; Pro publishes your statistics"
+        !proUnlocked && state.isAuthenticated -> {
+            val player = state.playerName?.takeIf { it.isNotBlank() } ?: "Play Games player"
+            "Signed in as $player • View-only for Free — unlock Pro to publish your statistics"
+        }
+        !proUnlocked ->
+            "View every ranking free • Unlock Pro to publish your statistics and appear on the boards"
         state.isChecking -> "Connecting to Google Play Games..."
         state.isAuthenticated -> {
             val player = state.playerName?.takeIf { it.isNotBlank() } ?: "Play Games player"
-            "Signed in as $player • Compare your training records"
+            "Signed in as $player • Your TrainerFish records are published with Pro"
         }
         else -> "Sign in to compare ELO, puzzle records, streaks, and cycles"
     }
     val action = when {
         !state.isConfigured -> "Setup"
-        !proUnlocked && state.isChecking -> "Wait"
-        !proUnlocked -> "Unlock"
         state.isChecking -> "Wait"
         state.isAuthenticated -> "View"
         else -> "Sign in"

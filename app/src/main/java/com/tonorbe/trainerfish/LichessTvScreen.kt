@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.SystemClock
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -215,6 +216,8 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     var analysisWasEdited by remember { mutableStateOf(false) }
     var selectedSquare by remember { mutableStateOf<Int?>(null) }
     var promotionChoices by remember { mutableStateOf<List<LibMove>>(emptyList()) }
+    var displayWhiteSeconds by remember { mutableStateOf<Int?>(null) }
+    var displayBlackSeconds by remember { mutableStateOf<Int?>(null) }
 
     val cosmetics = remember {
         context.getSharedPreferences("gm_cosmetics", android.content.Context.MODE_PRIVATE)
@@ -664,6 +667,56 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         if (!detached && tv.gameId != null) whiteBottom = tv.orientationWhite
     }
 
+    // Lichess clock snapshots do not arrive every second. Between snapshots,
+    // advance the side-to-move clock locally so the TV display remains smooth.
+    // Any fresh FEN or clock value from the server restarts this effect and
+    // immediately corrects the local display to the authoritative values.
+    LaunchedEffect(
+        tv.gameId,
+        tv.white.seconds,
+        tv.black.seconds,
+        tv.fen,
+        tv.status,
+        tv.watchedGameOngoing,
+        detached
+    ) {
+        if (detached) return@LaunchedEffect
+
+        val serverWhiteSeconds = tv.white.seconds
+        val serverBlackSeconds = tv.black.seconds
+        displayWhiteSeconds = serverWhiteSeconds
+        displayBlackSeconds = serverBlackSeconds
+
+        val liveOrRecovering =
+            tv.status == LichessTvConnectionStatus.LIVE ||
+                tv.status == LichessTvConnectionStatus.RECONNECTING
+        val sourceStillPlaying =
+            tv.source != LichessTvSource.WATCHED_PLAYER || tv.watchedGameOngoing
+        if (!liveOrRecovering || !sourceStillPlaying) return@LaunchedEffect
+        if (serverWhiteSeconds == null && serverBlackSeconds == null) return@LaunchedEffect
+
+        val whiteClockRunning = tv.fen.split(' ').getOrNull(1) != "b"
+        val snapshotReceivedAt = SystemClock.elapsedRealtime()
+
+        while (true) {
+            delay(200L)
+            val elapsedWholeSeconds =
+                ((SystemClock.elapsedRealtime() - snapshotReceivedAt) / 1_000L).toInt()
+
+            if (whiteClockRunning) {
+                displayWhiteSeconds = serverWhiteSeconds
+                    ?.minus(elapsedWholeSeconds)
+                    ?.coerceAtLeast(0)
+                displayBlackSeconds = serverBlackSeconds
+            } else {
+                displayWhiteSeconds = serverWhiteSeconds
+                displayBlackSeconds = serverBlackSeconds
+                    ?.minus(elapsedWholeSeconds)
+                    ?.coerceAtLeast(0)
+            }
+        }
+    }
+
     LaunchedEffect(detached, tv.pgnLoaded, tv.gameId, tv.uciMoves) {
         if (
             detached &&
@@ -751,6 +804,12 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         !detached &&
             tv.source == LichessTvSource.BROADCAST_BOARD &&
             selectedBroadcastGames.size > 1
+    val displayedWhitePlayer = tv.white.copy(
+        seconds = displayWhiteSeconds ?: tv.white.seconds
+    )
+    val displayedBlackPlayer = tv.black.copy(
+        seconds = displayBlackSeconds ?: tv.black.seconds
+    )
 
     BackHandler(onBack = onHome)
 
@@ -876,7 +935,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                             }
                         )
                         Spacer(Modifier.height(5.dp))
-                        LichessTvPlayers(white = tv.white, black = tv.black)
+                        LichessTvPlayers(white = displayedWhitePlayer, black = displayedBlackPlayer)
                         Spacer(Modifier.height(7.dp))
                         StudyPanel(Modifier.fillMaxWidth().weight(1f))
                     }
@@ -899,7 +958,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                             }
                         )
                         Spacer(Modifier.height(4.dp))
-                        LichessTvPlayers(white = tv.white, black = tv.black)
+                        LichessTvPlayers(white = displayedWhitePlayer, black = displayedBlackPlayer)
                     }
 
                     // Fix the pane height from the screen width instead of assigning a

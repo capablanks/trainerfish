@@ -293,7 +293,7 @@ private fun TLAGMApp(
     var autoContinueCycleRequest by rememberSaveable { mutableStateOf(false) }
     var showRootExitSupportDialog by rememberSaveable { mutableStateOf(false) }
     var showChessTvSupportDialog by rememberSaveable { mutableStateOf(false) }
-    var showLeaderboardProDialog by rememberSaveable { mutableStateOf(false) }
+    var showLeaderboardViewDialog by rememberSaveable { mutableStateOf(false) }
     val rootProUnlocked by BillingManager.isPro.collectAsState(
         initial = BillingManager.isProUnlocked(ctx)
     )
@@ -369,16 +369,19 @@ private fun TLAGMApp(
     )
 
     TrainerFishFeatureProDialog(
-        show = showLeaderboardProDialog && !rootProUnlocked,
-        title = "TrainerFish Leaderboards are Pro",
-        message = "The leaderboards are TrainerFish's remaining full Pro feature. Unlock Pro to view the rankings and publish your training records to Google Play Games.",
+        show = showLeaderboardViewDialog && !rootProUnlocked,
+        title = "View free. Compete with Pro.",
+        message = "Everyone can view the TrainerFish rankings for free. Free users' training records continue to be saved locally, but they are not published to Google Play Games and will not appear on the leaderboards. Unlock Pro to publish your current and future statistics; your retained local records will be submitted after Pro is activated.",
         confirmLabel = "Buy Pro",
-        dismissLabel = "Maybe later",
+        dismissLabel = "View free",
         onConfirm = {
-            showLeaderboardProDialog = false
+            showLeaderboardViewDialog = false
             (ctx as? Activity)?.let { BillingManager.launchPurchase(it) }
         },
-        onDismiss = { showLeaderboardProDialog = false }
+        onDismiss = {
+            showLeaderboardViewDialog = false
+            onOpenLeaderboards()
+        }
     )
 
     fun selectedMode(): TrainerMode =
@@ -460,7 +463,7 @@ private fun TLAGMApp(
                 proUnlocked = rootProUnlocked,
                 onOpenLeaderboards = {
                     if (rootProUnlocked) onOpenLeaderboards()
-                    else showLeaderboardProDialog = true
+                    else showLeaderboardViewDialog = true
                 },
                 onWatchLichessTv = {
                     if (rootProUnlocked) screen = RootScreen.LichessTv
