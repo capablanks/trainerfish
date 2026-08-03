@@ -1,0 +1,62 @@
+name: Apply Chess TV dialog and save icon fixed
+
+on:
+  push:
+    branches:
+      - codex/google-compliance-btf-refresh
+    paths:
+      - .github/workflows/apply-chess-tv-dialog-save-icon-fixed.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out update branch
+        uses: actions/checkout@v4
+        with:
+          ref: codex/google-compliance-btf-refresh
+          fetch-depth: 0
+
+      - name: Apply source patch
+        run: python3 tools/run_chess_tv_dialog_patch_fixed.py
+
+      - name: Validate source patch
+        run: |
+          git diff --check
+          grep -q "One scroll container owns the complete dialog body" app/src/main/java/com/tonorbe/trainerfish/LichessTvScreen.kt
+          grep -q "imageVector = Icons.Default.Save" app/src/main/java/com/tonorbe/trainerfish/LichessTvScreen.kt
+          grep -q "Tap boards, then Done" app/src/main/java/com/tonorbe/trainerfish/LichessTvScreen.kt
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
+
+      - name: Compile Kotlin
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:compileDebugKotlin --no-daemon --stacktrace
+
+      - name: Commit source and remove temporary files
+        run: |
+          rm -f tools/apply_chess_tv_landscape_dialog_save_icon.py
+          rm -f tools/run_chess_tv_dialog_patch_fixed.py
+          rm -f .github/workflows/apply-chess-tv-dialog-save-icon.yml
+          rm -f .github/workflows/apply-chess-tv-dialog-save-icon-fixed.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Improve Chess TV landscape dialog and add PGN save icon"
+          git push origin HEAD:codex/google-compliance-btf-refresh
