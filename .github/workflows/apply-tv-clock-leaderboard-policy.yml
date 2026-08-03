@@ -1,0 +1,42 @@
+name: Apply TV clock and leaderboard policy
+
+on:
+  push:
+    branches:
+      - codex/google-compliance-btf-refresh
+    paths:
+      - .github/workflows/apply-tv-clock-leaderboard-policy.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out update branch
+        uses: actions/checkout@v4
+        with:
+          ref: codex/google-compliance-btf-refresh
+          fetch-depth: 0
+
+      - name: Apply source patch
+        run: python3 tools/apply_tv_clock_and_leaderboard_view_patch.py
+
+      - name: Validate patch
+        run: |
+          git diff --check
+          grep -q "snapshotReceivedAt = SystemClock.elapsedRealtime()" app/src/main/java/com/tonorbe/trainerfish/LichessTvScreen.kt
+          grep -q "View free. Compete with Pro." app/src/main/java/com/tonorbe/trainerfish/MainActivity.kt
+          grep -q "Viewing is free; Pro publishes your statistics" app/src/main/java/com/tonorbe/trainerfish/TrainerFishLanding.kt
+          grep -q "Viewing is free. flushBestScores() is intentionally a no-op for Free users." app/src/main/java/com/tonorbe/trainerfish/playgames/TrainerFishPlayGamesController.kt
+
+      - name: Commit patched source and remove temporary patch machinery
+        run: |
+          rm -f tools/apply_tv_clock_and_leaderboard_view_patch.py
+          rm -f .github/workflows/apply-tv-clock-leaderboard-policy.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add local TV clocks and free leaderboard viewing"
+          git push origin HEAD:codex/google-compliance-btf-refresh
