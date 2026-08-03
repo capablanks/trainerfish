@@ -7,6 +7,8 @@ import org.json.JSONArray
 import com.github.bhlangonijr.chesslib.game.Game
 import com.github.bhlangonijr.chesslib.pgn.PgnHolder
 import com.tonorbe.trainerfish.pgn.PgnGameInfo
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
 import java.io.File
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
@@ -30,6 +32,11 @@ private const val PGN_CACHE_PREFS = "tf_binary_puzzle_pgn_cache_v1"
 private const val PGN_CACHE_ORDER = "order_csv"
 private const val PGN_CACHE_MAX = 64
 private const val STARTER_INDEX_NAME = "train_starter_puzzles.json"
+private const val OFFSETS_HEADER_BYTES = 16L
+private const val OFFSET_ENTRY_BYTES = 6L
+private const val THEME_INDEX_HEADER_BYTES = 16L
+private const val DECODED_GAME_CACHE_MAX = 16
+private const val ASSET_COPY_BUFFER_BYTES = 256 * 1024
 
 
 data class TacticsPuzzleKey(
@@ -76,6 +83,24 @@ enum class TacticsShard(
 }
 
 object TacticsBinaryBank {
+    private data class RecordSpan(val offset: Int, val length: Int)
+    private data class ThemeIndexSource(
+        val shard: TacticsShard,
+        val file: File,
+        val count: Int
+    )
+
+    private val decodedGameCache = object : LinkedHashMap<Int, PgnGameInfo>(
+        DECODED_GAME_CACHE_MAX,
+        0.75f,
+        true
+    ) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, PgnGameInfo>?): Boolean =
+            size > DECODED_GAME_CACHE_MAX
+    }
+    private val themeIndexSourceCache = HashMap<String, ThemeIndexSource>()
+    private val assetCopyLocks = HashMap<String, Any>()
+
     private val offsetsCache = HashMap<TacticsShard, Pair<IntArray, IntArray>>()
     private val bucketsCache = HashMap<TacticsShard, List<TacticsBinRatingBucket>>()
     private val themesCache = HashMap<TacticsShard, Map<String, IntArray>>()
@@ -343,8 +368,7 @@ object TacticsBinaryBank {
             total += if (token.isBlank() || token == "all") {
                 shardPuzzleCount(context, shard)
             } else {
-                runCatching { loadThemeIndexIds(context, shard, token).size }
-                    .getOrDefault(0)
+                themeIndexCount(context, shard, token)
             }
         }
         return total
@@ -409,17 +433,26 @@ object TacticsBinaryBank {
             return out
         }
 
-        // Theme path: theme index already contains only local row numbers with this
-        // theme inside the selected shard band. No rating-bucket intersection.
-        val perShard = ArrayList<Pair<TacticsShard, IntArray>>()
+        // Theme path: sample directly from fixed-width posting-list rows.
+        // This preserves the full eligible pool while avoiding an IntArray containing
+        // every matching puzzle ID just to choose a few entries.
+        val sources = ArrayList<ThemeIndexSource>()
+        val legacySources = ArrayList<Pair<TacticsShard, IntArray>>()
         var total = 0
 
         for (shard in shardsForRange(minRating, maxRating)) {
-            val localIds = runCatching { loadThemeIndexIds(context, shard, token) }
-                .getOrDefault(IntArray(0))
-            if (localIds.isNotEmpty()) {
-                perShard += shard to localIds
-                total += localIds.size
+            val source = runCatching { themeIndexSource(context, shard, token) }.getOrNull()
+            if (source != null && source.count > 0) {
+                sources += source
+                total += source.count
+            } else {
+                // Compatibility fallback for old/partial datasets without per-theme files.
+                val ids = runCatching { loadThemeIndexIds(context, shard, token) }
+                    .getOrDefault(IntArray(0))
+                if (ids.isNotEmpty()) {
+                    legacySources += shard to ids
+                    total += ids.size
+                }
             }
         }
 
@@ -427,37 +460,74 @@ object TacticsBinaryBank {
         val want = min(limit, total)
         val out = ArrayList<Int>(want)
         val seen = HashSet<Int>(want * 2)
-        val prefix = IntArray(perShard.size)
+
+        data class WeightedSource(
+            val shard: TacticsShard,
+            val count: Int,
+            val fileSource: ThemeIndexSource? = null,
+            val legacyIds: IntArray? = null
+        )
+
+        val weighted = ArrayList<WeightedSource>(sources.size + legacySources.size)
+        sources.forEach { weighted += WeightedSource(it.shard, it.count, fileSource = it) }
+        legacySources.forEach { (shard, ids) ->
+            weighted += WeightedSource(shard, ids.size, legacyIds = ids)
+        }
+
+        val prefix = IntArray(weighted.size)
         var acc = 0
-        for (i in perShard.indices) {
-            acc += perShard[i].second.size
+        for (i in weighted.indices) {
+            acc += weighted[i].count
             prefix[i] = acc
         }
 
-        var attempts = 0
-        val maxAttempts = want * 35
-        while (out.size < want && attempts < maxAttempts) {
-            attempts++
-            val r = Random.nextInt(total)
-            var shardPos = 0
-            while (shardPos < prefix.size && r >= prefix[shardPos]) shardPos++
-            val (shard, ids) = perShard[shardPos.coerceIn(0, perShard.lastIndex)]
-            val local = ids[Random.nextInt(ids.size)]
-            val encoded = encode(shard, local)
-            if (seen.add(encoded)) out += encoded
-        }
+        val handles = HashMap<String, RandomAccessFile>()
+        try {
+            var attempts = 0
+            val maxAttempts = want * 35
+            while (out.size < want && attempts < maxAttempts) {
+                attempts++
+                val r = Random.nextInt(total)
+                var pos = 0
+                while (pos < prefix.size && r >= prefix[pos]) pos++
+                val source = weighted[pos.coerceIn(0, weighted.lastIndex)]
+                val row = Random.nextInt(source.count)
 
-        // Defensive fill for small themes where repeated random picks hit duplicates.
-        if (out.size < want) {
-            for ((shard, ids) in perShard) {
-                for (local in ids) {
-                    val encoded = encode(shard, local)
-                    if (seen.add(encoded)) {
-                        out += encoded
-                        if (out.size >= want) return out
+                val local = source.legacyIds?.get(row) ?: run {
+                    val fs = source.fileSource ?: return@run -1
+                    val key = fs.file.absolutePath
+                    val raf = handles.getOrPut(key) { RandomAccessFile(fs.file, "r") }
+                    raf.seek(THEME_INDEX_HEADER_BYTES + row.toLong() * 4L)
+                    raf.readIntLE()
+                }
+                if (local < 0) continue
+
+                val encoded = encode(source.shard, local)
+                if (seen.add(encoded)) out += encoded
+            }
+
+            // Defensive deterministic fill for very small themes.
+            if (out.size < want) {
+                for (source in weighted) {
+                    for (row in 0 until source.count) {
+                        val local = source.legacyIds?.get(row) ?: run {
+                            val fs = source.fileSource ?: return@run -1
+                            val key = fs.file.absolutePath
+                            val raf = handles.getOrPut(key) { RandomAccessFile(fs.file, "r") }
+                            raf.seek(THEME_INDEX_HEADER_BYTES + row.toLong() * 4L)
+                            raf.readIntLE()
+                        }
+                        if (local < 0) continue
+                        val encoded = encode(source.shard, local)
+                        if (seen.add(encoded)) {
+                            out += encoded
+                            if (out.size >= want) return out
+                        }
                     }
                 }
             }
+        } finally {
+            handles.values.forEach { runCatching { it.close() } }
         }
 
         return out
@@ -468,22 +538,28 @@ object TacticsBinaryBank {
         val out = ArrayList<PgnGameInfo>(encodedIds.size)
 
         for (encoded in encodedIds) {
-            val starterCached = runCatching {
-                loadStarterCachedPgn(context, encoded)?.let { starterPgnToGameInfo(context, it) }
-            }.getOrNull()
-            if (starterCached != null) {
-                out += starterCached
+            val memoryCached = synchronized(decodedGameCache) { decodedGameCache[encoded] }
+            if (memoryCached != null) {
+                out += memoryCached
                 continue
             }
-            // Cold-start fast path: if this puzzle was already decoded in a previous app session,
-            // rebuild the PgnGameInfo from the tiny cached PGN instead of opening the large binary shard.
-            val cached = runCatching {
-                loadCachedPuzzlePgn(context, encoded)?.let { cachedPgnToGameInfo(context, it) }
-            }.onFailure {
-                Log.w("TacticsBinaryBank", "Cached puzzle PGN failed for $encoded; falling back to binary", it)
-            }.getOrNull()
 
+            // Preserve the persisted cross-restart fast path. A tiny cached PGN is
+            // cheaper than extracting a never-used shard on first Continue. New or
+            // uncached puzzles still use the direct binary-to-game path below.
+            val cachedPgn = runCatching {
+                loadCachedPuzzlePgn(context, encoded)
+                    ?: loadStarterCachedPgn(context, encoded)
+            }.getOrNull()
+            val cached = cachedPgn?.let {
+                runCatching { cachedPgnToGameInfo(context, it) }
+                    .onFailure { err ->
+                        Log.w("TacticsBinaryBank", "Cached puzzle PGN failed for $encoded", err)
+                    }
+                    .getOrNull()
+            }
             if (cached != null) {
+                synchronized(decodedGameCache) { decodedGameCache[encoded] = cached }
                 out += cached
                 continue
             }
@@ -492,50 +568,118 @@ object TacticsBinaryBank {
             val rec = runCatching { readRecord(context, key) }
                 .onFailure { Log.e("TacticsBinaryBank", "Failed to read puzzle $encoded", it) }
                 .getOrNull()
-                ?: continue
 
-            val pgn = buildPgn(rec)
-            val info = pgnToGameInfo(
-                context = context,
-                pgn = pgn,
-                fallbackFen = rec.fen,
-                fallbackEvent = rec.puzzleId,
-                fallbackTheme = rec.primaryTheme,
-                fallbackRating = rec.rating,
-                fallbackNote = rec.shard.label
-            ) ?: continue
+            val direct = rec?.let { recordToPgnGameInfo(it) }
+            if (direct != null) {
+                // Persist only the tiny PGN representation; SharedPreferences.apply()
+                // is asynchronous and gives a future cold Continue a no-shard path.
+                runCatching { cachePuzzlePgn(context, encoded, buildPgn(rec)) }
+                synchronized(decodedGameCache) { decodedGameCache[encoded] = direct }
+                out += direct
+                continue
+            }
 
-            cachePuzzlePgn(context, encoded, pgn)
-            out += info
+            if (rec != null) {
+                // Last-resort parser path retained for compatibility.
+                val pgn = buildPgn(rec)
+                val parsed = pgnToGameInfo(
+                    context = context,
+                    pgn = pgn,
+                    fallbackFen = rec.fen,
+                    fallbackEvent = rec.puzzleId,
+                    fallbackTheme = rec.primaryTheme,
+                    fallbackRating = rec.rating,
+                    fallbackNote = rec.shard.label
+                )
+                if (parsed != null) {
+                    cachePuzzlePgn(context, encoded, pgn)
+                    synchronized(decodedGameCache) { decodedGameCache[encoded] = parsed }
+                    out += parsed
+                }
+            }
         }
 
         return out
     }
 
+    /**
+     * Decode a few real, already-committed puzzle IDs ahead of the UI.
+     * The cache is intentionally tiny; this changes no cycle membership or ordering.
+     */
+    fun prefetchGames(context: Context, encodedIds: List<Int>, limit: Int = 4) {
+        val wanted = encodedIds
+            .asSequence()
+            .filter { it >= 0 }
+            .distinct()
+            .filterNot { id -> synchronized(decodedGameCache) { decodedGameCache.containsKey(id) } }
+            .take(limit.coerceIn(1, DECODED_GAME_CACHE_MAX))
+            .toList()
+        if (wanted.isNotEmpty()) loadGames(context, wanted)
+    }
 
     fun readRecord(context: Context, key: TacticsPuzzleKey): TacticsBinRecord {
-        val (offsets, lengths) = loadOffsets(context, key.shard)
-        if (key.localIndex !in offsets.indices) error("Puzzle index ${key.localIndex} out of range for ${key.shard.folder}")
+        val span = readRecordSpan(context, key)
         val puzzleFile = ensureAssetCopied(context, key.shard, "train_puzzles.bin")
         val themeNames = loadThemeNames(context, key.shard)
         RandomAccessFile(puzzleFile, "r").use { raf ->
-            raf.seek(offsets[key.localIndex].toLong())
-            val bytes = ByteArray(lengths[key.localIndex])
+            raf.seek(span.offset.toLong())
+            val bytes = ByteArray(span.length)
             raf.readFully(bytes)
             return parseRecord(bytes, key, themeNames)
         }
     }
 
-    private fun recordToPgnGameInfo(context: Context, rec: TacticsBinRecord): PgnGameInfo? {
-        val pgn = buildPgn(rec)
-        return pgnToGameInfo(
-            context = context,
-            pgn = pgn,
-            fallbackFen = rec.fen,
-            fallbackEvent = rec.puzzleId,
-            fallbackTheme = rec.primaryTheme,
-            fallbackRating = rec.rating,
-            fallbackNote = rec.shard.label
+    private fun recordToPgnGameInfo(rec: TacticsBinRecord): PgnGameInfo? {
+        val board = com.github.bhlangonijr.chesslib.Board()
+        runCatching { board.loadFromFen(rec.fen) }.getOrElse { return null }
+
+        val moves = java.util.LinkedList<com.github.bhlangonijr.chesslib.move.Move>()
+        for (rawUci in rec.uciMoves) {
+            val wanted = rawUci.trim().lowercase(Locale.ROOT)
+            if (wanted.length < 4) return null
+
+            val legal = runCatching {
+                com.github.bhlangonijr.chesslib.move.MoveGenerator
+                    .generateLegalMoves(board)
+                    .toList()
+            }.getOrNull() ?: return null
+
+            val move = legal.firstOrNull {
+                it.toString().lowercase(Locale.ROOT) == wanted
+            } ?: legal.firstOrNull {
+                it.toString().lowercase(Locale.ROOT).take(4) == wanted.take(4) &&
+                        wanted.length == 4
+            } ?: return null
+
+            moves += move
+            val moved = runCatching { board.doMove(move) }.getOrDefault(false)
+            if (!moved) return null
+        }
+
+        val game = Game("tf_binary_${rec.encodedId}", null)
+        val installed = runCatching {
+            val setter = game.javaClass.methods.firstOrNull { method ->
+                method.name == "setHalfMoves" && method.parameterTypes.size == 1
+            } ?: error("setHalfMoves not found")
+            setter.invoke(game, moves)
+        }.recoverCatching {
+            val field = game.javaClass.getDeclaredField("halfMoves")
+            field.isAccessible = true
+            field.set(game, moves)
+        }.isSuccess
+
+        if (!installed) return null
+
+        return PgnGameInfo(
+            white = "",
+            black = "",
+            startFen = rec.fen,
+            game = game,
+            event = rec.puzzleId,
+            theme = rec.primaryTheme,
+            rating = rec.rating,
+            site = "Lichess Puzzle Database",
+            note = rec.shard.label
         )
     }
 
@@ -784,6 +928,24 @@ object TacticsBinaryBank {
         return sq(from) + sq(to) + p
     }
 
+    private fun readRecordSpan(context: Context, key: TacticsPuzzleKey): RecordSpan {
+        val file = ensureAssetCopied(context, key.shard, "train_puzzle_offsets.bin")
+        RandomAccessFile(file, "r").use { raf ->
+            require(raf.readMagic() == MAGIC_OFFSETS) { "Bad offsets magic for ${key.shard.folder}" }
+            val version = raf.readIntLE()
+            require(version == TACTICS_BIN_VERSION) { "Unsupported offsets version $version" }
+            val count = raf.readIntLE()
+            require(key.localIndex in 0 until count) {
+                "Puzzle index ${key.localIndex} out of range for ${key.shard.folder}"
+            }
+            raf.seek(OFFSETS_HEADER_BYTES + key.localIndex.toLong() * OFFSET_ENTRY_BYTES)
+            return RecordSpan(
+                offset = raf.readIntLE(),
+                length = raf.readUShortLE()
+            )
+        }
+    }
+
     private fun loadOffsets(context: Context, shard: TacticsShard): Pair<IntArray, IntArray> {
         offsetsCache[shard]?.let { return it }
         val file = ensureAssetCopied(context, shard, "train_puzzle_offsets.bin")
@@ -831,9 +993,15 @@ object TacticsBinaryBank {
     }
 
     private fun loadThemeNames(context: Context, shard: TacticsShard): List<String> {
-        themeNamesCache[shard]?.let { return it }
+        synchronized(themeNamesCache) { themeNamesCache[shard] }?.let { return it }
 
-        // Read only theme names from the legacy combined train_themes.bin.
+        // Current datasets publish the exact ID order in the tiny theme manifest.
+        // Reading that list avoids extracting/scanning the much larger combined
+        // train_themes.bin merely to resolve one puzzle's primary-theme label.
+        runCatching { loadThemeIndexManifest(context, shard) }
+        synchronized(themeNamesCache) { themeNamesCache[shard] }?.let { return it }
+
+        // Legacy fallback: read only names from the combined train_themes.bin.
         // Do not decode posting lists here; that was the hidden one-puzzle slowdown.
         val file = ensureAssetCopied(context, shard, "train_themes.bin")
         RandomAccessFile(file, "r").use { raf ->
@@ -852,7 +1020,7 @@ object TacticsBinaryBank {
                 if (encodedLen > 0) raf.seek(raf.filePointer + encodedLen)
                 names += name
             }
-            themeNamesCache[shard] = names
+            synchronized(themeNamesCache) { themeNamesCache[shard] = names }
             return names
         }
     }
@@ -917,10 +1085,23 @@ object TacticsBinaryBank {
     }
 
     private fun loadThemeIndexManifest(context: Context, shard: TacticsShard): Map<String, String> {
-        themeIndexManifestCache[shard]?.let { return it }
+        synchronized(themeIndexManifestCache) { themeIndexManifestCache[shard] }?.let { return it }
 
         val file = ensureAssetCopied(context, shard, "train_theme_index_manifest.json")
         val root = JSONObject(file.readText(Charsets.UTF_8))
+
+        val themeOrder = root.optJSONArray("themeOrder")
+        if (themeOrder != null && themeOrder.length() > 0) {
+            val names = ArrayList<String>(themeOrder.length())
+            for (i in 0 until themeOrder.length()) {
+                val name = themeOrder.optString(i, "").trim().lowercase(Locale.ROOT)
+                if (name.isNotBlank()) names += name
+            }
+            if (names.isNotEmpty()) {
+                synchronized(themeNamesCache) { themeNamesCache[shard] = names }
+            }
+        }
+
         val themes = root.getJSONObject("themes")
         val out = HashMap<String, String>(themes.length())
         val keys = themes.keys()
@@ -931,8 +1112,52 @@ object TacticsBinaryBank {
             val rel = entry.optString("file", "theme_indexes/$key.bin")
             if (key.isNotBlank() && rel.isNotBlank()) out[key] = rel
         }
-        themeIndexManifestCache[shard] = out
+        synchronized(themeIndexManifestCache) { themeIndexManifestCache[shard] = out }
         return out
+    }
+
+    private fun themeIndexSource(
+        context: Context,
+        shard: TacticsShard,
+        rawTheme: String
+    ): ThemeIndexSource? {
+        val token = normalizedThemeKey(rawTheme)
+        if (token.isBlank() || token == "all") return null
+
+        val cacheKey = "${shard.folder}:$token"
+        synchronized(themeIndexSourceCache) {
+            themeIndexSourceCache[cacheKey]
+        }?.let { return it }
+
+        val relFile = runCatching {
+            loadThemeIndexManifest(context, shard)[token]
+        }.getOrNull() ?: "theme_indexes/$token.bin"
+
+        val source = runCatching {
+            val file = ensureAssetCopied(context, shard, relFile)
+            val count = RandomAccessFile(file, "r").use { raf ->
+                require(raf.readMagic() == MAGIC_THEME_INDEX) {
+                    "Bad theme-index magic for ${shard.folder}/$token"
+                }
+                val version = raf.readIntLE()
+                require(version == TACTICS_BIN_VERSION) {
+                    "Unsupported theme-index version $version"
+                }
+                raf.readIntLE().coerceAtLeast(0)
+            }
+            ThemeIndexSource(shard = shard, file = file, count = count)
+        }.getOrNull() ?: return null
+
+        synchronized(themeIndexSourceCache) {
+            themeIndexSourceCache[cacheKey] = source
+        }
+        return source
+    }
+
+    private fun themeIndexCount(context: Context, shard: TacticsShard, rawTheme: String): Int {
+        themeIndexSource(context, shard, rawTheme)?.let { return it.count }
+        return runCatching { loadThemeIndexIds(context, shard, rawTheme).size }
+            .getOrDefault(0)
     }
 
     private fun loadThemeIndexIds(context: Context, shard: TacticsShard, rawTheme: String): IntArray {
@@ -1088,11 +1313,47 @@ object TacticsBinaryBank {
         out.parentFile?.mkdirs()
         if (out.exists() && out.length() > 0L) return out
 
-        val assetPath = "puzzles/${shard.folder}/$fileName"
-        context.assets.open(assetPath).use { input ->
-            out.outputStream().use { output -> input.copyTo(output) }
+        val lock = synchronized(assetCopyLocks) {
+            assetCopyLocks.getOrPut(out.absolutePath) { Any() }
         }
-        return out
+
+        return synchronized(lock) {
+            // A UI load and a background prefetch may ask for the same first-use
+            // asset together. Recheck after taking the per-file lock.
+            if (out.exists() && out.length() > 0L) return@synchronized out
+
+            val assetPath = "puzzles/${shard.folder}/$fileName"
+            val tmp = File(out.parentFile, out.name + ".copying")
+            runCatching { tmp.delete() }
+
+            val started = System.nanoTime()
+            try {
+                BufferedInputStream(
+                    context.assets.open(assetPath),
+                    ASSET_COPY_BUFFER_BYTES
+                ).use { input ->
+                    BufferedOutputStream(
+                        tmp.outputStream(),
+                        ASSET_COPY_BUFFER_BYTES
+                    ).use { output ->
+                        input.copyTo(output, ASSET_COPY_BUFFER_BYTES)
+                        output.flush()
+                    }
+                }
+
+                if (out.exists()) out.delete()
+                check(tmp.renameTo(out)) { "Unable to install puzzle asset $assetPath" }
+                val elapsedMs = (System.nanoTime() - started) / 1_000_000L
+                Log.d(
+                    "TacticsBinaryBank",
+                    "Copied $assetPath in ${elapsedMs}ms (${out.length()} bytes)"
+                )
+                out
+            } catch (t: Throwable) {
+                runCatching { tmp.delete() }
+                throw t
+            }
+        }
     }
 
     private fun RandomAccessFile.readMagic(): String {
