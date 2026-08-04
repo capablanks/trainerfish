@@ -127,6 +127,8 @@ private fun lichessTvSanTokenToFanDisplay(tokenRaw: String): String {
         token = token.dropLast(trailing.length)
     }
 
+    token = lichessTvNormalizeSanToken(token)
+
     if (
         token.matches(Regex("^\\d+\\.{1,3}$")) ||
         token == "1-0" || token == "0-1" || token == "1/2-1/2" || token == "*" ||
@@ -177,7 +179,7 @@ private fun tvPgn(s: LichessTvState): String {
         s.white.rating?.let{appendLine("[WhiteElo \"$it\"]")}; s.black.rating?.let{appendLine("[BlackElo \"$it\"]")}
         appendLine("[Result \"$r\"]")
         if(s.startFen.isNotBlank() && s.startFen!=LICHESS_TV_START_FEN){appendLine("[SetUp \"1\"]");appendLine("[FEN \"${tvTag(s.startFen)}\"]")}
-        appendLine(); s.sanMoves.forEachIndexed{i,m->if(i>0)append(' ');if(i%2==0)append("${i/2+1}. ");append(m.trim())}
+        appendLine(); s.sanMoves.forEachIndexed{i,m->if(i>0)append(' ');if(i%2==0)append("${i/2+1}. ");append(lichessTvNormalizeSanToken(m.trim()))}
         if(s.sanMoves.isNotEmpty())append(' '); appendLine(r)
     }
 }

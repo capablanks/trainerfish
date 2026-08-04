@@ -92,6 +92,19 @@ internal fun lichessTvResultLabel(result: String?): String? = when (lichessTvRes
 }
 
 /**
+ * Lichess live feeds may encode castling as a king move to the rook square.
+ * UCI move storage remains unchanged; SAN/display fallbacks are normalized.
+ */
+internal fun lichessTvNormalizeSanToken(raw: String): String {
+    val trimmed = raw.trim()
+    return when (trimmed.lowercase()) {
+        "e1h1", "e1g1", "e8h8", "e8g8" -> "O-O"
+        "e1a1", "e1c1", "e8a8", "e8c8" -> "O-O-O"
+        else -> raw
+    }
+}
+
+/**
  * One unauthenticated spectator connection to either Lichess's TV feed or the
  * public, delayed stream of a user-selected game. PGN exports fill moves played
  * before TrainerFish joined either stream.
@@ -708,7 +721,7 @@ internal class LichessTvClient {
                 black = current.black.copy(seconds = data.optIntOrNull("bc") ?: current.black.seconds),
                 lastMoveUci = if (applied) moveUci else current.lastMoveUci,
                 uciMoves = if (append) current.uciMoves + moveUci else current.uciMoves,
-                sanMoves = if (append) current.sanMoves + (san ?: moveUci) else current.sanMoves,
+                sanMoves = if (append) current.sanMoves + lichessTvNormalizeSanToken(san ?: moveUci) else current.sanMoves,
                 errorMessage = null
             )
         }
@@ -819,7 +832,7 @@ internal class LichessTvClient {
                 } else null
 
                 uciMoves = uciMoves + moveUci
-                sanMoves = sanMoves + (san ?: moveUci)
+                sanMoves = sanMoves + lichessTvNormalizeSanToken(san ?: moveUci)
             }
 
             current.copy(
@@ -907,7 +920,7 @@ internal class LichessTvClient {
             val node = tree.nodes.getOrNull(nodeId) ?: break
             val moveUci = node.uci ?: break
             uci += moveUci
-            san += node.san.ifBlank { moveUci }
+            san += lichessTvNormalizeSanToken(node.san.ifBlank { moveUci })
             parsePgnClockSeconds(node.postComment ?: node.preComment)?.let { seconds ->
                 if (ply % 2 == 0) whiteSeconds = seconds else blackSeconds = seconds
             }
