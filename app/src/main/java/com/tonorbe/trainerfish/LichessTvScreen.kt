@@ -1,11 +1,13 @@
 package com.tonorbe.trainerfish
 
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.SystemClock
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -102,6 +104,8 @@ import java.util.Locale
 import kotlin.coroutines.coroutineContext
 
 private const val MAX_BROADCAST_GAMES = 8
+private const val CHESS_TV_PREFS = "chess_tv_preferences"
+private const val CHESS_TV_KEEP_SCREEN_AWAKE_KEY = "keep_screen_awake"
 
 private enum class LichessBroadcastBrowserMode {
     TOURNAMENTS,
@@ -111,6 +115,52 @@ private enum class LichessBroadcastBrowserMode {
 
 private fun tvTag(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"")
     .replace(Regex("[\r\n]+"), " ").trim()
+
+private fun lichessTvSanTokenToFanDisplay(tokenRaw: String): String {
+    if (tokenRaw.isBlank()) return tokenRaw
+
+    val leading = tokenRaw.takeWhile { it == '(' || it == '[' || it == '{' }
+    val trailing = tokenRaw.takeLastWhile { it == ')' || it == ']' || it == '}' }
+    var token = tokenRaw
+    if (leading.isNotEmpty()) token = token.drop(leading.length)
+    if (trailing.isNotEmpty() && token.length >= trailing.length) {
+        token = token.dropLast(trailing.length)
+    }
+
+    if (
+        token.matches(Regex("^\\d+\\.{1,3}$")) ||
+        token == "1-0" || token == "0-1" || token == "1/2-1/2" || token == "*" ||
+        token == "O-O" || token == "O-O-O"
+    ) {
+        return leading + token + trailing
+    }
+
+    var out = token
+    if (out.isNotEmpty()) {
+        val figurine = when (out[0]) {
+            'K' -> "♔"
+            'Q' -> "♕"
+            'R' -> "♖"
+            'B' -> "♗"
+            'N' -> "♘"
+            else -> null
+        }
+        if (figurine != null) out = figurine + out.drop(1)
+    }
+
+    out = out
+        .replace("=K", "=♔")
+        .replace("=Q", "=♕")
+        .replace("=R", "=♖")
+        .replace("=B", "=♗")
+        .replace("=N", "=♘")
+
+    return leading + out + trailing
+}
+
+private fun lichessTvSanToFanDisplay(raw: String): String =
+    raw.split(Regex("\\s+")).joinToString(" ") { lichessTvSanTokenToFanDisplay(it) }
+
 private fun tvPgn(s: LichessTvState): String {
     val r=lichessTvResultOrNull(s.result) ?: "*"
     val d=SimpleDateFormat("yyyy.MM.dd",Locale.US).format(Date())
@@ -159,6 +209,14 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     val broadcastApi = remember { LichessBroadcastApi() }
     val followStore = remember(context) { ChessTvFollowStore(context) }
     val screenScope = rememberCoroutineScope()
+    val chessTvPreferences = remember(context) {
+        context.getSharedPreferences(CHESS_TV_PREFS, Context.MODE_PRIVATE)
+    }
+    var keepScreenAwake by rememberSaveable {
+        mutableStateOf(
+            chessTvPreferences.getBoolean(CHESS_TV_KEEP_SCREEN_AWAKE_KEY, true)
+        )
+    }
     val tv by client.state.collectAsState()
     val engineCpRaw by ProcEngine.scoreCp.collectAsState()
     val engineLines by ProcEngine.lines.collectAsState()
@@ -268,6 +326,13 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         analysisPly = safePly
         analysisFen = fen
         selectedSquare = null
+    }
+
+    fun toggleKeepScreenAwake() {
+        keepScreenAwake = !keepScreenAwake
+        chessTvPreferences.edit()
+            .putBoolean(CHESS_TV_KEEP_SCREEN_AWAKE_KEY, keepScreenAwake)
+            .apply()
     }
 
     fun reconnect() {
@@ -657,6 +722,25 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         }
     }
 
+    val hostActivity = context as? Activity
+    DisposableEffect(hostActivity, keepScreenAwake) {
+        val flag = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+        val flagWasAlreadySet =
+            hostActivity?.window?.attributes?.flags?.let { currentFlags ->
+                currentFlags and flag != 0
+            } == true
+
+        if (keepScreenAwake && hostActivity != null && !flagWasAlreadySet) {
+            hostActivity.window.addFlags(flag)
+        }
+
+        onDispose {
+            if (keepScreenAwake && hostActivity != null && !flagWasAlreadySet) {
+                hostActivity.window.clearFlags(flag)
+            }
+        }
+    }
+
     DisposableEffect(client) {
         client.connect()
         onDispose {
@@ -883,6 +967,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     engineEnabled = effectiveEngineEnabled,
                     engineLocked = watchedPlayerEngineLocked,
                     watchingAlternateGame = tv.source != LichessTvSource.TOP_GAME,
+                    keepScreenAwake = keepScreenAwake,
                     evaluationText = engineEvaluation,
                     enginePv = enginePv,
                     uciMoves = shownUciMoves,
@@ -891,6 +976,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     showBroadcastGameControls = showBroadcastGameControls,
                     canSavePgn = tv.sanMoves.isNotEmpty(),
                     onEngineToggle = { engineEnabled = !engineEnabled },
+                    onKeepScreenAwakeToggle = ::toggleKeepScreenAwake,
                     onAnalyze = { enterAnalysis(tv.uciMoves.size) },
                     onReconnect = ::reconnect,
                     onWatchPlayer = {
@@ -1933,6 +2019,7 @@ private fun LichessTvStudyPanel(
     engineEnabled: Boolean,
     engineLocked: Boolean,
     watchingAlternateGame: Boolean,
+    keepScreenAwake: Boolean,
     evaluationText: String,
     enginePv: String,
     uciMoves: List<String>,
@@ -1941,6 +2028,7 @@ private fun LichessTvStudyPanel(
     showBroadcastGameControls: Boolean,
     canSavePgn: Boolean,
     onEngineToggle: () -> Unit,
+    onKeepScreenAwakeToggle: () -> Unit,
     onAnalyze: () -> Unit,
     onReconnect: () -> Unit,
     onWatchPlayer: () -> Unit,
@@ -2058,6 +2146,17 @@ private fun LichessTvStudyPanel(
                                 }
                             )
                         }
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "Keep screen awake: ${if (keepScreenAwake) "On" else "Off"}"
+                                )
+                            },
+                            onClick = {
+                                controlsMenuExpanded = false
+                                onKeepScreenAwakeToggle()
+                            }
+                        )
                         DropdownMenuItem(
                             text = { Text("Help for Chess TV") },
                             onClick = {
@@ -2219,7 +2318,7 @@ private fun LichessTvMoveList(
                         fontWeight = if (currentPly == ply) FontWeight.Black else FontWeight.Medium
                     )
                 )
-                append(san)
+                append(lichessTvSanToFanDisplay(san))
                 pop()
                 pop()
             }
@@ -2352,7 +2451,8 @@ private fun lichessTvPvText(fen: String, infoLine: String?): String {
         val move = bfUciToMoveOnBoard(board, uci) ?: return@forEach
         val white = board.sideToMove == Side.WHITE
         val san = runCatching { bfPrettySan(board, move, white) }.getOrElse { uci }
-        output += if (white) "$moveNumber. $san" else san
+        val fanSan = lichessTvSanToFanDisplay(san)
+        output += if (white) "$moveNumber. $fanSan" else fanSan
         board.doMove(move)
         if (!white) moveNumber++
     }

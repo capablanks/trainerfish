@@ -18,6 +18,7 @@ import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
+import java.net.SocketTimeoutException
 import java.net.URL
 import java.net.URLEncoder
 
@@ -250,9 +251,10 @@ internal class LichessTvClient {
                 connection = (URL(TV_FEED_URL).openConnection() as HttpURLConnection).apply {
                     requestMethod = "GET"
                     connectTimeout = 15_000
-                    readTimeout = 0
+                    readTimeout = TOP_GAME_READ_TIMEOUT_MS
                     setRequestProperty("Accept", "application/x-ndjson")
                     setRequestProperty("User-Agent", USER_AGENT)
+                    setRequestProperty("Cache-Control", "no-cache")
                     useCaches = false
                     doInput = true
                 }
@@ -286,7 +288,11 @@ internal class LichessTvClient {
                 _state.update {
                     it.copy(
                         status = LichessTvConnectionStatus.RECONNECTING,
-                        errorMessage = error.message ?: "Chess TV connection lost"
+                        errorMessage = if (error is SocketTimeoutException) {
+                            "Chess TV stream stalled — reconnecting automatically"
+                        } else {
+                            error.message ?: "Chess TV connection lost"
+                        }
                     )
                 }
                 delay(retryDelayMs)
@@ -983,12 +989,13 @@ internal class LichessTvClient {
 
     companion object {
         private const val TV_FEED_URL = "https://lichess.org/api/tv/feed"
+        private const val TOP_GAME_READ_TIMEOUT_MS = 75_000
         private const val GAME_EXPORT_BASE = "https://lichess.org/game/export"
         private const val USER_CURRENT_GAME_BASE = "https://lichess.org/api/user"
         private const val USER_STATUS_URL = "https://lichess.org/api/users/status"
         private const val GAME_STREAM_BASE = "https://lichess.org/api/stream/game"
         private const val BROADCAST_STREAM_BASE = "https://lichess.org/api/stream/broadcast/round"
-        private const val USER_AGENT = "TrainerFish/5.0 (com.tonorbe.trainerfish)"
+        private const val USER_AGENT = "TrainerFish/5.1 (com.tonorbe.trainerfish)"
         private const val MAX_PGN_CHARS = 512_000
     }
 }
