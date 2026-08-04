@@ -210,6 +210,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     val client = remember { LichessTvClient() }
     val broadcastApi = remember { LichessBroadcastApi() }
     val followStore = remember(context) { ChessTvFollowStore(context) }
+    val restoredSession = remember { ChessTvSessionStore.snapshot() }
     val screenScope = rememberCoroutineScope()
     val chessTvPreferences = remember(context) {
         context.getSharedPreferences(CHESS_TV_PREFS, Context.MODE_PRIVATE)
@@ -218,6 +219,9 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         mutableStateOf(
             chessTvPreferences.getBoolean(CHESS_TV_KEEP_SCREEN_AWAKE_KEY, true)
         )
+    }
+    var favoriteLiveAlertsEnabled by rememberSaveable {
+        mutableStateOf(ChessTvFavoriteLiveNotificationScheduler.isEnabled(context))
     }
     val tv by client.state.collectAsState()
     val engineCpRaw by ProcEngine.scoreCp.collectAsState()
@@ -249,9 +253,16 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     var liveBroadcasts by remember { mutableStateOf<List<LichessBroadcastPreview>>(emptyList()) }
     var selectedBroadcastRound by remember { mutableStateOf<LichessBroadcastRound?>(null) }
     var selectedBroadcastGames by remember {
-        mutableStateOf<List<LichessBroadcastSelection>>(emptyList())
+        mutableStateOf(restoredSession.selectedGames)
     }
-    var activeBroadcastIndex by remember { mutableStateOf(0) }
+    var activeBroadcastIndex by remember {
+        mutableStateOf(
+            restoredSession.activeIndex.coerceIn(
+                0,
+                (restoredSession.selectedGames.size - 1).coerceAtLeast(0)
+            )
+        )
+    }
     var pendingBroadcastGames by remember {
         mutableStateOf<List<LichessBroadcastSelection>>(emptyList())
     }
@@ -304,6 +315,61 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         broadcastLoading = false
     }
 
+    fun watchSavedBroadcast(index: Int) {
+        val games = selectedBroadcastGames
+        if (games.isEmpty()) return
+        val safeIndex = index.coerceIn(0, games.lastIndex)
+        val original = games[safeIndex]
+
+        activeBroadcastIndex = safeIndex
+        detached = false
+        selectedSquare = null
+        promotionChoices = emptyList()
+        ChessTvSessionStore.saveGames(games, safeIndex)
+        ChessTvSessionStore.markSource(LichessTvSource.BROADCAST_BOARD)
+        client.watchBroadcastBoard(original)
+
+        // Refresh the selected board from the round directory as well as the
+        // live stream, so returning from puzzles immediately catches up to the
+        // current position even after a long absence.
+        screenScope.launch {
+            val preview = LichessBroadcastPreview(
+                tournamentId = "",
+                tournamentName = original.tournamentName,
+                roundId = original.roundId,
+                roundName = original.roundName,
+                tier = 0,
+                location = null,
+                playersSummary = null
+            )
+            val refreshed = runCatching { broadcastApi.loadRound(preview) }
+                .getOrNull()
+                ?.boards
+                ?.firstOrNull { it.gameId == original.gameId }
+                ?.let { board ->
+                    LichessBroadcastRound(preview, listOf(board)).selectionFor(board)
+                }
+                ?: original
+
+            if (selectedBroadcastGames.getOrNull(safeIndex)?.gameId != original.gameId) {
+                return@launch
+            }
+            if (refreshed != original) {
+                selectedBroadcastGames = selectedBroadcastGames.toMutableList().apply {
+                    this[safeIndex] = refreshed
+                }
+                ChessTvSessionStore.saveGames(selectedBroadcastGames, safeIndex)
+                client.watchBroadcastBoard(refreshed)
+            }
+        }
+    }
+
+    fun resumeSelectedBroadcasts() {
+        if (selectedBroadcastGames.isNotEmpty()) {
+            watchSavedBroadcast(activeBroadcastIndex)
+        }
+    }
+
     fun enterAnalysis(targetPly: Int = tv.uciMoves.size) {
         client.detachForAnalysis()
         detached = true
@@ -337,6 +403,14 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
             .apply()
     }
 
+    fun toggleFavoriteLiveAlerts() {
+        favoriteLiveAlertsEnabled = !favoriteLiveAlertsEnabled
+        ChessTvFavoriteLiveNotificationScheduler.setEnabled(
+            context,
+            favoriteLiveAlertsEnabled
+        )
+    }
+
     fun reconnect() {
         detached = false
         selectedSquare = null
@@ -351,6 +425,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         selectedSquare = null
         promotionChoices = emptyList()
         showWatchPlayerDialog = false
+        ChessTvSessionStore.markSource(LichessTvSource.WATCHED_PLAYER)
         client.watchPlayer(username)
     }
 
@@ -358,6 +433,7 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         detached = false
         selectedSquare = null
         promotionChoices = emptyList()
+        ChessTvSessionStore.markSource(LichessTvSource.TOP_GAME)
         client.connectTopGame()
     }
 
@@ -645,19 +721,18 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
 
     fun watchSelectedBroadcasts() {
         cancelPersonalizedScan()
-        val selections = pendingBroadcastGames
+        val selections = pendingBroadcastGames.distinctBy { it.roundId to it.gameId }
         if (selections.isEmpty()) return
 
         val currentGameId = tv.gameId.takeIf { tv.source == LichessTvSource.BROADCAST_BOARD }
         val restoredIndex = selections.indexOfFirst { it.gameId == currentGameId }
         activeBroadcastIndex = restoredIndex.takeIf { it >= 0 } ?: 0
         selectedBroadcastGames = selections
-        detached = false
-        selectedSquare = null
-        promotionChoices = emptyList()
+        ChessTvSessionStore.saveGames(selections, activeBroadcastIndex)
+        ChessTvSessionStore.markSource(LichessTvSource.BROADCAST_BOARD)
         resumeLiveAfterBroadcastDialog = false
         showBroadcastDialog = false
-        client.watchBroadcastBoard(selections[activeBroadcastIndex])
+        watchSavedBroadcast(activeBroadcastIndex)
     }
 
     fun switchBroadcastGame(direction: Int) {
@@ -673,9 +748,8 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         )
         if (nextIndex == activeBroadcastIndex) return
         activeBroadcastIndex = nextIndex
-        selectedSquare = null
-        promotionChoices = emptyList()
-        client.watchBroadcastBoard(selectedBroadcastGames[nextIndex])
+        ChessTvSessionStore.saveGames(selectedBroadcastGames, nextIndex)
+        watchSavedBroadcast(nextIndex)
     }
 
     fun applyAnalysisMove(move: LibMove) {
@@ -744,11 +818,25 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     }
 
     DisposableEffect(client) {
-        client.connect()
+        if (
+            restoredSession.lastSource == LichessTvSource.BROADCAST_BOARD &&
+            restoredSession.selectedGames.isNotEmpty()
+        ) {
+            watchSavedBroadcast(restoredSession.activeIndex)
+        } else {
+            client.connect()
+        }
         onDispose {
             client.close()
             ProcEngine.send("stop")
             ProcEngine.clearOutput()
+        }
+    }
+
+    LaunchedEffect(tv.source, tv.status, selectedBroadcastGames, activeBroadcastIndex) {
+        ChessTvSessionStore.saveGames(selectedBroadcastGames, activeBroadcastIndex)
+        if (tv.status != LichessTvConnectionStatus.OFFLINE) {
+            ChessTvSessionStore.markSource(tv.source)
         }
     }
 
@@ -954,7 +1042,6 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     lightSquare = lightSquare,
                     darkSquare = darkSquare,
                     evaluationCpWhite = engineCpWhite,
-                    evaluationText = engineEvaluation,
                     engineEnabled = effectiveEngineEnabled,
                     onSquareClick = ::onBoardSquare,
                     landscape = landscape,
@@ -970,6 +1057,11 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     engineLocked = watchedPlayerEngineLocked,
                     watchingAlternateGame = tv.source != LichessTvSource.TOP_GAME,
                     keepScreenAwake = keepScreenAwake,
+                    savedBroadcastCount = selectedBroadcastGames.size,
+                    showResumeSelectedBroadcasts = selectedBroadcastGames.isNotEmpty() &&
+                        tv.source != LichessTvSource.BROADCAST_BOARD,
+                    favoriteLiveAlertsEnabled = favoriteLiveAlertsEnabled,
+                    favoriteLiveAlertsAvailable = followProfile.favorites.isNotEmpty(),
                     evaluationText = engineEvaluation,
                     enginePv = enginePv,
                     uciMoves = shownUciMoves,
@@ -979,6 +1071,8 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
                     canSavePgn = tv.sanMoves.isNotEmpty(),
                     onEngineToggle = { engineEnabled = !engineEnabled },
                     onKeepScreenAwakeToggle = ::toggleKeepScreenAwake,
+                    onFavoriteLiveAlertsToggle = ::toggleFavoriteLiveAlerts,
+                    onResumeSelectedBroadcasts = ::resumeSelectedBroadcasts,
                     onAnalyze = { enterAnalysis(tv.uciMoves.size) },
                     onReconnect = ::reconnect,
                     onWatchPlayer = {
@@ -1906,7 +2000,6 @@ private fun LichessTvBoardPane(
     lightSquare: Color,
     darkSquare: Color,
     evaluationCpWhite: Int?,
-    evaluationText: String,
     engineEnabled: Boolean,
     onSquareClick: (Int) -> Unit,
     landscape: Boolean,
@@ -1949,7 +2042,6 @@ private fun LichessTvBoardPane(
                 Spacer(Modifier.width(2.dp))
                 LichessTvEvalBar(
                     cpWhite = evaluationCpWhite,
-                    text = evaluationText,
                     enabled = engineEnabled,
                     horizontal = false,
                     modifier = Modifier.width(24.dp).fillMaxHeight()
@@ -1966,7 +2058,6 @@ private fun LichessTvBoardPane(
                 Spacer(Modifier.height(2.dp))
                 LichessTvEvalBar(
                     cpWhite = evaluationCpWhite,
-                    text = evaluationText,
                     enabled = engineEnabled,
                     horizontal = true,
                     modifier = Modifier.fillMaxWidth().height(14.dp)
@@ -1979,39 +2070,33 @@ private fun LichessTvBoardPane(
 @Composable
 private fun LichessTvEvalBar(
     cpWhite: Int?,
-    text: String,
     enabled: Boolean,
     horizontal: Boolean,
     modifier: Modifier
 ) {
+    // Linear full scale: 0.00 is the center, each pawn equals one
+    // board rank, and +/-4.00 fills the bar completely.
     val whiteShare = if (!enabled || cpWhite == null) 0.5f else {
-        (0.5f + cpWhite.coerceIn(-1_200, 1_200) / 2_400f).coerceIn(0.06f, 0.94f)
+        (0.5f + cpWhite.coerceIn(-400, 400) / 800f).coerceIn(0f, 1f)
     }
-    Box(modifier = modifier.clip(RoundedCornerShape(7.dp)).background(Color(0xFF111827))) {
+    Box(modifier = modifier.clip(RoundedCornerShape(7.dp)).background(Color(0xFF151515))) {
         if (horizontal) {
-            Row(modifier = Modifier.fillMaxSize()) {
-                Box(Modifier.fillMaxHeight().weight(1f - whiteShare).background(Color(0xFF151515)))
-                Box(Modifier.fillMaxHeight().weight(whiteShare).background(Color(0xFFF3F4F6)))
-            }
+            Box(
+                Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .fillMaxWidth(whiteShare)
+                    .background(Color(0xFFF3F4F6))
+            )
         } else {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Box(Modifier.fillMaxWidth().weight(1f - whiteShare).background(Color(0xFF151515)))
-                Box(Modifier.fillMaxWidth().weight(whiteShare).background(Color(0xFFF3F4F6)))
-            }
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .fillMaxHeight(whiteShare)
+                    .background(Color(0xFFF3F4F6))
+            )
         }
-        Text(
-            text = text,
-            color = Color.White,
-            fontSize = 8.sp,
-            fontWeight = FontWeight.Black,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            softWrap = false,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .background(Color(0xE6111827), RoundedCornerShape(4.dp))
-                .padding(horizontal = 2.dp, vertical = if (horizontal) 0.dp else 2.dp)
-        )
     }
 }
 
@@ -2022,6 +2107,10 @@ private fun LichessTvStudyPanel(
     engineLocked: Boolean,
     watchingAlternateGame: Boolean,
     keepScreenAwake: Boolean,
+    savedBroadcastCount: Int,
+    showResumeSelectedBroadcasts: Boolean,
+    favoriteLiveAlertsEnabled: Boolean,
+    favoriteLiveAlertsAvailable: Boolean,
     evaluationText: String,
     enginePv: String,
     uciMoves: List<String>,
@@ -2031,6 +2120,8 @@ private fun LichessTvStudyPanel(
     canSavePgn: Boolean,
     onEngineToggle: () -> Unit,
     onKeepScreenAwakeToggle: () -> Unit,
+    onFavoriteLiveAlertsToggle: () -> Unit,
+    onResumeSelectedBroadcasts: () -> Unit,
     onAnalyze: () -> Unit,
     onReconnect: () -> Unit,
     onWatchPlayer: () -> Unit,
@@ -2125,6 +2216,15 @@ private fun LichessTvStudyPanel(
                                 onWatchPlayer()
                             }
                         )
+                        if (showResumeSelectedBroadcasts) {
+                            DropdownMenuItem(
+                                text = { Text("Resume selected broadcasts ($savedBroadcastCount)") },
+                                onClick = {
+                                    controlsMenuExpanded = false
+                                    onResumeSelectedBroadcasts()
+                                }
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text("Live broadcasts") },
                             onClick = {
@@ -2137,6 +2237,22 @@ private fun LichessTvStudyPanel(
                             onClick = {
                                 controlsMenuExpanded = false
                                 onChooseFavorites()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    if (favoriteLiveAlertsAvailable) {
+                                        "Favorite live alerts: ${if (favoriteLiveAlertsEnabled) "On" else "Off"}"
+                                    } else {
+                                        "Favorite live alerts: Choose favorites first"
+                                    }
+                                )
+                            },
+                            enabled = favoriteLiveAlertsAvailable,
+                            onClick = {
+                                controlsMenuExpanded = false
+                                onFavoriteLiveAlertsToggle()
                             }
                         )
                         if (watchingAlternateGame) {

@@ -1271,7 +1271,7 @@ private fun trainerPuzzleShareText(
     val themeText = theme.trim().ifBlank { "tactics" }
     val ratingText = rating?.takeIf { it > 0 }?.toString() ?: "TrainerFish"
     val timeText = solvedMs?.let { formatHms(it) } ?: "record time"
-    return "I solved this $themeText puzzle rated $ratingText in $timeText. Can you?\n\nTrain tactics with TrainerFish."
+    return "I solved this $themeText puzzle rated $ratingText in $timeText.\n\nDownload Trainer Fish and start solving fun puzzles today."
 }
 
 private fun composeColorToAndroid(color: Color): Int = android.graphics.Color.argb(
@@ -1280,6 +1280,70 @@ private fun composeColorToAndroid(color: Color): Int = android.graphics.Color.ar
     (color.green * 255f).roundToInt().coerceIn(0, 255),
     (color.blue * 255f).roundToInt().coerceIn(0, 255)
 )
+
+private fun drawTrainerFishPuzzlePosterIcon(
+    context: Context,
+    canvas: android.graphics.Canvas,
+    left: Float,
+    top: Float,
+    size: Float
+) {
+    val iconId = trainerFishPosterIconId(context)
+    val bitmap = if (iconId != 0) {
+        android.graphics.BitmapFactory.decodeResource(context.resources, iconId)
+    } else null
+    if (bitmap != null && !bitmap.isRecycled) {
+        canvas.drawBitmap(
+            bitmap,
+            null,
+            android.graphics.RectF(left, top, left + size, top + size),
+            null
+        )
+        return
+    }
+
+    runCatching {
+        val drawable = context.applicationInfo.loadIcon(context.packageManager)
+        val save = canvas.save()
+        drawable.setBounds(
+            left.roundToInt(),
+            top.roundToInt(),
+            (left + size).roundToInt(),
+            (top + size).roundToInt()
+        )
+        drawable.draw(canvas)
+        canvas.restoreToCount(save)
+    }
+}
+
+private fun drawTrainerFishGooglePlayBadge(
+    context: Context,
+    canvas: android.graphics.Canvas,
+    left: Float,
+    top: Float,
+    width: Float
+) {
+    val resourceId = context.resources.getIdentifier(
+        "google_play_badge",
+        "drawable",
+        context.packageName
+    )
+    if (resourceId == 0) return
+
+    val badge = android.graphics.BitmapFactory.decodeResource(
+        context.resources,
+        resourceId
+    ) ?: return
+    if (badge.isRecycled || badge.width <= 0 || badge.height <= 0) return
+
+    val height = width * badge.height.toFloat() / badge.width.toFloat()
+    canvas.drawBitmap(
+        badge,
+        null,
+        android.graphics.RectF(left, top, left + width, top + height),
+        null
+    )
+}
 
 private fun drawTacticsShareBoard(
     context: Context,
@@ -1385,6 +1449,14 @@ private fun createTacticsSolvedPosterUri(
     }
     canvas.drawRoundRect(card, 42f, 42f, strokePaint)
 
+    drawTrainerFishPuzzlePosterIcon(
+        context = context,
+        canvas = canvas,
+        left = 82f,
+        top = 76f,
+        size = 96f
+    )
+
     val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
         color = android.graphics.Color.WHITE
         textAlign = android.graphics.Paint.Align.CENTER
@@ -1447,19 +1519,27 @@ private fun createTacticsSolvedPosterUri(
     paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
     drawTrainerPosterWrappedText(
         canvas = canvas,
-        text = "I solved this puzzle. Can you?",
+        text = "Download Trainer Fish and start solving fun puzzles today.",
         x = width / 2f,
-        startY = 1172f,
+        startY = 1148f,
         maxWidth = 700f,
         paint = paint,
-        lineHeight = 48f,
+        lineHeight = 44f,
         maxLines = 2
     )
 
     paint.color = android.graphics.Color.argb(228, 255, 255, 255)
     paint.textSize = 40f
     paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
-    canvas.drawText("TrainerFish Tactics", width / 2f, height - 100f, paint)
+    canvas.drawText("TrainerFish Tactics", 330f, height - 100f, paint)
+
+    drawTrainerFishGooglePlayBadge(
+        context = context,
+        canvas = canvas,
+        left = 758f,
+        top = height - 160f,
+        width = 242f
+    )
 
     val dir = java.io.File(context.cacheDir, "share").apply { mkdirs() }
     val safeTheme = theme.ifBlank { "tactics" }.replace(Regex("[^A-Za-z0-9_-]"), "_")

@@ -74,6 +74,7 @@ class MainActivity : ComponentActivity() {
 
     private var pendingOpenPgnUri by mutableStateOf<Uri?>(null)
     private var pendingOpenTacticsFromNotification by mutableStateOf(false)
+    private var pendingOpenChessTvSelection by mutableStateOf<LichessBroadcastSelection?>(null)
     private lateinit var playGamesController: TrainerFishPlayGamesController
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,6 +82,7 @@ class MainActivity : ComponentActivity() {
 
         pendingOpenPgnUri = extractPgnUri(intent)
         pendingOpenTacticsFromNotification = intent?.getBooleanExtra("tf_open_tactics", false) == true
+        pendingOpenChessTvSelection = intent.chessTvFavoriteLiveSelectionOrNull()
 
         // Option A: apply user's orientation lock (Auto/Portrait/Landscape)
         runCatching {
@@ -107,6 +109,7 @@ class MainActivity : ComponentActivity() {
         // Daily TrainerFish motivational notification at around noon.
         requestTrainerFishNotificationPermissionIfNeeded()
         TrainerFishDailyNotificationScheduler.scheduleDailyNoon(applicationContext)
+        ChessTvFavoriteLiveNotificationScheduler.sync(applicationContext)
 
         // Do NOT preload the opening book at app start.
         // It is a large in-memory structure and can collide with tactics/theme index loading,
@@ -153,6 +156,8 @@ class MainActivity : ComponentActivity() {
                         onExternalPgnUriConsumed = { pendingOpenPgnUri = null },
                         openTacticsFromNotification = pendingOpenTacticsFromNotification,
                         onOpenTacticsFromNotificationConsumed = { pendingOpenTacticsFromNotification = false },
+                        openChessTvSelectionFromNotification = pendingOpenChessTvSelection,
+                        onOpenChessTvSelectionFromNotificationConsumed = { pendingOpenChessTvSelection = null },
                         playGamesState = playGamesController.uiState,
                         onOpenLeaderboards = playGamesController::showLeaderboards,
                         onLeaderboardScoreUpdate = playGamesController::recordAndSubmit,
@@ -227,6 +232,7 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         pendingOpenPgnUri = extractPgnUri(intent)
         pendingOpenTacticsFromNotification = intent.getBooleanExtra("tf_open_tactics", false)
+        pendingOpenChessTvSelection = intent.chessTvFavoriteLiveSelectionOrNull()
     }
 
     override fun onResume() {
@@ -258,6 +264,8 @@ private fun TLAGMApp(
     onExternalPgnUriConsumed: () -> Unit = {},
     openTacticsFromNotification: Boolean = false,
     onOpenTacticsFromNotificationConsumed: () -> Unit = {},
+    openChessTvSelectionFromNotification: LichessBroadcastSelection? = null,
+    onOpenChessTvSelectionFromNotificationConsumed: () -> Unit = {},
     playGamesState: TrainerFishPlayGamesUiState = TrainerFishPlayGamesUiState(),
     onOpenLeaderboards: () -> Unit = {},
     onLeaderboardScoreUpdate: (TrainerFishLeaderboardUpdate) -> Unit = {},
@@ -289,6 +297,7 @@ private fun TLAGMApp(
     }
 
     var screen by rememberSaveable { mutableStateOf(RootScreen.Home) }
+    var chessTvLaunchToken by rememberSaveable { mutableStateOf(0) }
     var selectedModeName by rememberSaveable { mutableStateOf(TrainerMode.WOODPECKER.name) }
     var autoContinueCycleRequest by rememberSaveable { mutableStateOf(false) }
     var showRootExitSupportDialog by rememberSaveable { mutableStateOf(false) }
@@ -322,6 +331,14 @@ private fun TLAGMApp(
             screen = RootScreen.Trainer
             onOpenTacticsFromNotificationConsumed()
         }
+    }
+
+    LaunchedEffect(openChessTvSelectionFromNotification?.gameId) {
+        val selection = openChessTvSelectionFromNotification ?: return@LaunchedEffect
+        ChessTvSessionStore.replaceWith(selection)
+        chessTvLaunchToken += 1
+        screen = RootScreen.LichessTv
+        onOpenChessTvSelectionFromNotificationConsumed()
     }
 
     BackHandler(enabled = !showFirstUseProfileDialog) {
@@ -499,7 +516,9 @@ private fun TLAGMApp(
         }
 
         RootScreen.LichessTv -> {
-            LichessTvScreen(onHome = { screen = RootScreen.Home })
+            key(chessTvLaunchToken) {
+                LichessTvScreen(onHome = { screen = RootScreen.Home })
+            }
         }
     }
 }
