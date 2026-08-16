@@ -283,6 +283,10 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     var resumeLiveAfterHelpDialog by rememberSaveable { mutableStateOf(false) }
     var analysisStartFen by remember { mutableStateOf(LICHESS_TV_START_FEN) }
     var analysisFen by remember { mutableStateOf(LICHESS_TV_START_FEN) }
+    // Cached FEN for ply 0..N. Chess TV navigation used to reconstruct every
+    // target position from the initial FEN on every tap, so move 60 replayed
+    // roughly sixty legal-move generations just to move the cursor once.
+    var analysisFenByPly by remember { mutableStateOf<List<String>>(emptyList()) }
     var analysisUciMoves by remember { mutableStateOf<List<String>>(emptyList()) }
     var analysisSanMoves by remember { mutableStateOf<List<String>>(emptyList()) }
     var analysisPly by remember { mutableStateOf(0) }
@@ -300,13 +304,17 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
     val boardTheme = cosmetics.getString("board_theme", "classic") ?: "classic"
     val (lightSquare, darkSquare) = remember(boardTheme) { lichessTvBoardColors(boardTheme) }
 
-    fun positionAt(startFen: String, moves: List<String>, ply: Int): String? {
-        val board = runCatching { Board().apply { loadFromFen(startFen) } }.getOrNull() ?: return null
-        for (moveUci in moves.take(ply.coerceIn(0, moves.size))) {
-            val move = bfUciToMoveOnBoard(board, moveUci) ?: return null
-            board.doMove(move)
+    fun positionsAlongLine(startFen: String, moves: List<String>): List<String> {
+        val board = runCatching { Board().apply { loadFromFen(startFen) } }.getOrNull()
+            ?: return emptyList()
+        val positions = ArrayList<String>(moves.size + 1)
+        positions += board.fen
+        for (moveUci in moves) {
+            val move = bfUciToMoveOnBoard(board, moveUci) ?: break
+            if (!board.doMove(move)) break
+            positions += board.fen
         }
-        return board.fen
+        return positions
     }
 
     fun cancelPersonalizedScan() {
@@ -379,8 +387,10 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         analysisStartFen = tv.startFen
         analysisUciMoves = tv.uciMoves
         analysisSanMoves = tv.sanMoves
+        val positions = positionsAlongLine(tv.startFen, tv.uciMoves)
+        analysisFenByPly = positions
         analysisPly = targetPly.coerceIn(0, tv.uciMoves.size)
-        analysisFen = positionAt(tv.startFen, tv.uciMoves, analysisPly)
+        analysisFen = positions.getOrNull(analysisPly)
             ?: if (analysisPly == tv.uciMoves.size) tv.fen else tv.startFen
     }
 
@@ -390,7 +400,12 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
             return
         }
         val safePly = targetPly.coerceIn(0, analysisUciMoves.size)
-        val fen = positionAt(analysisStartFen, analysisUciMoves, safePly) ?: return
+        val positions = analysisFenByPly.takeIf {
+            it.size == analysisUciMoves.size + 1
+        } ?: positionsAlongLine(analysisStartFen, analysisUciMoves).also {
+            analysisFenByPly = it
+        }
+        val fen = positions.getOrNull(safePly) ?: return
         analysisPly = safePly
         analysisFen = fen
         selectedSquare = null
@@ -461,12 +476,12 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
             return
         }
         val pgn = tvPgn(tv)
-        copyTvPgnToClipboard(context, pgn)
         val uri = tvPgnContentUri(context, tvPgnName(tv), pgn)
         if (uri == null) {
+            copyTvPgnToClipboard(context, pgn)
             Toast.makeText(
                 context,
-                "PGN copied, but the temporary PGN file could not be prepared.",
+                "The direct PGN handoff could not be prepared. PGN copied as a fallback.",
                 Toast.LENGTH_LONG
             ).show()
             return
@@ -483,14 +498,15 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
         if (opened) {
             Toast.makeText(
                 context,
-                "PGN copied and opened in Chess Openings Coach.",
+                "Opening this game in Chess Openings Coach PGN Reader…",
                 Toast.LENGTH_LONG
             ).show()
         } else {
+            copyTvPgnToClipboard(context, pgn)
             context.openChessOpeningsCoachPlayStore()
             Toast.makeText(
                 context,
-                "Chess Openings Coach was not found. The PGN is still on the clipboard.",
+                "Chess Openings Coach was not found. PGN copied as a fallback.",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -762,6 +778,12 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
 
         analysisUciMoves = analysisUciMoves.take(analysisPly) + uci
         analysisSanMoves = analysisSanMoves.take(analysisPly) + san
+        val cachedPrefix = analysisFenByPly.take(analysisPly + 1)
+        analysisFenByPly = if (cachedPrefix.size == analysisPly + 1) {
+            cachedPrefix + board.fen
+        } else {
+            positionsAlongLine(analysisStartFen, analysisUciMoves)
+        }
         analysisWasEdited = true
         analysisPly += 1
         analysisFen = board.fen
@@ -906,8 +928,10 @@ internal fun LichessTvScreen(onHome: () -> Unit) {
             analysisStartFen = tv.startFen
             analysisUciMoves = tv.uciMoves
             analysisSanMoves = tv.sanMoves
+            val positions = positionsAlongLine(tv.startFen, tv.uciMoves)
+            analysisFenByPly = positions
             analysisPly = tv.uciMoves.size
-            analysisFen = positionAt(tv.startFen, tv.uciMoves, tv.uciMoves.size) ?: analysisFen
+            analysisFen = positions.getOrNull(analysisPly) ?: analysisFen
         }
     }
 
