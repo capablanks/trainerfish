@@ -13,6 +13,7 @@ enum class CocTarget(val extraValue: String) {
 
 private const val COC_PACKAGE = "com.tonorbe.chessopeningscoach"
 private const val COC_EXTRA_TARGET = "trainerfish_coc_target"
+private const val PGN_MIME_TYPE = "application/x-chess-pgn"
 
 fun Context.openChessOpeningsCoach(
     target: CocTarget,
@@ -26,7 +27,11 @@ fun Context.openChessOpeningsCoach(
         putExtra(COC_EXTRA_TARGET, target.extraValue)
 
         if (pgnUri != null) {
-            data = pgnUri
+            // Use a real VIEW handoff instead of leaving the package launch
+            // intent as ACTION_MAIN. CoC can therefore consume the content URI
+            // immediately and open the game directly in its PGN Reader.
+            action = Intent.ACTION_VIEW
+            setDataAndType(pgnUri, PGN_MIME_TYPE)
             putExtra(Intent.EXTRA_STREAM, pgnUri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
