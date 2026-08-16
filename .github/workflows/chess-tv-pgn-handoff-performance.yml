@@ -1,0 +1,49 @@
+name: Chess TV PGN Handoff and Performance
+
+on:
+  push:
+    branches:
+      - work/chess-tv-pgn-handoff-performance
+    paths:
+      - .github/workflows/chess-tv-pgn-handoff-performance.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out target branch
+        uses: actions/checkout@v4
+        with:
+          ref: work/chess-tv-pgn-handoff-performance
+          fetch-depth: 0
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Apply Chess TV patch
+        run: python3 tools/apply_chess_tv_navigation_cache.py
+
+      - name: Run debug unit tests
+        run: |
+          chmod +x gradlew
+          ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Assemble debug APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Commit validated changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            app/src/main/java/com/tonorbe/trainerfish/LichessTvScreen.kt
+          git diff --cached --check
+          git commit -m "Open Chess TV PGNs directly and cache replay positions"
+          git push origin HEAD:work/chess-tv-pgn-handoff-performance
