@@ -176,18 +176,34 @@ text = replace_once(
 text = replace_once(
     text,
     '''        if (opened) {
-            Toast.makeText(context, "PGN copied and opened in Chess Openings Coach.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                "PGN copied and opened in Chess Openings Coach.",
+                Toast.LENGTH_LONG
+            ).show()
         } else {
             context.openChessOpeningsCoachPlayStore()
-            Toast.makeText(context, "Chess Openings Coach was not found. The PGN is still on the clipboard.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                "Chess Openings Coach was not found. The PGN is still on the clipboard.",
+                Toast.LENGTH_LONG
+            ).show()
         }
 ''',
     '''        if (opened) {
-            Toast.makeText(context, "Opening this game in Chess Openings Coach PGN Reader…", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                "Opening this game in Chess Openings Coach PGN Reader…",
+                Toast.LENGTH_LONG
+            ).show()
         } else {
             copyTvPgnToClipboard(context, pgn)
             context.openChessOpeningsCoachPlayStore()
-            Toast.makeText(context, "Chess Openings Coach was not found. PGN copied as a fallback.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                "Chess Openings Coach was not found. PGN copied as a fallback.",
+                Toast.LENGTH_LONG
+            ).show()
         }
 ''',
     "handoff result message"
